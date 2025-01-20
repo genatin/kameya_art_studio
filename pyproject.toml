@@ -9,6 +9,9 @@ readme = "README.md"
 python = "^3.12"
 aiogram = "^3.14.0"
 pydantic-settings = "^2.6.1"
+gspread = "^6.1.4"
+aiogram-dialog = "^2.3.0"
+pydantic = "^2.10.5"
 
 
 [build-system]

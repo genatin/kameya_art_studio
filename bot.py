@@ -1,21 +1,25 @@
 import asyncio
+
 from aiogram import Bot, Dispatcher
-from config import config
-from setup import setup_bot
+from aiogram_dialog import setup_dialogs
 
-from handlers import base_router
+from src.config import config
+from src.database.user_collector import user_collector
+from src.dialogs.sign_up import master, registration, router
+from src.gspread_handler.gspread_worker import gspread_worker
+from src.handlers.setup import CheckIsUserReg
 
 
-
-# Запуск бота
 async def main():
     bot = Bot(token=config.bot_token.get_secret_value())
     dp = Dispatcher()
-    dp.include_routers(base_router)
-    setup_bot()
-    
-    await bot.delete_webhook(drop_pending_updates=True)
+    router.message.middleware(CheckIsUserReg())
+    dp.include_routers(router, registration, master)
+    setup_dialogs(dp)
+    users = gspread_worker.load_users_from_gsheet()
+    gspread_worker.run_background_update()
+    user_collector.update_cache(users)
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+
+asyncio.run(main())
