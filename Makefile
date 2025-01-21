@@ -7,3 +7,7 @@ up:
 format:
 	poetry run isort .
 	poetry run black .
+
+
+mypy:
+	poetry run mypy src bot.py

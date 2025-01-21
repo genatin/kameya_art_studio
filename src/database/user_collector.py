@@ -2,7 +2,7 @@ from typing import TypeAlias
 
 from src.database.dto import UserDTO
 
-UserTgId: TypeAlias = str
+UserTgId: TypeAlias = int
 
 
 class UserCollector:

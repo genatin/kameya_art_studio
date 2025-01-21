@@ -13,6 +13,6 @@ class CheckIsUserReg(BaseMiddleware):
         event: types.Message,
         data: Dict[str, Any],
     ) -> Any:
-        user = user_collector.get_user(str(event.from_user.id))
+        user = user_collector.get_user(event.from_user.id)
         data["user"] = user
         await handler(event, data)

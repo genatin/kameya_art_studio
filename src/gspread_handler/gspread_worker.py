@@ -43,8 +43,10 @@ class GspreadWorker:
     def load_users_from_gsheet(self) -> dict[UserTgId, UserDTO]:
         with self.open_gsheet(config.GSHEET_NAME) as gsheet:
             users_sheet = gsheet.worksheet(config.users_page)
-            list_of_dicts = users_sheet.get_all_records()[1:]
-            return {tg_id: UserDTO(id=tg_id) for tg_id, phone, *_ in list_of_dicts}
+            list_of_dicts = users_sheet.get_all_records()
+            return {
+                user_data["id"]: UserDTO(**user_data) for user_data in list_of_dicts
+            }
 
     @__add_to_queue
     def add_user(self, user: UserDTO) -> None:
@@ -57,7 +59,7 @@ class GspreadWorker:
     def update_data_user(self, user: UserDTO) -> None:
         with self.open_gsheet(config.GSHEET_NAME) as gsheet:
             wsheet_users = gsheet.worksheet(config.users_page)
-            row_num = wsheet_users.find(user.id, in_column=1).row
+            row_num = wsheet_users.find(str(user.id), in_column=1).row
             wsheet_users.batch_update(user.compile_batch(row_num))
 
 

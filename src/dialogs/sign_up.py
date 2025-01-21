@@ -14,7 +14,7 @@ from aiogram.types import (
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Button, Cancel, Next, Row, Start
+from aiogram_dialog.widgets.kbd import Back, Button, Cancel, Next, Row
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -70,7 +70,7 @@ master = Dialog(
         state=ByMaster.START,
     ),
     Window(
-        Format("User input: {dialog_data} -- {dialog_data[phone]}"),
+        Format("User input: {dialog_data}"),
         Back(text=Const("Назад")),
         state=ByMaster.SERVICE_CHOICE,
     ),
@@ -100,34 +100,28 @@ async def get_contact(msg: Message, _, dialog_manager: DialogManager):
         msg.chat.id, [dialog_manager.dialog_data["message_id"], msg.message_id]
     )
     phone = "+" + msg.contact.phone_number.replace("+", "")
-    dialog_manager.dialog_data["phone"] = phone
-    new_user = UserDTO(id=str(msg.from_user.id), phone=phone)
-    user_collector.update_cache(new_user)
+    new_user = UserDTO(id=msg.from_user.id, phone=phone)
+    dialog_manager.dialog_data["user"] = new_user
+    user_collector.update_cache({msg.from_user.id: new_user})
     gspread_worker.add_user(new_user)
     await dialog_manager.next()
 
 
 async def get_name(msg: Message | CallbackQuery, _, dialog_manager: DialogManager):
     if isinstance(msg, Message):
-        dialog_manager.dialog_data["name"] = msg.text
+        dialog_manager.dialog_data["user"].name = msg.text
         await dialog_manager.next()
     else:
-        dialog_manager.dialog_data["name"] = msg.from_user.first_name
+        dialog_manager.dialog_data["user"].name = msg.from_user.first_name
 
 
 async def get_lastname(msg: Message, _, dialog_manager: DialogManager):
     if isinstance(msg, Message):
-        dialog_manager.dialog_data["last_name"] = msg.text
+        dialog_manager.dialog_data["user"].last_name = msg.text
         await dialog_manager.next()
     else:
-        dialog_manager.dialog_data["last_name"] = msg.from_user.last_name
-    gspread_worker.update_data_user(
-        UserDTO(
-            id=str(msg.from_user.id),
-            name=dialog_manager.dialog_data["name"],
-            last_name=dialog_manager.dialog_data["last_name"],
-        )
-    )
+        dialog_manager.dialog_data["user"].last_name = msg.from_user.last_name
+    gspread_worker.update_data_user(dialog_manager.dialog_data["user"])
 
 
 registration = Dialog(
@@ -178,8 +172,12 @@ registration = Dialog(
 
 
 @router.message(Command("sign_up"))
-async def sign_up_handler(message: Message, dialog_manager: DialogManager, user):
+async def sign_up_handler(
+    message: Message, dialog_manager: DialogManager, user: UserDTO
+):
     if user:
-        await dialog_manager.start(Registration.SIGN_UP, data=user.to_dict())
+        await dialog_manager.start(
+            Registration.SIGN_UP, data=user.model_dump(exclude_none=True)
+        )
     else:
         await dialog_manager.start(Registration.START)

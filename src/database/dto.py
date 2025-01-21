@@ -4,8 +4,8 @@ from pydantic import BaseModel
 
 
 class UserDTO(BaseModel):
-    id: str
-    phone: str | None = None
+    id: int
+    phone: str | int | None = None
     name: str | None = None
     last_name: str | None = None
 
