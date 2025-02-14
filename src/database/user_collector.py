@@ -12,7 +12,9 @@ class UserCollector:
     def get_user(self, user_id: UserTgId) -> UserDTO | None:
         return self.__cached_users.get(user_id)
 
-    def update_cache(self, user_ids_phone: dict[UserTgId, UserDTO]) -> None:
+    def update_cache(self, user_ids_phone: dict[UserTgId, UserDTO] | UserDTO) -> None:
+        if isinstance(user_ids_phone, UserDTO):
+            self.__cached_users[user_ids_phone.id] = user_ids_phone
         self.__cached_users.update(user_ids_phone)
 
 

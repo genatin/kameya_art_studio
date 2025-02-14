@@ -12,11 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl tini && \
 ENV PATH="${PATH}:${POETRY_HOME}/bin"
 
 COPY poetry.lock pyproject.toml ./
-COPY . /app
-
 RUN poetry config virtualenvs.create false && \
     poetry install --no-interaction --no-cache && \
     rm -rf ~/.cache ~/.config/pypoetry/auth.toml
+
+COPY . /app
 
 ENTRYPOINT ["tini", "--" ]
 CMD [ "poetry", "run", "python", "bot.py" ]

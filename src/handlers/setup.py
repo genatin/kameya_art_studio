@@ -15,4 +15,5 @@ class CheckIsUserReg(BaseMiddleware):
     ) -> Any:
         user = user_collector.get_user(event.from_user.id)
         data["user"] = user
+        print(user)
         await handler(event, data)
