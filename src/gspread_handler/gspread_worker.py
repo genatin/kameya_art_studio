@@ -1,21 +1,25 @@
 from contextlib import contextmanager
 from functools import partial
 from queue import Queue
-from threading import RLock, Thread
+from threading import Lock, Thread
 from typing import Iterator
 
 import gspread
+from gspread.cell import Cell
+from gspread.worksheet import Worksheet
 
+from src.cache.dto import UserDTO
+from src.cache.user_collector import UserTgId
 from src.config import Config, config
-from src.database.dto import UserDTO
-from src.database.user_collector import UserTgId
+
+_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 class GspreadWorker:
     def __init__(self, config: Config):
         self.__gp = gspread.service_account(filename=config.SERVICE_ACCOUNT_FILE_NAME)
         self.__tasks_queue: Queue = Queue(maxsize=10000)
-        self.__lock = RLock()
+        self.__lock = Lock()
 
     def __add_to_queue(f):
         def wrapper(self, *args, **kwargs):
@@ -35,6 +39,8 @@ class GspreadWorker:
         Thread(target=self.__background_update_sheets, daemon=True).start()
 
     def __background_update_sheets(self):
+        import time
+
         while True:
             task = self.__tasks_queue.get()
             with self.__lock:
@@ -48,19 +54,26 @@ class GspreadWorker:
                 user_data["id"]: UserDTO(**user_data) for user_data in list_of_dicts
             }
 
+    def get_user_cell(self, ws: Worksheet, user: UserDTO) -> Cell | None:
+        return ws.find(str(user.id), in_column=1)
+
     @__add_to_queue
     def add_user(self, user: UserDTO) -> None:
         with self.open_gsheet(config.GSHEET_NAME) as gsheet:
-            users = gsheet.worksheet(config.users_page)
-            values = list(user.model_dump(exclude_none=True).values())
-            users.append_row(values)
+            ws = gsheet.worksheet(config.users_page)
+            cell = self.get_user_cell(ws, user)
+            if cell:
+                self.update_data_user(user)
+            else:
+                values = list(user.model_dump(exclude_none=True).values())
+                ws.append_row(values)
 
     @__add_to_queue
     def update_data_user(self, user: UserDTO) -> None:
         with self.open_gsheet(config.GSHEET_NAME) as gsheet:
-            wsheet_users = gsheet.worksheet(config.users_page)
-            row_num = wsheet_users.find(str(user.id), in_column=1).row
-            wsheet_users.batch_update(user.compile_batch(row_num))
+            ws = gsheet.worksheet(config.users_page)
+            row_num = self.get_user_cell(ws, user).row
+            ws.batch_update(user.compile_batch(row_num))
 
 
 gspread_worker = GspreadWorker(config)

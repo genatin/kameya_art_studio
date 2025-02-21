@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class UserDTO(BaseModel):
     id: int
+    nickname: str | None = None
     phone: str | int | None = None
     name: str | None = None
     last_name: str | None = None

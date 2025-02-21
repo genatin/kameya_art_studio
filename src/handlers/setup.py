@@ -2,7 +2,7 @@ from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware, types
 
-from src.database.user_collector import user_collector
+from src.cache.user_collector import user_collector
 
 
 class CheckIsUserReg(BaseMiddleware):
@@ -15,5 +15,4 @@ class CheckIsUserReg(BaseMiddleware):
     ) -> Any:
         user = user_collector.get_user(event.from_user.id)
         data["user"] = user
-        print(user)
         await handler(event, data)

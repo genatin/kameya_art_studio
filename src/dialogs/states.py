@@ -1,6 +1,10 @@
 from aiogram.fsm.state import State, StatesGroup
 
 
+class FirstSeen(StatesGroup):
+    START = State()
+
+
 class Registration(StatesGroup):
     SEND_CONTACT = State()
     GET_CONTACT = State()
@@ -15,3 +19,7 @@ class BaseMenu(StatesGroup):
     SIGN_UP = State()
     ABOUT_US = State()
     END = State()
+
+
+class SignUp(StatesGroup):
+    START = State()
