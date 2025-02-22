@@ -6,12 +6,11 @@ class FirstSeen(StatesGroup):
 
 
 class Registration(StatesGroup):
-    SEND_CONTACT = State()
     GET_CONTACT = State()
+    EDIT_CONTACT = State()
     NAME = State()
-    NAME_IS = State()
     LASTNAME = State()
-    LASTNAME_IS = State()
+    END = State()
 
 
 class BaseMenu(StatesGroup):

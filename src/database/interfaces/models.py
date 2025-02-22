@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 
-@dataclass
+@dataclass(slots=True)
 class UserDTO:
     id: int
     nickname: str | None = None

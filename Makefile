@@ -13,3 +13,7 @@ flake:
 
 mypy:
 	poetry run mypy src bot.py
+
+up_test:
+	
+	poetry run python test.py

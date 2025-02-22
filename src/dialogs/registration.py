@@ -8,17 +8,19 @@ from aiogram.types import (
 )
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
-from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Button, Next
-from aiogram_dialog.widgets.markup.reply_keyboard import ReplyKeyboardFactory
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.input import MessageInput, TextInput
+from aiogram_dialog.widgets.kbd import Back, Button, Group, Keyboard, Row, SwitchTo
+from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.database.interfaces.models import UserDTO
 from src.dialogs.states import Registration
 from src.facade.users import users_facade
 
+_FINISHED = "finished"
+
 
 async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
+    manager.dialog_data[_FINISHED] = False
     markup = ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text="Поделиться контактом", request_contact=True)]],
         one_time_keyboard=True,
@@ -31,11 +33,9 @@ async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
 
 async def get_contact(msg: Message, _, manager: DialogManager):
     phone = "+" + msg.contact.phone_number.replace("+", "")
-
     msg_to_remove = await msg.answer(
-        r"_вы не должны увидеть это сообщение\.\.\._",
+        "***",
         reply_markup=ReplyKeyboardRemove(),
-        parse_mode="MarkdownV2",
     )
     await msg_to_remove.delete()
 
@@ -43,29 +43,40 @@ async def get_contact(msg: Message, _, manager: DialogManager):
         id=msg.from_user.id, nickname="@" + msg.from_user.username, phone=phone
     )
     manager.dialog_data["user"] = new_user
+    manager.current_context().widget_data["phone"] = phone
     users_facade.add_user(new_user)
-    await manager.next()
+    await manager.switch_to(Registration.NAME)
 
 
-async def get_name(msg: Message | CallbackQuery, _, manager: DialogManager):
-    manager.dialog_data["user"].name = msg.text
-    await manager.next()
-
-
-async def get_lastname(msg: Message, _, manager: DialogManager):
-    manager.dialog_data["user"].last_name = msg.text
-    await manager.next()
+async def result_getter(dialog_manager: DialogManager, **kwargs):
+    dialog_manager.dialog_data[_FINISHED] = True
+    phone = "+" + dialog_manager.find("phone").get_value().lstrip("+")
+    return {
+        "phone": phone,
+        "name": dialog_manager.find("name").get_value(),
+        "last_name": dialog_manager.find("last_name").get_value(),
+    }
 
 
 async def registration_complete(
-    callback: CallbackQuery, button: Button, manager: DialogManager, **kwargs
+    callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ):
-    user = manager.dialog_data["user"]
+    user: UserDTO = manager.dialog_data["user"]
+    user.name = manager.find("name").get_value()
+    user.last_name = manager.find("last_name").get_value()
+
     users_facade.update_user(user)
     await callback.message.answer(
         "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!",
     )
-    await manager.done(show_mode=ShowMode.SEND)
+    await manager.done(show_mode=ShowMode.DELETE_AND_SEND)
+
+
+async def next_or_end(event, widget, dialog_manager: DialogManager, *_):
+    if dialog_manager.dialog_data.get(_FINISHED):
+        await dialog_manager.switch_to(Registration.END)
+    else:
+        await dialog_manager.next()
 
 
 registration_dialog = Dialog(
@@ -75,26 +86,48 @@ registration_dialog = Dialog(
         state=Registration.GET_CONTACT,
     ),
     Window(
+        Format("Введите номер телефона"),
+        TextInput(id="phone", on_success=next_or_end),
+        state=Registration.EDIT_CONTACT,
+    ),
+    Window(
         Format("Введите Ваше имя кириллицей ниже"),
-        MessageInput(get_name),
+        TextInput(id="name", on_success=next_or_end),
         state=Registration.NAME,
     ),
     Window(
-        Format("Ваше имя: {dialog_data[user].name}?"),
-        Next(Const("Да")),
-        Back(Const("Нет")),
-        state=Registration.NAME_IS,
-    ),
-    Window(
-        Const("Введите вашу фамилию кириллицей ниже"),
-        Back(Const("Назад")),
-        MessageInput(get_lastname),
+        Const("Введите Вашу фамилию кириллицей ниже"),
+        TextInput("last_name", on_success=next_or_end),
         state=Registration.LASTNAME,
     ),
     Window(
-        Format("Ваша фамилия: {dialog_data[user].last_name}?"),
-        Button(Const("Да"), id="reg_complete", on_click=registration_complete),
-        Back(Const("Нет")),
-        state=Registration.LASTNAME_IS,
+        Jinja(
+            "<b>Телефон</b>: {{phone}}\n"
+            "<b>Имя</b>: {{name}}\n"
+            "<b>Фамилия</b>: {{last_name}}\n\n"
+            "Убедитесь, что данные введены корректно, с помощью кнопок ниже можно изменить данные.\n\n"
+            "Если всё правильно, нажмите <i>Дальше</i>"
+        ),
+        Row(
+            SwitchTo(
+                Const("Изменить имя"),
+                state=Registration.NAME,
+                id="to_name",
+            ),
+            SwitchTo(
+                Const("Изменить фамилию"),
+                state=Registration.LASTNAME,
+                id="to_lastname",
+            ),
+        ),
+        SwitchTo(
+            Const("Изменить телефон"),
+            state=Registration.EDIT_CONTACT,
+            id="to_phone",
+        ),
+        Button(Const("Дальше ➡️"), id="good", on_click=registration_complete),
+        parse_mode="html",
+        getter=result_getter,
+        state=Registration.END,
     ),
 )
