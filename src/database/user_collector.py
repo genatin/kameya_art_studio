@@ -1,11 +1,11 @@
 from typing import TypeAlias
 
-from src.cache.dto import UserDTO
+from src.database.interfaces.models import UserDTO
 
 UserTgId: TypeAlias = int
 
 
-class UserCollector:
+class UsersCollector:
     def __init__(self):
         self.__cached_users: dict[UserTgId, UserDTO] = {}
 
@@ -15,7 +15,7 @@ class UserCollector:
     def update_cache(self, user: dict[UserTgId, UserDTO] | UserDTO) -> None:
         if isinstance(user, UserDTO):
             self.__cached_users[user.id] = user
-        self.__cached_users.update(user)
-
-
-user_collector = UserCollector()
+        elif isinstance(user, dict):
+            self.__cached_users.update(user)
+        else:
+            raise NotImplementedError

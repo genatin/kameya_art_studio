@@ -10,12 +10,12 @@ from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Back, Button, Next
+from aiogram_dialog.widgets.markup.reply_keyboard import ReplyKeyboardFactory
 from aiogram_dialog.widgets.text import Const, Format
 
-from src.cache.dto import UserDTO
-from src.cache.user_collector import user_collector
-from src.dialogs.states import Registration, SignUp
-from src.gspread_handler.gspread_worker import gspread_worker
+from src.database.interfaces.models import UserDTO
+from src.dialogs.states import Registration
+from src.facade.users import users_facade
 
 
 async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
@@ -23,20 +23,27 @@ async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
         keyboard=[[KeyboardButton(text="Поделиться контактом", request_contact=True)]],
         one_time_keyboard=True,
     )
-    message = await cq.message.answer(
-        "Вы пока не зарегистрированы, для регистрации потребуется ваш номер телефона",
+    await cq.message.answer(
+        "Ой, Вы ещё не зарегистрированы, для регистрации потребуется ваш номер телефона",
         reply_markup=markup,
     )
-    manager.dialog_data["message_id"] = message.message_id
 
 
 async def get_contact(msg: Message, _, manager: DialogManager):
     phone = "+" + msg.contact.phone_number.replace("+", "")
+
+    msg_to_remove = await msg.answer(
+        r"_вы не должны увидеть это сообщение\.\.\._",
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode="MarkdownV2",
+    )
+    await msg_to_remove.delete()
+
     new_user = UserDTO(
         id=msg.from_user.id, nickname="@" + msg.from_user.username, phone=phone
     )
     manager.dialog_data["user"] = new_user
-    gspread_worker.add_user(new_user)
+    users_facade.add_user(new_user)
     await manager.next()
 
 
@@ -51,14 +58,12 @@ async def get_lastname(msg: Message, _, manager: DialogManager):
 
 
 async def registration_complete(
-    callback: CallbackQuery, button: Button, manager: DialogManager
+    callback: CallbackQuery, button: Button, manager: DialogManager, **kwargs
 ):
     user = manager.dialog_data["user"]
-    gspread_worker.update_data_user(user)
-    user_collector.update_cache(user)
+    users_facade.update_user(user)
     await callback.message.answer(
         "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!",
-        reply_markup=ReplyKeyboardRemove(),
     )
     await manager.done(show_mode=ShowMode.SEND)
 

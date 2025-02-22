@@ -8,8 +8,7 @@ from aiogram_dialog.widgets.kbd import Cancel, Start, SwitchTo
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
-from src.cache.dto import UserDTO
-from src.cache.user_collector import user_collector
+from src.database.interfaces.models import UserDTO
 from src.dialogs.registration import send_contact
 from src.dialogs.states import BaseMenu, FirstSeen, Registration, SignUp
 from src.dialogs.utils import get_cached_user
@@ -64,7 +63,7 @@ async def cmd_hello(message: Message, dialog_manager: DialogManager, user: UserD
     else:
         await dialog_manager.start(
             BaseMenu.START,
-            data={"user": user.model_dump(exclude_none=True)},
+            data={"user": user.to_dict(exclude_none=True)},
         )
 
 
@@ -74,5 +73,5 @@ async def sign_up_handler(
 ):
     await dialog_manager.start(
         SignUp.START,
-        data={"user": user.model_dump(exclude_none=True) if user else None},
+        data={"user": user.to_dict(exclude_none=True) if user else None},
     )

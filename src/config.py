@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -6,7 +8,7 @@ class Config(BaseSettings):
     # Желательно вместо str использовать SecretStr
     # для конфиденциальных данных, например, токена бота
     bot_token: SecretStr
-    SERVICE_ACCOUNT_FILE_NAME: str
+    SERVICE_FILE_NAME: str
     GSHEET_NAME: str
     users_page: str = Field(default="users")
 
@@ -20,4 +22,8 @@ class Config(BaseSettings):
 # При импорте файла сразу создастся
 # и провалидируется объект конфига,
 # который можно далее импортировать из разных мест
-config = Config()
+
+
+@lru_cache
+def get_config() -> Config:
+    return Config()

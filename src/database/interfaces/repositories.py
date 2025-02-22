@@ -1,0 +1,18 @@
+from abc import ABC, abstractmethod
+
+from src.database.interfaces.models import UserDTO
+
+
+class UsersAbstractRepository(ABC):
+
+    @abstractmethod
+    def add_user(self, user: UserDTO) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def update_user(self, user: UserDTO) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_user(self, id: int) -> UserDTO | None:
+        raise NotImplementedError
