@@ -10,7 +10,7 @@ class UsersAbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def update_user(self, user: UserDTO) -> None:
+    def update_user(self, user: UserDTO) -> None | str:
         raise NotImplementedError
 
     @abstractmethod

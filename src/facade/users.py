@@ -16,9 +16,10 @@ class UsersFacade:
         self.repository.add_user(user)
         self.collector.update_cache(user)
 
-    def update_user(self, user: UserDTO) -> None:
-        self.repository.update_user(user)
-        self.collector.update_cache(user)
+    def update_user(self, user: UserDTO) -> bool:
+        if success := self.repository.update_user(user) is not None:
+            self.collector.update_cache(user)
+        return success
 
     def load_from_database_to_cache(self) -> None:
         users = gspread_repository.load_users_from_gsheet()

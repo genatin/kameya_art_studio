@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import json
+import logging
 import string
 from dataclasses import asdict, dataclass
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
 class UserDTO:
     id: int
     nickname: str | None = None
-    phone: str | int | None = None
+    phone: str | None = None
     name: str | None = None
     last_name: str | None = None
 

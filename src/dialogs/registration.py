@@ -11,7 +11,7 @@ from aiogram.types import (
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
 from aiogram_dialog.widgets.input import MessageInput, TextInput
-from aiogram_dialog.widgets.kbd import Button, Row, SwitchTo
+from aiogram_dialog.widgets.kbd import Back, Button, Row, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.database.interfaces.models import UserDTO
@@ -35,7 +35,7 @@ async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
 
 
 async def get_contact(msg: Message, _, manager: DialogManager):
-    phone = "+" + msg.contact.phone_number.replace("+", "")
+    phone = "+" + msg.contact.phone_number.lstrip("+")
     msg_to_remove = await msg.answer(
         "***",
         reply_markup=ReplyKeyboardRemove(),
@@ -54,6 +54,7 @@ async def get_contact(msg: Message, _, manager: DialogManager):
 async def result_getter(dialog_manager: DialogManager, **kwargs):
     dialog_manager.dialog_data[_FINISHED] = True
     phone = "+" + dialog_manager.find("phone").get_value().lstrip("+")
+    dialog_manager.current_context().widget_data["phone"] = phone
     return {
         "phone": phone,
         "name": dialog_manager.find("name").get_value(),
@@ -68,12 +69,15 @@ async def registration_complete(
     user = UserDTO(**user)
     user.name = manager.find("name").get_value()
     user.last_name = manager.find("last_name").get_value()
-
-    users_facade.update_user(user)
-    await callback.message.answer(
-        "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!",
+    is_success = users_facade.update_user(user)
+    # TODO сделать отправку админу
+    message = (
+        "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!"
+        if is_success
+        else "Что-то пошло не так, попробуйте ещё раз. Если ошибка повторяется, то попробуйте через пару часов. Мы уже разбираемся."
     )
-    await manager.done(show_mode=ShowMode.DELETE_AND_SEND)
+    await callback.message.answer(message)
+    await manager.done(show_mode=ShowMode.NO_UPDATE)
 
 
 async def next_or_end(event, widget, dialog_manager: DialogManager, *_):
@@ -92,6 +96,7 @@ registration_dialog = Dialog(
     Window(
         Format("Введите номер телефона"),
         TextInput(id="phone", on_success=next_or_end),
+        SwitchTo(Const("Назад"), id="reg_end", state=Registration.END),
         state=Registration.EDIT_CONTACT,
     ),
     Window(

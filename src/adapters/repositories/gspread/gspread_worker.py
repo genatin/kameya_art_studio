@@ -71,11 +71,11 @@ class GspreadRepository(UsersAbstractRepository):
             ws.append_row(values)
 
     @__add_to_queue
-    def update_user(self, user: UserDTO) -> None:
+    def update_user(self, user: UserDTO) -> None | str:
         ws = self.__sheet.worksheet(self.config.users_page)
         cell = self.__get_user_cell(user=user)
         if cell:
-            ws.batch_update(user.compile_batch(cell.row))
+            return ws.batch_update(user.compile_batch(cell.row))
 
 
 gspread_repository = GspreadRepository(get_config())
