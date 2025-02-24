@@ -39,7 +39,9 @@ class GspreadRepository(UsersAbstractRepository):
         users_sheet = self.__sheet.worksheet(self.config.users_page)
         list_of_dicts = users_sheet.get_all_records()
         return {
-            int(user_data["id"]): UserDTO(**user_data) for user_data in list_of_dicts
+            int(user_data["id"]): UserDTO(**user_data)
+            for user_data in list_of_dicts
+            if user_data["id"]
         }
 
     def __get_user_cell(

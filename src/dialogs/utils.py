@@ -1,3 +1,5 @@
+import dataclasses
+import json
 from typing import Any
 
 from aiogram_dialog import DialogManager
@@ -14,3 +16,10 @@ async def get_cached_user(dialog_manager: DialogManager, **kwargs) -> dict[str, 
     if user_pret and user_pret.phone:
         user = user_pret
     return {"user": user}
+
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        return super().default(o)

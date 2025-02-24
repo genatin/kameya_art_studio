@@ -1,3 +1,5 @@
+import logging
+
 from aiogram.types import (
     CallbackQuery,
     ContentType,
@@ -17,6 +19,7 @@ from src.dialogs.states import Registration
 from src.facade.users import users_facade
 
 _FINISHED = "finished"
+logger = logging.getLogger(__name__)
 
 
 async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
@@ -62,6 +65,7 @@ async def registration_complete(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ):
     user: UserDTO = manager.dialog_data["user"]
+    user = UserDTO(**user)
     user.name = manager.find("name").get_value()
     user.last_name = manager.find("last_name").get_value()
 
