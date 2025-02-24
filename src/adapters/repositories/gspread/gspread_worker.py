@@ -1,8 +1,6 @@
-from contextlib import contextmanager
 from functools import partial, wraps
 from queue import Queue
-from threading import Lock, Thread
-from typing import Iterator
+from threading import Thread
 
 import gspread
 from gspread.cell import Cell
@@ -16,8 +14,7 @@ from src.database.user_collector import UserTgId
 
 class GspreadRepository(UsersAbstractRepository):
     def __init__(self, config: Config):
-        self.__tasks_queue: Queue = Queue(maxsize=10000)
-        self.__lock: Lock = Lock()
+        self.__tasks_queue: Queue = Queue(maxsize=1000)
         self.config = config
         self.__sheet: Spreadsheet = gspread.service_account(
             filename=config.SERVICE_FILE_NAME
@@ -36,8 +33,7 @@ class GspreadRepository(UsersAbstractRepository):
     def __background_update_sheets(self):
         while True:
             task = self.__tasks_queue.get()
-            with self.__lock:
-                task()
+            task()
 
     def load_users_from_gsheet(self) -> dict[UserTgId, UserDTO]:
         users_sheet = self.__sheet.worksheet(self.config.users_page)

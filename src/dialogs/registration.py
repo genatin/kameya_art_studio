@@ -9,7 +9,7 @@ from aiogram.types import (
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
 from aiogram_dialog.widgets.input import MessageInput, TextInput
-from aiogram_dialog.widgets.kbd import Back, Button, Group, Keyboard, Row, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Row, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.database.interfaces.models import UserDTO

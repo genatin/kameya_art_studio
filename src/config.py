@@ -8,6 +8,7 @@ class Config(BaseSettings):
     # Желательно вместо str использовать SecretStr
     # для конфиденциальных данных, например, токена бота
     bot_token: SecretStr
+    REDIS_PASSWORD: SecretStr
     SERVICE_FILE_NAME: str
     GSHEET_NAME: str
     users_page: str = Field(default="users")

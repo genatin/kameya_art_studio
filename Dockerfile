@@ -1,5 +1,4 @@
 FROM python:3.12-slim
-WORKDIR /app
 
 ARG POETRY_HOME=/etc/poetry
 
@@ -13,10 +12,14 @@ ENV PATH="${PATH}:${POETRY_HOME}/bin"
 
 COPY poetry.lock pyproject.toml ./
 RUN poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-cache && \
+    poetry install --no-interaction --no-cache --without dev && \
     rm -rf ~/.cache ~/.config/pypoetry/auth.toml
 
-COPY . /app
+
+COPY ./src /src
+COPY ./bot.py /bot.py
+COPY ./service_account.json /service_account.json
+
 
 ENTRYPOINT ["tini", "--" ]
 CMD [ "poetry", "run", "python", "bot.py" ]

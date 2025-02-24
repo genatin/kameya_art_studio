@@ -22,3 +22,4 @@ class BaseMenu(StatesGroup):
 
 class SignUp(StatesGroup):
     START = State()
+    LESSONS = State()

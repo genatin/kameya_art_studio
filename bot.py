@@ -1,11 +1,16 @@
 import asyncio
+import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.filters import ExceptionTypeFilter
+from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
 from aiogram_dialog import setup_dialogs
+from aiogram_dialog.api.exceptions import UnknownIntent, UnknownState
+from redis.asyncio.client import Redis
 
 from src.adapters.repositories.gspread.gspread_worker import gspread_repository
 from src.config import get_config
-from src.dialogs.base_menu import menu_dialog, router
+from src.dialogs.base_menu import menu_dialog, on_unknown_intent, router
 from src.dialogs.first_seend import first_seen_dialog
 from src.dialogs.registration import registration_dialog
 from src.dialogs.sign_up import signup_dialog
@@ -14,9 +19,21 @@ from src.handlers.setup import CheckIsUserReg
 
 
 async def main():
-    bot = Bot(token=get_config().bot_token.get_secret_value())
-    dp = Dispatcher()
+    logging.basicConfig(level=logging.INFO)
+    config = get_config()
+    bot = Bot(token=config.bot_token.get_secret_value())
+
+    storage = RedisStorage(
+        Redis(host="redis", db=0, password=config.REDIS_PASSWORD.get_secret_value()),
+        key_builder=DefaultKeyBuilder(with_destiny=True),
+    )
+
+    dp = Dispatcher(storage=storage)
     router.message.middleware(CheckIsUserReg())
+    dp.errors.register(
+        on_unknown_intent,
+        ExceptionTypeFilter(UnknownIntent),
+    )
     dp.include_routers(
         first_seen_dialog, router, menu_dialog, registration_dialog, signup_dialog
     )
@@ -26,4 +43,5 @@ async def main():
     await dp.start_polling(bot)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
