@@ -70,7 +70,6 @@ class GspreadRepository(UsersAbstractRepository):
             values = list(user.to_dict(exclude_none=True).values())
             ws.append_row(values)
 
-    @__add_to_queue
     def update_user(self, user: UserDTO) -> None | str:
         ws = self.__sheet.worksheet(self.config.users_page)
         cell = self.__get_user_cell(user=user)

@@ -53,31 +53,32 @@ async def get_contact(msg: Message, _, manager: DialogManager):
 
 async def result_getter(dialog_manager: DialogManager, **kwargs):
     dialog_manager.dialog_data[_FINISHED] = True
-    phone = "+" + dialog_manager.find("phone").get_value().lstrip("+")
-    dialog_manager.current_context().widget_data["phone"] = phone
-    return {
-        "phone": phone,
-        "name": dialog_manager.find("name").get_value(),
-        "last_name": dialog_manager.find("last_name").get_value(),
-    }
+    user_dict: dict = dialog_manager.dialog_data["user"]
+
+    user_dict["name"] = dialog_manager.find("name").get_value()
+    user_dict["phone"] = "+" + dialog_manager.find("phone").get_value().lstrip("+")
+    user_dict["last_name"] = dialog_manager.find("last_name").get_value()
+    return user_dict
 
 
 async def registration_complete(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ):
-    user: UserDTO = manager.dialog_data["user"]
-    user = UserDTO(**user)
-    user.name = manager.find("name").get_value()
-    user.last_name = manager.find("last_name").get_value()
+    user = UserDTO(**manager.dialog_data["user"])
+
+    await callback.message.answer("Совсем чуть-чуть...")
     is_success = users_facade.update_user(user)
     # TODO сделать отправку админу
-    message = (
-        "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!"
-        if is_success
-        else "Что-то пошло не так, попробуйте ещё раз. Если ошибка повторяется, то попробуйте через пару часов. Мы уже разбираемся."
-    )
+    if is_success:
+        message = "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!"
+        show_mode = ShowMode.DELETE_AND_SEND
+
+    else:
+        message = "Что-то пошло не так, попробуйте ещё раз. Если ошибка повторяется, то попробуйте через пару часов. Мы уже разбираемся."
+        show_mode = ShowMode.NO_UPDATE
+
     await callback.message.answer(message)
-    await manager.done(show_mode=ShowMode.NO_UPDATE)
+    await manager.done(show_mode=show_mode)
 
 
 async def next_or_end(event, widget, dialog_manager: DialogManager, *_):
