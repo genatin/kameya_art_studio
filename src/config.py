@@ -8,10 +8,14 @@ class Config(BaseSettings):
     # Желательно вместо str использовать SecretStr
     # для конфиденциальных данных, например, токена бота
     bot_token: SecretStr
-    REDIS_PASSWORD: SecretStr
+    ADMIN_ID: str
     SERVICE_FILE_NAME: str
     GSHEET_NAME: str
     users_page: str = Field(default="users")
+
+    REDIS_PASSWORD: SecretStr
+    REDIS_HOST: str = Field(default="redis")
+    REDIS_PORT: int
 
     # Начиная со второй версии pydantic, настройки класса настроек задаются
     # через model_config

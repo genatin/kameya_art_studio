@@ -11,7 +11,8 @@ up_local:
 	poetry run python bot.py
 
 restart_bot:
-	docker-compose build bot && docker-compose restart bot
+	docker compose up -d --build bot
+
 
 format:
 	poetry run isort .

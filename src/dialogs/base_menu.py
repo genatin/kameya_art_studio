@@ -39,7 +39,7 @@ async def on_unknown_intent(event: ErrorEvent, dialog_manager: DialogManager):
         )
     await dialog_manager.start(
         BaseMenu.START,
-        mode=StartMode.RESET_STACK,
+        mode=StartMode.NEW_STACK,
         show_mode=ShowMode.SEND,
     )
 
@@ -50,7 +50,7 @@ menu_dialog = Dialog(
             path="src/data/welcome_photo.jpg",
             type=ContentType.PHOTO,
         ),
-        Format("Рады тебя снова видеть, {user.name}!", when=F["user"]),
+        Format("Рады тебя видеть, {user.name}!", when=F["user"]),
         Format(
             "{event.from_user.full_name} привет, \n\n--- здесь вы можете записаться на ---",
             when=~F["user"],

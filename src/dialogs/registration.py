@@ -1,5 +1,6 @@
 import logging
 
+from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import (
     CallbackQuery,
     ContentType,
@@ -95,20 +96,22 @@ registration_dialog = Dialog(
         state=Registration.GET_CONTACT,
     ),
     Window(
-        Format("Введите номер телефона"),
+        Const("Введите номер телефона\n_Например: +78005553535_"),
         TextInput(id="phone", on_success=next_or_end),
         SwitchTo(Const("Назад"), id="reg_end", state=Registration.END),
         state=Registration.EDIT_CONTACT,
     ),
     Window(
-        Format("Введите Ваше имя кириллицей ниже"),
+        Format("*Введите ваше имя*\n_Например: Илья_"),
         TextInput(id="name", on_success=next_or_end),
         state=Registration.NAME,
+        parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
-        Const("Введите Вашу фамилию кириллицей ниже"),
+        Const("*Введите вашу фамилию*\n_Например: Репин_"),
         TextInput("last_name", on_success=next_or_end),
         state=Registration.LASTNAME,
+        parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
         Jinja(
@@ -136,7 +139,7 @@ registration_dialog = Dialog(
             id="to_phone",
         ),
         Button(Const("Дальше ➡️"), id="good", on_click=registration_complete),
-        parse_mode="html",
+        parse_mode=ParseMode.HTML,
         getter=result_getter,
         state=Registration.END,
     ),

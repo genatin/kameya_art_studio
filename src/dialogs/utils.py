@@ -2,10 +2,29 @@ import dataclasses
 import json
 from typing import Any
 
+from aiogram.types import ErrorEvent
 from aiogram_dialog import DialogManager
 
+from src.config import get_config
 from src.database.interfaces.models import UserDTO
 from src.facade.users import users_facade
+
+
+async def error_handler(error_event: ErrorEvent):
+    message_from_user = error_event.update.message.from_user
+    await error_event.update.bot
+    await error_event.update.bot.send_message(
+        get_config().ADMIN_ID,
+        f"User_id: {message_from_user.id}\n",
+        f'Username: <a href="tg://user?id={message_from_user.id}">{message_from_user.username}\n</a>'
+        f"Message: {error_event.update.message.text} \n\nError:",
+        disable_notification=True,
+        parse_mode="HTML",
+    )
+    await error_event.update.message.answer(
+        "Ой, случилось что-то непредвиденное, пока разработчик чинит ошибку"
+        " вы всегда можете оборвать действие нажав или отправив сообщение /cancel"
+    )
 
 
 async def get_cached_user(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
