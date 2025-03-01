@@ -44,14 +44,18 @@ async def main():
     )
     # dp.errors.register(error_handler)
     dp.include_routers(
-        first_seen_dialog, router, menu_dialog, registration_dialog, signup_dialog
+        first_seen_dialog,
+        router,
+        signup_dialog,
+        menu_dialog,
+        registration_dialog,
     )
     setup_dialogs(dp)
     gspread_repository.run_background_update()
     users = gspread_repository.load_users_from_gsheet()
     users_repository.collector.update_cache(users)
 
-    await dp.start_polling(bot, gena=storage)
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":

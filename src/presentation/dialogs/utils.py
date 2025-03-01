@@ -4,6 +4,7 @@ from typing import Any
 
 from aiogram.types import ErrorEvent
 from aiogram_dialog import DialogManager
+from pydantic import BaseModel
 
 from src.application.models import UserDTO
 from src.config import get_config
@@ -33,6 +34,7 @@ async def get_cached_user(dialog_manager: DialogManager, **kwargs) -> dict[str, 
     )
     if user_pret and user_pret.phone:
         user = user_pret
+    dialog_manager.dialog_data["user"] = user
     return {"user": user}
 
 
@@ -40,4 +42,6 @@ class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, o):
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
+        elif isinstance(o, BaseModel):
+            return o.model_dump()
         return super().default(o)
