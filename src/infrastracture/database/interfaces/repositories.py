@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.database.interfaces.models import UserDTO
+from src.application.models import UserDTO
 
 
 class UsersAbstractRepository(ABC):

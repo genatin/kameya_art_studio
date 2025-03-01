@@ -2,7 +2,7 @@ from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware, types
 
-from src.facade.users import users_facade
+from src.infrastracture import users_repository
 
 
 class CheckIsUserReg(BaseMiddleware):
@@ -13,5 +13,5 @@ class CheckIsUserReg(BaseMiddleware):
         event: types.Message,
         data: Dict[str, Any],
     ) -> Any:
-        data["user"] = users_facade.collector.get_user(event.from_user.id)
+        data["user"] = users_repository.collector.get_user(event.from_user.id)
         await handler(event, data)

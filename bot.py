@@ -1,25 +1,24 @@
 import asyncio
 import logging
-import traceback
 from functools import partial
 from json import dumps
 
-from aiogram import Bot, Dispatcher, F, types
+from aiogram import Bot, Dispatcher
 from aiogram.filters import ExceptionTypeFilter
 from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
 from aiogram_dialog import setup_dialogs
 from aiogram_dialog.api.exceptions import UnknownIntent
 from redis.asyncio.client import Redis
 
-from src.adapters.repositories.gspread.gspread_worker import gspread_repository
 from src.config import get_config
-from src.dialogs.base_menu import menu_dialog, on_unknown_intent, router
-from src.dialogs.first_seend import first_seen_dialog
-from src.dialogs.registration import registration_dialog
-from src.dialogs.sign_up import signup_dialog
-from src.dialogs.utils import EnhancedJSONEncoder, error_handler
-from src.facade.users import users_facade
-from src.handlers.setup import CheckIsUserReg
+from src.infrastracture import users_repository
+from src.infrastracture.adapters.repositories.gspread_worker import gspread_repository
+from src.presentation.dialogs.base_menu import menu_dialog, on_unknown_intent, router
+from src.presentation.dialogs.first_seend import first_seen_dialog
+from src.presentation.dialogs.registration import registration_dialog
+from src.presentation.dialogs.sign_up import signup_dialog
+from src.presentation.dialogs.utils import EnhancedJSONEncoder, error_handler
+from src.presentation.handlers.setup import CheckIsUserReg
 
 
 async def main():
@@ -43,13 +42,15 @@ async def main():
         on_unknown_intent,
         ExceptionTypeFilter(UnknownIntent),
     )
-    dp.errors.register(error_handler)
+    # dp.errors.register(error_handler)
     dp.include_routers(
         first_seen_dialog, router, menu_dialog, registration_dialog, signup_dialog
     )
     setup_dialogs(dp)
     gspread_repository.run_background_update()
-    users_facade.load_from_database_to_cache()
+    users = gspread_repository.load_users_from_gsheet()
+    users_repository.collector.update_cache(users)
+
     await dp.start_polling(bot, gena=storage)
 
 

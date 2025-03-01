@@ -6,10 +6,9 @@ import gspread
 from gspread.cell import Cell
 from gspread.spreadsheet import Spreadsheet
 
+from src.application.models import UserDTO, UserTgId
 from src.config import Config, get_config
-from src.database.interfaces.models import UserDTO
-from src.database.interfaces.repositories import UsersAbstractRepository
-from src.database.user_collector import UserTgId
+from src.infrastracture.database.interfaces.repositories import UsersAbstractRepository
 
 
 class GspreadRepository(UsersAbstractRepository):

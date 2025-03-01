@@ -5,14 +5,13 @@ from typing import Any
 from aiogram.types import ErrorEvent
 from aiogram_dialog import DialogManager
 
+from src.application.models import UserDTO
 from src.config import get_config
-from src.database.interfaces.models import UserDTO
-from src.facade.users import users_facade
+from src.infrastracture import users_repository
 
 
 async def error_handler(error_event: ErrorEvent):
     message_from_user = error_event.update.message.from_user
-    await error_event.update.bot
     await error_event.update.bot.send_message(
         get_config().ADMIN_ID,
         f"User_id: {message_from_user.id}\n",
@@ -29,7 +28,7 @@ async def error_handler(error_event: ErrorEvent):
 
 async def get_cached_user(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
     user = None
-    user_pret: UserDTO = users_facade.collector.get_user(
+    user_pret: UserDTO = users_repository.collector.get_user(
         dialog_manager.event.from_user.id
     )
     if user_pret and user_pret.phone:

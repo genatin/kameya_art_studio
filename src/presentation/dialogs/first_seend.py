@@ -5,14 +5,16 @@ from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const
 
-from src.adapters.repositories.gspread.gspread_worker import gspread_repository
-from src.database.interfaces.models import UserDTO
-from src.dialogs.states import BaseMenu, FirstSeen
+from src.application.models import UserDTO
+from src.infrastracture.adapters.repositories.gspread_worker import gspread_repository
+from src.presentation.dialogs.states import BaseMenu, FirstSeen
 
 
 async def getter_first_seen_video(**kwargs):
     return {
-        "video": MediaAttachment(ContentType.VIDEO, path="src/data/welcome_video.mp4")
+        "video": MediaAttachment(
+            ContentType.VIDEO, path="src/static_data/welcome_video.mp4"
+        )
     }
 
 

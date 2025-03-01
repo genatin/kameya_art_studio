@@ -1,11 +1,8 @@
-from typing import TypeAlias
-
-from src.database.interfaces.models import UserDTO
-
-UserTgId: TypeAlias = int
+from src.application.in_memory.interfaces import InMemoryUsersAbstractRepository
+from src.application.models import UserDTO, UserTgId
 
 
-class UsersCollector:
+class InMemoryUsers(InMemoryUsersAbstractRepository):
     def __init__(self):
         self.__cached_users: dict[UserTgId, UserDTO] = {}
 

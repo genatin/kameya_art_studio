@@ -5,15 +5,15 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import ContentType, ErrorEvent, Message, ReplyKeyboardRemove
 from aiogram_dialog import Dialog, DialogManager, ShowMode, StartMode, Window
-from aiogram_dialog.api.exceptions import UnknownIntent
 from aiogram_dialog.widgets.kbd import Cancel, Start
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
-from src.database.interfaces.models import UserDTO
-from src.dialogs.registration import send_contact
-from src.dialogs.states import BaseMenu, FirstSeen, Registration, SignUp
-from src.dialogs.utils import get_cached_user
+from src.application.models import UserDTO
+from src.presentation.dialogs.registration import send_contact
+from src.presentation.dialogs.states import BaseMenu, FirstSeen, Registration, SignUp
+from src.presentation.dialogs.utils import get_cached_user
+from src.presentation.keyboards.text import ru
 
 router = Router()
 
@@ -47,7 +47,7 @@ async def on_unknown_intent(event: ErrorEvent, dialog_manager: DialogManager):
 menu_dialog = Dialog(
     Window(
         StaticMedia(
-            path="src/data/welcome_photo.jpg",
+            path="src/static_data/welcome_photo.jpg",
             type=ContentType.PHOTO,
         ),
         Format("Рады тебя видеть, {user.name}!", when=F["user"]),
@@ -74,13 +74,13 @@ menu_dialog = Dialog(
     ),
     Window(
         StaticMedia(
-            path="src/data/welcome_photo.jpg",
+            path="src/static_data/welcome_photo.jpg",
             type=ContentType.PHOTO,
         ),
         Format(
             "{event.from_user.full_name} привет, \n\n--- здесь вы можете записаться на урок ---\n\nчтобы продолжить понадобится ваш номер телефона"
         ),
-        Cancel(text=Const("Назад")),
+        Cancel(text=Const(ru.back_step)),
         state=BaseMenu.ABOUT_US,
     ),
 )

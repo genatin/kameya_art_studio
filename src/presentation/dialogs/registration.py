@@ -12,12 +12,13 @@ from aiogram.types import (
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
 from aiogram_dialog.widgets.input import MessageInput, TextInput
-from aiogram_dialog.widgets.kbd import Back, Button, Row, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Row, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
-from src.database.interfaces.models import UserDTO
-from src.dialogs.states import Registration
-from src.facade.users import users_facade
+from src.application.models import UserDTO
+from src.infrastracture import users_repository
+from src.presentation.dialogs.states import Registration
+from src.presentation.keyboards.text import ru
 
 _FINISHED = "finished"
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
     manager.dialog_data[_FINISHED] = False
     markup = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="Поделиться контактом", request_contact=True)]],
+        keyboard=[[KeyboardButton(text=ru.send_phone, request_contact=True)]],
         one_time_keyboard=True,
     )
     await cq.message.answer(
@@ -48,7 +49,7 @@ async def get_contact(msg: Message, _, manager: DialogManager):
     )
     manager.dialog_data["user"] = new_user
     manager.current_context().widget_data["phone"] = phone
-    users_facade.add_user(new_user)
+    users_repository.add_user(new_user)
     await manager.switch_to(Registration.NAME)
 
 
@@ -68,7 +69,7 @@ async def registration_complete(
     user = UserDTO(**manager.dialog_data["user"])
 
     await callback.message.answer("Совсем чуть-чуть...")
-    is_success = users_facade.update_user(user)
+    is_success = users_repository.update_user(user)
     # TODO сделать отправку админу
     if is_success:
         message = "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!"
@@ -96,10 +97,11 @@ registration_dialog = Dialog(
         state=Registration.GET_CONTACT,
     ),
     Window(
-        Const("Введите номер телефона\n_Например: +78005553535_"),
+        Const("*Введите номер телефона*\n_Например: +78005553535_"),
         TextInput(id="phone", on_success=next_or_end),
-        SwitchTo(Const("Назад"), id="reg_end", state=Registration.END),
+        SwitchTo(Const(ru.back_step), id="reg_end", state=Registration.END),
         state=Registration.EDIT_CONTACT,
+        parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
         Format("*Введите ваше имя*\n_Например: Илья_"),

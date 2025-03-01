@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import json
 import logging
 import string
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, TypeAlias
 
 logger = logging.getLogger(__name__)
+
+
+UserTgId: TypeAlias = int
 
 
 @dataclass(slots=True)
