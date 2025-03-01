@@ -15,10 +15,10 @@ from aiogram_dialog.widgets.input import MessageInput, TextInput
 from aiogram_dialog.widgets.kbd import Button, Row, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
+from src.application.domen.text import ru
 from src.application.models import UserDTO
 from src.infrastracture import users_repository
 from src.presentation.dialogs.states import Registration
-from src.presentation.keyboards.text import ru
 
 _FINISHED = "finished"
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ async def registration_complete(
 ):
     user = UserDTO(**manager.dialog_data["user"])
 
-    await callback.message.answer("Совсем чуть-чуть...")
+    await callback.message.answer("Ещё совсем чуть-чуть...")
     is_success = users_repository.update_user(user)
     # TODO сделать отправку админу
     if is_success:

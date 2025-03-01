@@ -12,6 +12,10 @@ class Config(BaseSettings):
     SERVICE_FILE_NAME: str
     GSHEET_NAME: str
     users_page: str = Field(default="users")
+    lessons_page: str = Field(default="уроки")
+    child_page: str = Field(default="детскаястудия")
+    master_class_page: str = Field(default="мастер-классы")
+    evening_page: str = Field(default="вечерние наброски")
 
     REDIS_PASSWORD: SecretStr
     REDIS_HOST: str = Field(default="redis")

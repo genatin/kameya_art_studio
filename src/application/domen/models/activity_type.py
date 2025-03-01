@@ -2,7 +2,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from src.presentation.keyboards.text import ru
+from src.application.domen.text import ru
 
 
 class ActivityEnum(Enum):

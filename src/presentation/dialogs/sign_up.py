@@ -1,16 +1,13 @@
 import logging
-from enum import StrEnum
 
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.api.entities.modes import ShowMode
-from aiogram_dialog.widgets.kbd import Back, Button, Cancel, Row, SwitchTo
-from aiogram_dialog.widgets.text import Const, Format, Jinja
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, SwitchTo
+from aiogram_dialog.widgets.text import Const, Jinja
 
-from src.infrastracture.adapters.repositories.gspread_worker import gspread_repository
-from src.presentation.dialogs.models import LessonActivity
-from src.presentation.dialogs.models.activity_type import (
+from src.application.domen.models import LessonActivity
+from src.application.domen.models.activity_type import (
     ActivityEnum,
     ActivityFactory,
     child_studio_act,
@@ -18,7 +15,7 @@ from src.presentation.dialogs.models.activity_type import (
     lesson_act,
     master_class_act,
 )
-from src.presentation.dialogs.models.lesson_option import (
+from src.application.domen.models.lesson_option import (
     LessonOption,
     LessonOptionFactory,
     one_l_option,
@@ -26,8 +23,11 @@ from src.presentation.dialogs.models.lesson_option import (
     sub8_l_option,
     trial_l_option,
 )
+from src.application.domen.text import ru
+from src.application.models import UserDTO
+from src.infrastracture import users_repository
+from src.infrastracture.adapters.repositories.gspread_worker import gspread_repository
 from src.presentation.dialogs.states import SignUp
-from src.presentation.keyboards.text import ru
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +38,10 @@ _BACK_TO_SIGN_UP = Row(
     SwitchTo(Const(ru.back_step), id="sign_up", state=SignUp.START),
     Button(Const(" "), id="empty"),
 )
-_BACK = Row(
-    Back(Const(ru.back_step), id="sign_up"),
-    Button(Const(" "), id="empty"),
-)
 
 
 async def lesson_option(cq: CallbackQuery, _, manager: DialogManager):
     lesson_activity = manager.dialog_data[_LESSON_ACTIVITY]
-    logger.info(f"---> {lesson_activity=}")
     lesson_activity["lesson_option"] = LessonOptionFactory.generate(cq.data)
     await manager.switch_to(SignUp.STAY_FORM)
 
@@ -66,7 +61,12 @@ _SUBSCRIPTION_8_BUT = generate_button(sub8_l_option)
 async def stay_form(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ):
-
+    lesson_activity: LessonActivity = LessonActivity(
+        **manager.dialog_data[_LESSON_ACTIVITY]
+    )
+    # users_repository.get_cached_user(ca)
+    user: UserDTO = users_repository.collector.get_user(manager.event.from_user.id)
+    gspread_repository.sign_up_user(user, lesson_activity)
     await callback.message.answer(ru.application_form)
     await manager.done()
 
@@ -97,7 +97,6 @@ async def back_on_previos_state(
     lesson_activity: LessonActivity = LessonActivity(
         **manager.dialog_data[_LESSON_ACTIVITY]
     )
-    MASS_CLASS = "a"
     match lesson_activity.activity_type.name:
         case ActivityEnum.MASS_CLASS.value:
             state = SignUp.MASS_CLASSES

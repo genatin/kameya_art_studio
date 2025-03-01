@@ -9,11 +9,12 @@ from aiogram_dialog.widgets.kbd import Cancel, Start
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
+from src.application.domen.text import ru
 from src.application.models import UserDTO
+from src.infrastracture import users_repository
 from src.presentation.dialogs.registration import send_contact
 from src.presentation.dialogs.states import BaseMenu, FirstSeen, Registration, SignUp
 from src.presentation.dialogs.utils import get_cached_user
-from src.presentation.keyboards.text import ru
 
 router = Router()
 
@@ -105,3 +106,11 @@ async def sign_up_handler(
         SignUp.START,
         data={"user": user.to_dict(exclude_none=True) if user else None},
     )
+
+
+@router.message(Command("registration"))
+async def registration_handler(
+    message: Message, dialog_manager: DialogManager, user: UserDTO
+):
+    users_repository.collector.remove_user(user.id)
+    await dialog_manager.start(BaseMenu.START)

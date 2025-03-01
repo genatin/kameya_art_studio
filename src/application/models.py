@@ -24,6 +24,7 @@ class UserDTO:
         exclude: set[str] | None = None,
         include: dict[str, Any] | None = None,
         exclude_none: bool = False,
+        sign_up: bool = False,
     ) -> dict[str, Any]:
         """
         Create a dictionary representation of the model.
@@ -43,6 +44,10 @@ class UserDTO:
             for k, v in list(data.items()):
                 if v is None:
                     data.pop(k, None)
+        if sign_up:
+            data["phone"] = "+" + str(data["phone"])
+            data.pop("id")
+            data.pop("nickname")
 
         if include:
             data.update(include)

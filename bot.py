@@ -20,6 +20,8 @@ from src.presentation.dialogs.sign_up import signup_dialog
 from src.presentation.dialogs.utils import EnhancedJSONEncoder, error_handler
 from src.presentation.handlers.setup import CheckIsUserReg
 
+logger = logging.getLogger(__name__)
+
 
 async def main():
     logging.basicConfig(level=logging.INFO)
@@ -42,7 +44,7 @@ async def main():
         on_unknown_intent,
         ExceptionTypeFilter(UnknownIntent),
     )
-    # dp.errors.register(error_handler)
+    dp.errors.register(error_handler)
     dp.include_routers(
         first_seen_dialog,
         router,

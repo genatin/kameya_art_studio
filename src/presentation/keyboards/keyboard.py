@@ -1,6 +1,6 @@
 from aiogram import types
 
-from src.presentation.keyboards.text import ru
+from src.application.domen.text import ru
 
 button_phone = types.KeyboardButton(text=ru.send_phone, request_contact=True)
 keyboard_phone = types.ReplyKeyboardMarkup(
