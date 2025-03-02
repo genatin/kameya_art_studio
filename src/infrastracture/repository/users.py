@@ -1,6 +1,6 @@
 from src.application.in_memory.interfaces import InMemoryUsersAbstractRepository
 from src.application.models import UserDTO
-from src.infrastracture.database.interfaces.repositories import UsersAbstractRepository
+from src.infrastracture.adapters.interfaces.repositories import UsersAbstractRepository
 
 
 class UsersRepository:

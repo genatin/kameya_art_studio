@@ -18,6 +18,7 @@ class UserDTO:
     phone: str | None = None
     name: str | None = None
     last_name: str | None = None
+    role: str | None = None
 
     def to_dict(
         self,
@@ -48,6 +49,7 @@ class UserDTO:
             data["phone"] = "+" + str(data["phone"])
             data.pop("id")
             data.pop("nickname")
+            data.pop("role")
 
         if include:
             data.update(include)

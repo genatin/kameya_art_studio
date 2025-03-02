@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Iterator
 
 from src.application.models import UserDTO, UserTgId
 
@@ -15,4 +16,8 @@ class InMemoryUsersAbstractRepository(ABC):
 
     @abstractmethod
     def update_cache(self, user: dict[UserTgId, UserDTO] | UserDTO) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_admins(self) -> list[UserDTO]:
         raise NotImplementedError

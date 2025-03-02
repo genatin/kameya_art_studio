@@ -4,7 +4,7 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import Button, Cancel, Row, SwitchTo
-from aiogram_dialog.widgets.text import Const, Jinja
+from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.application.domen.models import LessonActivity
 from src.application.domen.models.activity_type import (
@@ -26,8 +26,10 @@ from src.application.domen.models.lesson_option import (
 from src.application.domen.text import ru
 from src.application.models import UserDTO
 from src.infrastracture import users_repository
-from src.infrastracture.adapters.repositories.gspread_worker import gspread_repository
+from src.infrastracture.adapters.repositories.gspread_users import gspread_repository
+from src.infrastracture.in_memory.storage import DataCache
 from src.presentation.dialogs.states import SignUp
+from src.presentation.dialogs.utils import notify_admins
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,7 @@ async def stay_form(
     # users_repository.get_cached_user(ca)
     user: UserDTO = users_repository.collector.get_user(manager.event.from_user.id)
     gspread_repository.sign_up_user(user, lesson_activity)
+    await notify_admins(manager.event.bot, user, lesson_activity)
     await callback.message.answer(ru.application_form)
     await manager.done()
 
@@ -109,6 +112,10 @@ async def back_on_previos_state(
     await manager.switch_to(state=state)
 
 
+async def getter_lessons(**kwargs):
+    return DataCache.lessons()
+
+
 signup_dialog = Dialog(
     Window(
         Const("Выберите занятие, которое хотите посетить"),
@@ -130,15 +137,14 @@ signup_dialog = Dialog(
         state=SignUp.START,
     ),
     Window(
-        Const(
-            "Уроки 🧑🏼‍🏫\n\n На этих уроках вы научитесь бла-бла-бла\n\nбла-бла-бла"
-        ),
+        Format("{description}"),
         _TRIALLESSON_BUT,
         _ONELESSON_BUT,
         _SUBSCRIPTION_4_BUT,
         _SUBSCRIPTION_8_BUT,
         _BACK_TO_SIGN_UP,
         state=SignUp.LESSONS,
+        getter=getter_lessons,
     ),
     Window(
         Const(
@@ -153,7 +159,7 @@ signup_dialog = Dialog(
     Window(
         Jinja(
             "<b>Ваша заявка:</b>\n\n"
-            "<b>Занятие:</b> {{activity_type}}\n"
+            "<b>Выбранное занятие:</b> {{activity_type}}\n"
             "<b>Вариант посещения:</b> {{lesson_option}}\n\n"
             "Убедитесь, что заявка корректно сформирована, с помощью кнопок ниже можно изменить данные.\n\n"
             "Если всё правильно, оставьте заявку<i></i>"

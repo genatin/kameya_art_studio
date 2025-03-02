@@ -6,7 +6,7 @@ from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const
 
 from src.application.models import UserDTO
-from src.infrastracture.adapters.repositories.gspread_worker import gspread_repository
+from src.infrastracture.adapters.repositories.gspread_users import gspread_repository
 from src.presentation.dialogs.states import BaseMenu, FirstSeen
 
 

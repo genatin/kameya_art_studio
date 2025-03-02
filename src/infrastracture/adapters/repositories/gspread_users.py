@@ -13,7 +13,7 @@ from src.application.domen.models import LessonActivity
 from src.application.domen.models.activity_type import ActivityEnum
 from src.application.models import UserDTO, UserTgId
 from src.config import Config, get_config
-from src.infrastracture.database.interfaces.repositories import UsersAbstractRepository
+from src.infrastracture.adapters.interfaces.repositories import UsersAbstractRepository
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,6 @@ class GspreadRepository(UsersAbstractRepository):
             values = list(user.to_dict(exclude_none=True).values())
             ws.append_row(values)
 
-    @__add_to_queue
     def sign_up_user(self, user: UserDTO, lesson_activity: LessonActivity) -> None:
         match lesson_activity.activity_type.name:
             case ActivityEnum.LESSON.value:

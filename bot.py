@@ -12,7 +12,7 @@ from redis.asyncio.client import Redis
 
 from src.config import get_config
 from src.infrastracture import users_repository
-from src.infrastracture.adapters.repositories.gspread_worker import gspread_repository
+from src.infrastracture.adapters.repositories.gspread_users import gspread_repository
 from src.presentation.dialogs.base_menu import menu_dialog, on_unknown_intent, router
 from src.presentation.dialogs.first_seend import first_seen_dialog
 from src.presentation.dialogs.registration import registration_dialog
@@ -24,9 +24,10 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    logging.basicConfig(level=logging.INFO)
     config = get_config()
     bot = Bot(token=config.bot_token.get_secret_value())
+    logging.basicConfig(level=logging.INFO)
+    logger.info("lllol")
     redis = Redis(
         host=config.REDIS_HOST,
         port=config.REDIS_PORT,
