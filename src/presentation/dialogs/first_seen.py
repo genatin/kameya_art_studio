@@ -6,20 +6,24 @@ from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const
 
 from src.application.models import UserDTO
-from src.infrastracture.adapters.repositories.gspread_users import gspread_repository
+from src.config import get_config
+from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import BaseMenu, FirstSeen
+
+_REPOSITORY = "repository"
 
 
 async def getter_first_seen_video(**kwargs):
     return {
         "video": MediaAttachment(
-            ContentType.VIDEO, path="src/static_data/welcome_video.mp4"
+            ContentType.VIDEO, path=get_config().WELCOME_VIDEO_PATH
         )
     }
 
 
 async def add_user_firstly(cq: CallbackQuery, _, manager: DialogManager):
-    gspread_repository.add_user(
+    repository: GspreadRepository = manager.middleware_data[_REPOSITORY]
+    repository.user.add_user(
         UserDTO(id=cq.from_user.id, nickname="@" + cq.from_user.username)
     )
     await manager.start(BaseMenu.START, show_mode=ShowMode.SEND)

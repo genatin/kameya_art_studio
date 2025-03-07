@@ -1,5 +1,5 @@
+import logging
 from collections import OrderedDict
-from copy import copy
 from typing import Iterator, MutableMapping, TypeVar
 
 from src.application.in_memory.interfaces import InMemoryUsersAbstractRepository
@@ -7,8 +7,6 @@ from src.application.models import UserDTO, UserTgId
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
-
-import logging
 
 logger = logging.getLogger(__name__)
 

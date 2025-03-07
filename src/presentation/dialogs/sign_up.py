@@ -1,9 +1,10 @@
 import logging
 
 from aiogram.enums.parse_mode import ParseMode
-from aiogram.types import CallbackQuery
-from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, SwitchTo
+from aiogram.types import CallbackQuery, ContentType
+from aiogram_dialog import Dialog, DialogManager, StartMode, Window
+from aiogram_dialog.widgets.kbd import Back, Button, Row, Start, SwitchTo
+from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.application.domen.models import LessonActivity
@@ -25,10 +26,9 @@ from src.application.domen.models.lesson_option import (
 )
 from src.application.domen.text import ru
 from src.application.models import UserDTO
-from src.infrastracture import users_repository
-from src.infrastracture.adapters.repositories.gspread_users import gspread_repository
-from src.infrastracture.in_memory.storage import DataCache
-from src.presentation.dialogs.states import SignUp
+from src.config import get_config
+from src.infrastracture.adapters.repositories.repo import GspreadRepository
+from src.presentation.dialogs.states import BaseMenu, ChildLessons, Lessons, SignUp
 from src.presentation.dialogs.utils import notify_admins
 
 logger = logging.getLogger(__name__)
@@ -43,9 +43,11 @@ _BACK_TO_SIGN_UP = Row(
 
 
 async def lesson_option(cq: CallbackQuery, _, manager: DialogManager):
-    lesson_activity = manager.dialog_data[_LESSON_ACTIVITY]
+    lesson_activity = manager.dialog_data.get(
+        _LESSON_ACTIVITY, manager.start_data[_LESSON_ACTIVITY]
+    )
     lesson_activity["lesson_option"] = LessonOptionFactory.generate(cq.data)
-    await manager.switch_to(SignUp.STAY_FORM)
+    await manager.done(manager.dialog_data)
 
 
 def generate_button(less_option: LessonOption) -> Button:
@@ -61,15 +63,23 @@ _SUBSCRIPTION_8_BUT = generate_button(sub8_l_option)
 
 
 async def stay_form(
-    callback: CallbackQuery, button: Button, manager: DialogManager, *_
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
 ):
+    repository: GspreadRepository = manager.middleware_data["repository"]
     lesson_activity: LessonActivity = LessonActivity(
         **manager.dialog_data[_LESSON_ACTIVITY]
     )
-    # users_repository.get_cached_user(ca)
-    user: UserDTO = users_repository.collector.get_user(manager.event.from_user.id)
-    gspread_repository.sign_up_user(user, lesson_activity)
-    await notify_admins(manager.event.bot, user, lesson_activity)
+    user: UserDTO = repository.user.get_user(manager.event.from_user.id)
+    match lesson_activity.activity_type.name:
+        case ActivityEnum.LESSON.value:
+            repo = repository.lessons_repo
+        case ActivityEnum.CHILD_STUDIO.value:
+            repo = repository.child_lessons_repo
+
+    repo.sign_up_user(user, lesson_activity)
+    await notify_admins(manager.event.bot, user, lesson_activity, repository)
     await callback.message.answer(ru.application_form)
     await manager.done()
 
@@ -82,6 +92,16 @@ async def _activity_option(cq: CallbackQuery, _, manager: DialogManager):
         manager.dialog_data[_LESSON_ACTIVITY] = LessonActivity(
             activity_type=activity_type
         )
+    match activity_type.name:
+        case ActivityEnum.LESSON.value:
+            state = Lessons.START
+        case ActivityEnum.CHILD_STUDIO.value:
+            state = ChildLessons.START
+        # case ActivityEnum.LESSON.value:
+        #     state = Lessons.START
+        # case ActivityEnum.LESSON.value:
+        #     state = Lessons.START
+    await manager.start(state, data=manager.dialog_data)
 
 
 async def _form_presentation(dialog_manager: DialogManager, **kwargs):
@@ -94,91 +114,111 @@ async def _form_presentation(dialog_manager: DialogManager, **kwargs):
     }
 
 
-async def back_on_previos_state(
-    callback: CallbackQuery, button: Button, manager: DialogManager, *_
-):
-    lesson_activity: LessonActivity = LessonActivity(
-        **manager.dialog_data[_LESSON_ACTIVITY]
-    )
-    match lesson_activity.activity_type.name:
-        case ActivityEnum.MASS_CLASS.value:
-            state = SignUp.MASS_CLASSES
-        case ActivityEnum.LESSON.value:
-            state = SignUp.LESSONS
-        case ActivityEnum.CHILD_STUDIO.value:
-            state = SignUp.CHILD_LESSONS
-        case ActivityEnum.EVENING_SKETCH.value:
-            state = SignUp.EVENING_LESSONS
-    await manager.switch_to(state=state)
+async def getter_lessons(repository: GspreadRepository, **kwargs):
+    return {"description": repository.lessons_repo.find_component_in_row("description")}
 
 
-async def getter_lessons(**kwargs):
-    return DataCache.lessons()
+async def getter_child(repository: GspreadRepository, **kwargs):
+    return {
+        "description": repository.child_lessons_repo.find_component_in_row(
+            "description"
+        )
+    }
+
+
+async def complete(result, _, dialog_manager: DialogManager, **kwargs):
+
+    logger.info(f"---> {dialog_manager.current_context()=}")
+    logger.info(f"---> {kwargs=}")
+    dialog_manager.dialog_data.update(result)
+    await dialog_manager.next()
 
 
 signup_dialog = Dialog(
     Window(
         Const("Выберите занятие, которое хотите посетить"),
         Button(Const(master_class_act.human_name), id=master_class_act.name),
-        SwitchTo(
+        Button(
             Const(lesson_act.human_name),
             id=lesson_act.name,
-            state=SignUp.LESSONS,
             on_click=_activity_option,
         ),
-        SwitchTo(
+        Button(
             Const(child_studio_act.human_name),
             id=child_studio_act.name,
-            state=SignUp.CHILD_LESSONS,
             on_click=_activity_option,
         ),
         Button(Const(evening_sketch_act.human_name), id=evening_sketch_act.name),
-        Row(Cancel(Const(ru.back_step)), Button(Const(" "), id="ss")),
-        state=SignUp.START,
-    ),
-    Window(
-        Format("{description}"),
-        _TRIALLESSON_BUT,
-        _ONELESSON_BUT,
-        _SUBSCRIPTION_4_BUT,
-        _SUBSCRIPTION_8_BUT,
-        _BACK_TO_SIGN_UP,
-        state=SignUp.LESSONS,
-        getter=getter_lessons,
-    ),
-    Window(
-        Const(
-            "Детские уроки🧑🏼‍🏫\n\n На этих уроках вы научитесь бла-бла-бла\n\nбла-бла-бла"
+        Row(
+            Start(
+                Const(ru.back_step),
+                id="back_to_menu",
+                state=BaseMenu.START,
+                mode=StartMode.RESET_STACK,
+            ),
+            Button(Const(" "), id="ss"),
         ),
-        _ONELESSON_BUT,
-        _SUBSCRIPTION_4_BUT,
-        _SUBSCRIPTION_8_BUT,
-        _BACK_TO_SIGN_UP,
-        state=SignUp.CHILD_LESSONS,
+        state=SignUp.START,
+        on_process_result=complete,
     ),
     Window(
         Jinja(
             "<b>Ваша заявка:</b>\n\n"
             "<b>Выбранное занятие:</b> {{activity_type}}\n"
             "<b>Вариант посещения:</b> {{lesson_option}}\n\n"
-            "Убедитесь, что заявка корректно сформирована, с помощью кнопок ниже можно изменить данные.\n\n"
-            "Если всё правильно, оставьте заявку<i></i>"
+            "<i>Убедитесь, что заявка корректно сформирована. \n\n"
+            "Если всё правильно, оставьте заявку</i>"
         ),
-        Row(
-            SwitchTo(
-                Const("Выбрать другое занятие"),
-                state=SignUp.START,
-                id="to_lesson",
-            ),
-            Button(
-                Const("Изменить вариант посещения"),
-                id="to_lastname",
-                on_click=back_on_previos_state,
-            ),
+        Back(
+            Const("Назад"),
         ),
         Button(Const(ru.stay_form), id="done", on_click=stay_form),
         state=SignUp.STAY_FORM,
         getter=_form_presentation,
         parse_mode=ParseMode.HTML,
+    ),
+)
+
+
+lessons_dialog = Dialog(
+    Window(
+        StaticMedia(
+            path=get_config().LESSONS_IMAGE_PATH,
+            type=ContentType.PHOTO,
+        ),
+        Format("{description}"),
+        _TRIALLESSON_BUT,
+        _ONELESSON_BUT,
+        _SUBSCRIPTION_4_BUT,
+        _SUBSCRIPTION_8_BUT,
+        Start(
+            Const("Назад"),
+            id="bact_to_signup",
+            state=SignUp.START,
+            mode=StartMode.RESET_STACK,
+        ),
+        state=Lessons.START,
+        getter=getter_lessons,
+    ),
+)
+
+child_lessons_dialog = Dialog(
+    Window(
+        StaticMedia(
+            path=get_config().CHILD_LESS_IMAGE_PATH,
+            type=ContentType.PHOTO,
+        ),
+        Format("{description}"),
+        _ONELESSON_BUT,
+        _SUBSCRIPTION_4_BUT,
+        _SUBSCRIPTION_8_BUT,
+        Start(
+            Const("Назад"),
+            id="bact_to_signup",
+            state=SignUp.START,
+            mode=StartMode.RESET_STACK,
+        ),
+        state=ChildLessons.START,
+        getter=getter_child,
     ),
 )

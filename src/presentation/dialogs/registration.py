@@ -17,10 +17,12 @@ from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.application.domen.text import ru
 from src.application.models import UserDTO
-from src.infrastracture import users_repository
+from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import Registration
 
 _FINISHED = "finished"
+_REPOSITORY = "repository"
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +51,8 @@ async def get_contact(msg: Message, _, manager: DialogManager):
     )
     manager.dialog_data["user"] = new_user
     manager.current_context().widget_data["phone"] = phone
-    users_repository.add_user(new_user)
+    repository: GspreadRepository = manager.middleware_data[_REPOSITORY]
+    repository.user.add_user(new_user)
     await manager.switch_to(Registration.NAME)
 
 
@@ -66,10 +69,12 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 async def registration_complete(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ):
+    repository: GspreadRepository = manager.middleware_data[_REPOSITORY]
+
     user = UserDTO(**manager.dialog_data["user"])
 
     await callback.message.answer("Ещё совсем чуть-чуть...")
-    is_success = users_repository.update_user(user)
+    is_success = repository.user.update_user(user)
     # TODO сделать отправку админу
     if is_success:
         message = "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!"

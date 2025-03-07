@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Iterator
 
 from src.application.models import UserDTO, UserTgId
 

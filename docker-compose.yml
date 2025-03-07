@@ -9,12 +9,14 @@ services:
     env_file: .env
     depends_on:
       - redis
+    volumes:
+      - ./static_data:/static_data
 
   redis:
     image: redis:6.2-alpine
     restart: always
     ports:
-      - "6379:6379"
+      - ${REDIS_PORT}:${REDIS_PORT}
     volumes:
       - cache:/data
     command: 
@@ -23,4 +25,5 @@ services:
 
 volumes:
   cache:
+  static_data:
 

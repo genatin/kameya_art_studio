@@ -11,16 +11,23 @@ class Config(BaseSettings):
     ADMIN_ID: str
     SERVICE_FILE_NAME: str
     GSHEET_NAME: str
-    users_page: str = Field(default="users")
-    lessons_page: str = Field(default="уроки")
-    child_page: str = Field(default="детскаястудия")
-    master_class_page: str = Field(default="мастер-классы")
-    evening_page: str = Field(default="вечерние наброски")
+    USERS_PAGE: str = Field(default="users")
+    LESSONS_PAGE: str = Field(default="уроки")
+    CHILD_PAGE: str = Field(default="детская студия")
+    MASTER_CL_PAGE: str = Field(default="мастер-классы")
+    EVENING_PAGE: str = Field(default="вечерние наброски")
 
     REDIS_PASSWORD: SecretStr
     REDIS_HOST: str = Field(default="redis")
     REDIS_PORT: int
 
+    # welcome images/videos
+    WELCOME_IMAGE_PATH: str = Field(default="static_data/welcome_photo.jpg")
+    WELCOME_VIDEO_PATH: str = Field(default="static_data/welcome_video.jpg")
+
+    # lessons images
+    LESSONS_IMAGE_PATH: str = Field(default="static_data/lessons.jpg")
+    CHILD_LESS_IMAGE_PATH: str = Field(default="static_data/child_lessons.jpg")
     # Начиная со второй версии pydantic, настройки класса настроек задаются
     # через model_config
     # В данном случае будет использоваться файла .env, который будет прочитан
