@@ -3,7 +3,7 @@ import logging
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import ContentType, Message
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window
+from aiogram_dialog import Dialog, DialogManager, LaunchMode, StartMode, Window
 from aiogram_dialog.widgets.kbd import Cancel, Start
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
@@ -58,6 +58,7 @@ menu_dialog = Dialog(
         Cancel(text=Const(ru.back_step)),
         state=BaseMenu.ABOUT_US,
     ),
+    launch_mode=LaunchMode.ROOT,
 )
 
 

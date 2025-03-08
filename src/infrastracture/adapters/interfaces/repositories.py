@@ -34,7 +34,7 @@ class BaseRepository(ABC):
         self._wsheet = wsheet
 
     @cache
-    def find_component_in_row(self, name_component: str) -> Cell:
+    def find_desctiption(self, name_component: str) -> Cell:
         cell = self._wsheet.find(name_component, in_row=1)
         return self._wsheet.col_values(cell.col)[1]
 
@@ -49,4 +49,6 @@ class BaseRepository(ABC):
                 ),
             }
         )
+        if lesson_activity.num_tickets:
+            values["num_tickets"] = lesson_activity.num_tickets
         self._wsheet.append_row(list(values.values()), table_range="A1")

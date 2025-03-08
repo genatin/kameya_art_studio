@@ -35,3 +35,4 @@ class Lessons(StatesGroup):
 
 class ChildLessons(StatesGroup):
     START = State()
+    TICKETS = State()
