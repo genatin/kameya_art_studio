@@ -23,7 +23,7 @@ async def getter_first_seen_video(**kwargs):
 
 async def add_user_firstly(cq: CallbackQuery, _, manager: DialogManager):
     repository: GspreadRepository = manager.middleware_data[_REPOSITORY]
-    repository.user.add_user(
+    await repository.user.add_user(
         UserDTO(id=cq.from_user.id, nickname="@" + cq.from_user.username)
     )
     await manager.start(BaseMenu.START, show_mode=ShowMode.SEND)

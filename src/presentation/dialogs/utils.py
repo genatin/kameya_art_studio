@@ -1,5 +1,3 @@
-import dataclasses
-import json
 import logging
 from typing import Any
 
@@ -7,7 +5,6 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import ErrorEvent, ReplyKeyboardRemove
 from aiogram_dialog import DialogManager, ShowMode, StartMode
-from pydantic import BaseModel
 
 from src.application.domen.models import LessonActivity
 from src.application.models import UserDTO
@@ -73,7 +70,7 @@ async def error_handler(error_event: ErrorEvent):
 async def get_cached_user(
     dialog_manager: DialogManager, repository: GspreadRepository, **kwargs
 ) -> dict[str, Any]:
-    user = repository.user.get_user(dialog_manager.event.from_user.id)
+    user = await repository.user.get_user(dialog_manager.event.from_user.id)
     dialog_manager.dialog_data["user"] = user
     if user and not user.phone:
         user = None
@@ -84,7 +81,6 @@ async def notify_admins(
     bot: Bot,
     user: UserDTO,
     lesson_activity: LessonActivity,
-    repository: GspreadRepository,
 ):
     message_to_admin = (
         "<u>Пользователь создал заявку:</u>\n\n"
@@ -95,17 +91,8 @@ async def notify_admins(
         f"Занятие: {lesson_activity.activity_type.human_name}\n"
         f"Вариант посещения: <b><u>{lesson_activity.lesson_option.human_name}</u></b>"
     )
-    for admin in repository.user.get_admins():
+    for admin_id in get_config().ADMINS:
         try:
-            await bot.send_message(admin.id, message_to_admin, parse_mode="HTML")
+            await bot.send_message(admin_id, message_to_admin, parse_mode="HTML")
         except Exception as e:
             logger.error(repr(e))
-
-
-class EnhancedJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if dataclasses.is_dataclass(o):
-            return dataclasses.asdict(o)
-        elif isinstance(o, BaseModel):
-            return o.model_dump()
-        return super().default(o)

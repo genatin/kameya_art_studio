@@ -64,9 +64,11 @@ menu_dialog = Dialog(
 
 @router.message(Command("start"))
 async def cmd_hello(
-    message: Message, dialog_manager: DialogManager, repository: GspreadRepository
+    message: Message,
+    dialog_manager: DialogManager,
+    repository: GspreadRepository,
 ):
-    user = repository.user.get_user(message.from_user.id)
+    user = await repository.user.get_user(message.from_user.id, cached=False)
     state = FirstSeen.START if not user else BaseMenu.START
     await dialog_manager.start(state, mode=StartMode.RESET_STACK)
 

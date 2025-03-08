@@ -33,10 +33,12 @@ class BaseRepository(ABC):
     def __init__(self, wsheet: Worksheet):
         self._wsheet = wsheet
 
-    @cache
-    def find_desctiption(self, name_component: str) -> Cell:
-        cell = self._wsheet.find(name_component, in_row=1)
+    def _find_component(self, component_name: str, row: int) -> Cell:
+        cell = self._wsheet.find(component_name, in_row=row)
         return self._wsheet.col_values(cell.col)[1]
+
+    def find_desctiption(self) -> Cell:
+        return self._find_component("description", 1)
 
     def sign_up_user(self, user: UserDTO, lesson_activity: LessonActivity) -> None:
         values = user.to_dict(sign_up=True)

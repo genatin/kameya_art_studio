@@ -20,10 +20,11 @@ class Config(BaseSettings):
     REDIS_PASSWORD: SecretStr
     REDIS_HOST: str = Field(default="redis")
     REDIS_PORT: int
-
+    users_cache_time: int = Field(default=60 * 60)
+    ADMINS: list[int]
     # welcome images/videos
     WELCOME_IMAGE_PATH: str = Field(default="static_data/welcome_photo.jpg")
-    WELCOME_VIDEO_PATH: str = Field(default="static_data/welcome_video.jpg")
+    WELCOME_VIDEO_PATH: str = Field(default="static_data/welcome_video.mp4")
 
     # lessons images
     LESSONS_IMAGE_PATH: str = Field(default="static_data/lessons.jpg")

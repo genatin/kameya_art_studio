@@ -52,7 +52,7 @@ async def get_contact(msg: Message, _, manager: DialogManager):
     manager.dialog_data["user"] = new_user
     manager.current_context().widget_data["phone"] = phone
     repository: GspreadRepository = manager.middleware_data[_REPOSITORY]
-    repository.user.add_user(new_user)
+    await repository.user.add_user(new_user)
     await manager.switch_to(Registration.NAME)
 
 
@@ -74,7 +74,7 @@ async def registration_complete(
     user = UserDTO(**manager.dialog_data["user"])
 
     await callback.message.answer("Ещё совсем чуть-чуть...")
-    is_success = repository.user.update_user(user)
+    is_success = await repository.user.update_user(user)
     # TODO сделать отправку админу
     if is_success:
         message = "Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!"
