@@ -22,10 +22,6 @@ class BaseMenu(StatesGroup):
 
 class SignUp(StatesGroup):
     START = State()
-    # LESSONS = State()
-    # MASS_CLASSES = State()
-    # CHILD_LESSONS = State()
-    # EVENING_LESSONS = State()
     STAY_FORM = State()
 
 
