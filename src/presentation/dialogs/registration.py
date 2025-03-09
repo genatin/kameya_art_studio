@@ -19,6 +19,7 @@ from src.application.domen.text import ru
 from src.application.models import UserDTO
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import Registration
+from src.presentation.keyboards.keyboard import keyboard_phone, keyboard_signup
 
 _FINISHED = "finished"
 _REPOSITORY = "repository"
@@ -28,23 +29,14 @@ logger = logging.getLogger(__name__)
 
 async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
     manager.dialog_data[_FINISHED] = False
-    markup = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=ru.send_phone, request_contact=True)]],
-        one_time_keyboard=True,
-    )
     await cq.message.answer(
         "Ой, Вы ещё не зарегистрированы, для регистрации потребуется ваш номер телефона",
-        reply_markup=markup,
+        reply_markup=keyboard_phone,
     )
 
 
 async def get_contact(msg: Message, _, manager: DialogManager):
     phone = "+" + msg.contact.phone_number.lstrip("+")
-    msg_to_remove = await msg.answer(
-        "***",
-        reply_markup=ReplyKeyboardRemove(),
-    )
-    await msg_to_remove.delete()
 
     new_user = UserDTO(
         id=msg.from_user.id, nickname="@" + msg.from_user.username, phone=phone
@@ -84,7 +76,7 @@ async def registration_complete(
         message = "Что-то пошло не так, попробуйте ещё раз. Если ошибка повторяется, то попробуйте через пару часов. Мы уже разбираемся."
         show_mode = ShowMode.NO_UPDATE
 
-    await callback.message.answer(message)
+    await callback.message.answer(message, reply_markup=keyboard_signup)
     await manager.done(show_mode=show_mode)
 
 

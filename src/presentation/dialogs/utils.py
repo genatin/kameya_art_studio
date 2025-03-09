@@ -67,11 +67,10 @@ async def error_handler(error_event: ErrorEvent):
     # )
 
 
-async def get_cached_user(
+async def get_user(
     dialog_manager: DialogManager, repository: GspreadRepository, **kwargs
 ) -> dict[str, Any]:
     user = await repository.user.get_user(dialog_manager.event.from_user.id)
-    dialog_manager.dialog_data["user"] = user
     if user and not user.phone:
         user = None
     return {"user": user}

@@ -13,7 +13,7 @@ from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.registration import send_contact
 from src.presentation.dialogs.states import BaseMenu, FirstSeen, Registration, SignUp
-from src.presentation.dialogs.utils import get_cached_user
+from src.presentation.dialogs.utils import get_user
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ menu_dialog = Dialog(
         ),
         Start(Const("О студии"), id="aaa", state=BaseMenu.ABOUT_US),
         state=BaseMenu.START,
-        getter=get_cached_user,
+        getter=get_user,
     ),
     Window(
         StaticMedia(
@@ -74,6 +74,7 @@ async def cmd_hello(
 
 
 @router.message(Command("sign_up"))
+@router.message(F.text == ru.sign_up)
 async def sign_up_handler(
     message: Message, dialog_manager: DialogManager, repository: GspreadRepository
 ):
@@ -86,5 +87,5 @@ async def registration_handler(
     dialog_manager: DialogManager,
     repository: GspreadRepository,
 ):
-    repository.user.remove_user(message.from_user.id)
+    await repository.user.remove_user(message.from_user.id)
     await dialog_manager.start(BaseMenu.START)
