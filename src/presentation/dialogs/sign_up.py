@@ -109,7 +109,7 @@ async def stay_form(
             repo = repository.child_lessons_repo
 
     repo.sign_up_user(user, lesson_activity)
-    await notify_admins(manager.event.bot, user, lesson_activity)
+    await notify_admins(manager.event, user, lesson_activity)
     await callback.message.answer(ru.application_form, parse_mode=ParseMode.HTML)
     await manager.done()
 

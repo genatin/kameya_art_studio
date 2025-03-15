@@ -32,3 +32,8 @@ class Lessons(StatesGroup):
 class ChildLessons(StatesGroup):
     START = State()
     TICKETS = State()
+
+
+class Admin(StatesGroup):
+    REPLY = State()
+    SEND = State()

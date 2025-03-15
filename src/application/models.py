@@ -46,7 +46,7 @@ class UserDTO:
                 if v is None:
                     data.pop(k, None)
         if sign_up:
-            data["phone"] = "+" + str(data["phone"])
+            data["phone"] = str(data["phone"])
             data.pop("id")
             data.pop("nickname")
             data.pop("role")

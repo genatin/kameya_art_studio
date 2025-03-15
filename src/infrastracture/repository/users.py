@@ -33,8 +33,8 @@ class UsersService:
             await self._save_user(user)
         return success
 
-    async def get_user(self, user_id: UserTgId, cached: bool = True) -> UserDTO | None:
-        if (user := await self.__redis.get_user(user_id)) or cached:
+    async def get_user(self, user_id: UserTgId) -> UserDTO | None:
+        if user := await self.__redis.get_user(user_id):
             return user
         user = self.__repository.get_user(user_id)
         if user:

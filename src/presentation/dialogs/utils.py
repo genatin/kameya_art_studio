@@ -3,16 +3,29 @@ from typing import Any
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import ErrorEvent, ReplyKeyboardRemove
+from aiogram.filters.callback_data import CallbackData
+from aiogram.types import (
+    ErrorEvent,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardRemove,
+)
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, ShowMode, StartMode
+from aiogram_dialog.api.entities.events import ChatEvent
 
 from src.application.domen.models import LessonActivity
+from src.application.domen.text import ru
 from src.application.models import UserDTO
 from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import BaseMenu
 
 logger = logging.getLogger(__name__)
+
+
+class UsersCallbackFactory(CallbackData, prefix="users"):
+    user_id: str
 
 
 async def on_unknown_intent(event: ErrorEvent, dialog_manager: DialogManager):
@@ -54,7 +67,7 @@ async def on_unknown_state(event, dialog_manager: DialogManager):
 async def error_handler(error_event: ErrorEvent):
     message_from_user = error_event.update.message.from_user
     await error_event.update.bot.send_message(
-        get_config().ADMIN_ID,
+        get_config().DEVELOPER_ID,
         # f"User_id: {message_from_user.id}\n",
         f'Username: <a href="tg://user?id={message_from_user.id}">{message_from_user.username}\n</a>'
         f"Message: {error_event.update.message.text} \n\nError:",
@@ -77,7 +90,7 @@ async def get_user(
 
 
 async def notify_admins(
-    bot: Bot,
+    event: ChatEvent,
     user: UserDTO,
     lesson_activity: LessonActivity,
 ):
@@ -90,8 +103,19 @@ async def notify_admins(
         f"Занятие: {lesson_activity.activity_type.human_name}\n"
         f"Вариант посещения: <b><u>{lesson_activity.lesson_option.human_name}</u></b>"
     )
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=ru.reply_to_user_form,
+        callback_data=UsersCallbackFactory(user_id=str(user.id)),
+    )
+
     for admin_id in get_config().ADMINS:
         try:
-            await bot.send_message(admin_id, message_to_admin, parse_mode="HTML")
+            await event.bot.send_message(
+                admin_id,
+                message_to_admin,
+                parse_mode="HTML",
+                reply_markup=builder.as_markup(),
+            )
         except Exception as e:
             logger.error(repr(e))

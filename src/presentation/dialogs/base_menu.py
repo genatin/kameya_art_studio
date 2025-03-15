@@ -68,7 +68,7 @@ async def cmd_hello(
     dialog_manager: DialogManager,
     repository: GspreadRepository,
 ):
-    user = await repository.user.get_user(message.from_user.id, cached=False)
+    user = await repository.user.get_user(message.from_user.id)
     state = FirstSeen.START if not user else BaseMenu.START
     await dialog_manager.start(state, mode=StartMode.RESET_STACK)
 

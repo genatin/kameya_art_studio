@@ -8,7 +8,7 @@ class Config(BaseSettings):
     # Желательно вместо str использовать SecretStr
     # для конфиденциальных данных, например, токена бота
     bot_token: SecretStr
-    ADMIN_ID: str
+    DEVELOPER_ID: str
     SERVICE_FILE_NAME: str
     GSHEET_NAME: str
     USERS_PAGE: str = Field(default="users")
