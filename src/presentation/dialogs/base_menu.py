@@ -104,7 +104,6 @@ async def sign_up_handler(
     dialog_manager: DialogManager,
     repository: GspreadRepository,
 ):
-    logger.info(f"---> {callback_data.user_id=}")
     await dialog_manager.start(
         Admin.REPLY, data={"user_id": callback_data.user_id}, mode=StartMode.RESET_STACK
     )
