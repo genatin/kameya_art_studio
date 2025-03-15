@@ -5,7 +5,7 @@ from aiogram import F, Router
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.api.entities import MediaAttachment, MediaId, ShowMode
+from aiogram_dialog.api.entities import MediaAttachment, MediaId, ShowMode, StartMode
 from aiogram_dialog.widgets.input import MessageInput, TextInput
 from aiogram_dialog.widgets.kbd import Back, Button
 from aiogram_dialog.widgets.media import DynamicMedia, StaticMedia
@@ -16,9 +16,8 @@ from src.application.models import UserDTO
 from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import Admin
-from src.presentation.dialogs.utils import UsersCallbackFactory
+from src.presentation.dialogs.utils import SignUpCallbackFactory
 
-admin_router = Router()
 logger = logging.getLogger(__name__)
 _PARSE_MODE_TO_USER = ParseMode.MARKDOWN
 
@@ -33,7 +32,7 @@ async def message_admin_handler(
     )
 
     if message.photo or message.document:
-        manager.dialog_data["admin_message"] += "_Ниже прикрепляем документ_"
+        manager.dialog_data["admin_message"] += "\n\n_(Ниже прикрепляем документ)_"
         if message.photo:
             manager.dialog_data["image"] = message.photo[0].file_id
         if message.document:
@@ -61,10 +60,12 @@ async def send_to_user(
             chat_id=manager.start_data["user_id"],
             document=manager.dialog_data["document"],
         )
+    await callback.message.answer("Сообщение отправлено пользователю")
     await manager.done()
 
 
 async def get_image(dialog_manager: DialogManager, **kwargs):
+    image = None
     if image_id := dialog_manager.dialog_data.get("image"):
         image = MediaAttachment(ContentType.PHOTO, file_id=MediaId(image_id))
     elif document_id := dialog_manager.dialog_data.get("document"):
@@ -75,13 +76,14 @@ async def get_image(dialog_manager: DialogManager, **kwargs):
 admin_dialog = Dialog(
     Window(
         Const(
-            "Введите сообщение, которое хотите отправить пользователю (можно прикрепить файл ИЛИ фото)"
+            "Введите сообщение, которое хотите отправить пользователю \n\n*(можно прикрепить файл ИЛИ фото)*"
         ),
         MessageInput(message_admin_handler),
         state=Admin.REPLY,
+        parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
-        Format("Сообщение будет выглядеть так: \n{dialog_data[admin_message]}"),
+        Format("Сообщение будет выглядеть так: \n\n{dialog_data[admin_message]}"),
         DynamicMedia("image", when="image"),
         Back(Const("Исправить")),
         Button(Const("Отправить"), id="good", on_click=send_to_user),
@@ -90,16 +92,3 @@ admin_dialog = Dialog(
         parse_mode=_PARSE_MODE_TO_USER,
     ),
 )
-
-
-@admin_router.callback_query(UsersCallbackFactory.filter())
-async def sign_up_handler(
-    cq: CallbackQuery,
-    callback_data: UsersCallbackFactory,
-    dialog_manager: DialogManager,
-    repository: GspreadRepository,
-):
-    await dialog_manager.start(Admin.REPLY, data={"user_id": callback_data.user_id})
-
-
-admin_router.include_router(admin_dialog)

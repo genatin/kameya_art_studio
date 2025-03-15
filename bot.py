@@ -18,7 +18,7 @@ from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.infrastracture.adapters.repositories.users import RepositoryUser
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.infrastracture.repository.users import UsersService
-from src.presentation.dialogs.admin import admin_router
+from src.presentation.dialogs.admin import admin_dialog
 from src.presentation.dialogs.base_menu import menu_dialog, router
 from src.presentation.dialogs.first_seen import first_seen_dialog
 from src.presentation.dialogs.registration import registration_dialog
@@ -84,7 +84,7 @@ async def main():
         signup_dialog,
         lessons_dialog,
         child_lessons_dialog,
-        admin_router,
+        admin_dialog,
     )
     dp.startup.register(polling_startup)
     setup_dialogs(dp)

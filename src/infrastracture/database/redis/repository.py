@@ -45,8 +45,6 @@ class RedisRepository:
         self, key: Any, value: UserDTO, cache_time: int | None = None
     ) -> None:
         user_key: UserKey = UserKey(key=key)
-        if value.role == "admin":
-            cache_time = None
         await self.set(key=user_key, value=value, ex=cache_time)
 
     async def get_user(self, key: Any) -> Optional[UserDTO]:

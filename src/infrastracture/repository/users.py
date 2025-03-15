@@ -33,8 +33,10 @@ class UsersService:
             await self._save_user(user)
         return success
 
-    async def get_user(self, user_id: UserTgId) -> UserDTO | None:
-        if user := await self.__redis.get_user(user_id):
+    async def get_user(
+        self, user_id: UserTgId, after_reg: bool = False
+    ) -> UserDTO | None:
+        if user := await self.__redis.get_user(user_id) or after_reg:
             return user
         user = self.__repository.get_user(user_id)
         if user:

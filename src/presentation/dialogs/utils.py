@@ -24,7 +24,7 @@ from src.presentation.dialogs.states import BaseMenu
 logger = logging.getLogger(__name__)
 
 
-class UsersCallbackFactory(CallbackData, prefix="users"):
+class SignUpCallbackFactory(CallbackData, prefix="signup"):
     user_id: str
 
 
@@ -83,7 +83,8 @@ async def error_handler(error_event: ErrorEvent):
 async def get_user(
     dialog_manager: DialogManager, repository: GspreadRepository, **kwargs
 ) -> dict[str, Any]:
-    user = await repository.user.get_user(dialog_manager.event.from_user.id)
+    after_reg = True if dialog_manager.start_data == "after_reg" else False
+    user = await repository.user.get_user(dialog_manager.event.from_user.id, after_reg)
     if user and not user.phone:
         user = None
     return {"user": user}
@@ -98,7 +99,7 @@ async def notify_admins(
         "<u>Пользователь создал заявку:</u>\n\n"
         f"Имя: <b>{user.name}</b>\n"
         f"Фамилия: <b>{user.last_name}</b>\n"
-        f"Телефоне: <b>+{user.phone}</b>\n"
+        f"Телефоне: <b>{user.phone}</b>\n"
         f"Количество билетов: {lesson_activity.num_tickets or 1}\n"
         f"Занятие: {lesson_activity.activity_type.human_name}\n"
         f"Вариант посещения: <b><u>{lesson_activity.lesson_option.human_name}</u></b>"
@@ -106,7 +107,7 @@ async def notify_admins(
     builder = InlineKeyboardBuilder()
     builder.button(
         text=ru.reply_to_user_form,
-        callback_data=UsersCallbackFactory(user_id=str(user.id)),
+        callback_data=SignUpCallbackFactory(user_id=str(user.id)),
     )
 
     for admin_id in get_config().ADMINS:

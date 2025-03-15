@@ -2,7 +2,7 @@ import logging
 
 from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import ContentType, Message
+from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, LaunchMode, StartMode, Window
 from aiogram_dialog.widgets.kbd import Cancel, Start
 from aiogram_dialog.widgets.media import StaticMedia
@@ -12,8 +12,14 @@ from src.application.domen.text import ru
 from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.registration import send_contact
-from src.presentation.dialogs.states import BaseMenu, FirstSeen, Registration, SignUp
-from src.presentation.dialogs.utils import get_user
+from src.presentation.dialogs.states import (
+    Admin,
+    BaseMenu,
+    FirstSeen,
+    Registration,
+    SignUp,
+)
+from src.presentation.dialogs.utils import SignUpCallbackFactory, get_user
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -88,4 +94,17 @@ async def registration_handler(
     repository: GspreadRepository,
 ):
     await repository.user.remove_user(message.from_user.id)
-    await dialog_manager.start(BaseMenu.START)
+    await dialog_manager.start(BaseMenu.START, data="after_reg")
+
+
+@router.callback_query(SignUpCallbackFactory.filter())
+async def sign_up_handler(
+    cq: CallbackQuery,
+    callback_data: SignUpCallbackFactory,
+    dialog_manager: DialogManager,
+    repository: GspreadRepository,
+):
+    logger.info(f"---> {callback_data.user_id=}")
+    await dialog_manager.start(
+        Admin.REPLY, data={"user_id": callback_data.user_id}, mode=StartMode.RESET_STACK
+    )
