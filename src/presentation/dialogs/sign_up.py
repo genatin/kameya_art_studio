@@ -102,14 +102,9 @@ async def stay_form(
         **manager.start_data[_LESSON_ACTIVITY]
     )
     user: UserDTO = await repository.user.get_user(manager.event.from_user.id)
-    match lesson_activity.activity_type.name:
-        case ActivityEnum.LESSON.value:
-            repo = repository.lessons_repo
-        case ActivityEnum.CHILD_STUDIO.value:
-            repo = repository.child_lessons_repo
 
-    repo.sign_up_user(user, lesson_activity)
-    await notify_admins(manager.event, user, lesson_activity)
+    num_row = repository.signup_user(lesson_activity=lesson_activity, user=user)
+    await notify_admins(manager.event, user, lesson_activity, num_row)
     await callback.message.answer(ru.application_form, parse_mode=ParseMode.HTML)
     await manager.done()
 

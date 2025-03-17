@@ -1,5 +1,4 @@
 import logging
-from typing import Iterator
 
 from aiogram.types import User as AiogramUser
 

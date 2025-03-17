@@ -1,15 +1,9 @@
 import logging
 from typing import Any
 
-from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters.callback_data import CallbackData
-from aiogram.types import (
-    ErrorEvent,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ReplyKeyboardRemove,
-)
+from aiogram.types import ErrorEvent, ReplyKeyboardRemove
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.api.entities.events import ChatEvent
@@ -26,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 class SignUpCallbackFactory(CallbackData, prefix="signup"):
     user_id: str
+    activity_type: str
+    num_row: str
 
 
 async def on_unknown_intent(event: ErrorEvent, dialog_manager: DialogManager):
@@ -91,9 +87,7 @@ async def get_user(
 
 
 async def notify_admins(
-    event: ChatEvent,
-    user: UserDTO,
-    lesson_activity: LessonActivity,
+    event: ChatEvent, user: UserDTO, lesson_activity: LessonActivity, num_row: int
 ):
     message_to_admin = (
         "<u>Пользователь создал заявку:</u>\n\n"
@@ -107,7 +101,11 @@ async def notify_admins(
     builder = InlineKeyboardBuilder()
     builder.button(
         text=ru.reply_to_user_form,
-        callback_data=SignUpCallbackFactory(user_id=str(user.id)),
+        callback_data=SignUpCallbackFactory(
+            user_id=str(user.id),
+            activity_type=lesson_activity.activity_type.name,
+            num_row=num_row,
+        ),
     )
 
     for admin_id in get_config().ADMINS:

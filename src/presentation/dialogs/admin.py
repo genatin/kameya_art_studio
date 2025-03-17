@@ -1,22 +1,16 @@
 import logging
 
-import aiogram.utils.markdown as fmt
-from aiogram import F, Router
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.api.entities import MediaAttachment, MediaId, ShowMode, StartMode
-from aiogram_dialog.widgets.input import MessageInput, TextInput
-from aiogram_dialog.widgets.kbd import Back, Button
-from aiogram_dialog.widgets.media import DynamicMedia, StaticMedia
+from aiogram_dialog.api.entities import MediaAttachment, MediaId
+from aiogram_dialog.widgets.input import MessageInput
+from aiogram_dialog.widgets.kbd import Back, Button, Cancel, Next
+from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const, Format
 
-from src.application.domen.text import ru
-from src.application.models import UserDTO
-from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import Admin
-from src.presentation.dialogs.utils import SignUpCallbackFactory
 
 logger = logging.getLogger(__name__)
 _PARSE_MODE_TO_USER = ParseMode.MARKDOWN
@@ -60,8 +54,7 @@ async def send_to_user(
             chat_id=manager.start_data["user_id"],
             document=manager.dialog_data["document"],
         )
-    await callback.message.answer("Сообщение отправлено пользователю")
-    await manager.done()
+    await manager.next()
 
 
 async def get_image(dialog_manager: DialogManager, **kwargs):
@@ -71,6 +64,29 @@ async def get_image(dialog_manager: DialogManager, **kwargs):
     elif document_id := dialog_manager.dialog_data.get("document"):
         image = MediaAttachment(ContentType.DOCUMENT, file_id=MediaId(document_id))
     return {"image": image}
+
+
+async def approve_payment(
+    callback: CallbackQuery, button: Button, manager: DialogManager, *_
+):
+    repository: GspreadRepository = manager.middleware_data["repository"]
+    repository.change_value_in_signup_user(
+        manager.start_data["activity_type"],
+        int(manager.start_data["num_row"]),
+        column_name="status",
+        value="оплачено",
+    )
+
+    manager.dialog_data["approve_message"] = (
+        "Оплату получили, благодарим вас!❗️\nПри отмене необходимо за 48 часов уведомить в этом чате, иначе сертификат сгорает! \nПри отмене мы можем предложить вам участие в следующем мастер-классе"
+    )
+    await manager.event.bot.send_message(
+        chat_id=manager.start_data["user_id"],
+        text=manager.dialog_data["approve_message"],
+        parse_mode=_PARSE_MODE_TO_USER,
+    )
+    await callback.message.answer("Сообщение отправлено пользователю")
+    await manager.done()
 
 
 admin_dialog = Dialog(
@@ -84,11 +100,27 @@ admin_dialog = Dialog(
     ),
     Window(
         Format("Сообщение будет выглядеть так: \n\n{dialog_data[admin_message]}"),
+        Const(
+            "Пользователю отправится подтверждение об оплате",
+            when="{dialog_data[payment_confirm]}",
+        ),
         DynamicMedia("image", when="image"),
         Back(Const("Исправить")),
         Button(Const("Отправить"), id="good", on_click=send_to_user),
         state=Admin.SEND,
         getter=get_image,
         parse_mode=_PARSE_MODE_TO_USER,
+    ),
+    Window(
+        Const("Сообщение отправлено\n\nПодтвердить оплату?"),
+        Next(Const("Да")),
+        Cancel(Const("Отменить")),
+        state=Admin.CONFIRM_PAYMENT,
+    ),
+    Window(
+        Const("Вы уверены, что хотите подтвердить оплату"),
+        Button(Const("Да"), id="payment_approve", on_click=approve_payment),
+        Back(Const("Нет")),
+        state=Admin.PAYMENT,
     ),
 )

@@ -5,7 +5,7 @@ import gspread
 from aiogram import Bot
 from aiogram.filters import ExceptionTypeFilter
 from aiogram_dialog import setup_dialogs
-from aiogram_dialog.api.exceptions import UnknownIntent, UnknownState
+from aiogram_dialog.api.exceptions import OutdatedIntent, UnknownIntent, UnknownState
 from redis.asyncio.client import Redis
 
 from src.application.factory.telegram import create_dispatcher
@@ -69,7 +69,7 @@ async def main():
 
     dp.errors.register(
         on_unknown_intent,
-        ExceptionTypeFilter(UnknownIntent),
+        ExceptionTypeFilter(UnknownIntent, OutdatedIntent),
     )
     dp.errors.register(
         on_unknown_state,
@@ -77,8 +77,8 @@ async def main():
     )
     # dp.errors.register(error_handler)
     dp.include_routers(
-        registration_dialog,
         router,
+        registration_dialog,
         first_seen_dialog,
         menu_dialog,
         signup_dialog,

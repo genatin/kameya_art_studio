@@ -1,14 +1,7 @@
 import logging
 
 from aiogram.enums.parse_mode import ParseMode
-from aiogram.types import (
-    CallbackQuery,
-    ContentType,
-    KeyboardButton,
-    Message,
-    ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
-)
+from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
 from aiogram_dialog.widgets.input import MessageInput, TextInput

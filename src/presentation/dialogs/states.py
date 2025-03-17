@@ -37,3 +37,5 @@ class ChildLessons(StatesGroup):
 class Admin(StatesGroup):
     REPLY = State()
     SEND = State()
+    CONFIRM_PAYMENT = State()
+    PAYMENT = State()

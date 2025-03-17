@@ -4,7 +4,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, LaunchMode, StartMode, Window
-from aiogram_dialog.widgets.kbd import Cancel, Start
+from aiogram_dialog.widgets.kbd import Back, Start
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -55,13 +55,13 @@ menu_dialog = Dialog(
     ),
     Window(
         StaticMedia(
-            path="src/static_data/welcome_photo.jpg",
+            path=f"{get_config().WELCOME_IMAGE_PATH}",
             type=ContentType.PHOTO,
         ),
         Format(
             "{event.from_user.full_name} привет, \n\n--- здесь вы можете записаться на урок ---\n\nчтобы продолжить понадобится ваш номер телефона"
         ),
-        Cancel(text=Const(ru.back_step)),
+        Back(text=Const(ru.back_step)),
         state=BaseMenu.ABOUT_US,
     ),
     launch_mode=LaunchMode.ROOT,
@@ -98,12 +98,12 @@ async def registration_handler(
 
 
 @router.callback_query(SignUpCallbackFactory.filter())
-async def sign_up_handler(
+async def sign_up_callback_handler(
     cq: CallbackQuery,
     callback_data: SignUpCallbackFactory,
     dialog_manager: DialogManager,
     repository: GspreadRepository,
 ):
     await dialog_manager.start(
-        Admin.REPLY, data={"user_id": callback_data.user_id}, mode=StartMode.RESET_STACK
+        Admin.REPLY, data=callback_data.dict(), mode=StartMode.RESET_STACK
     )
