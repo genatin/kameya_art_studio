@@ -6,15 +6,8 @@ from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
 
 from src.application.domen.text import ru
-from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
-from src.presentation.dialogs.states import (
-    Administration,
-    AdminReply,
-    BaseMenu,
-    FirstSeen,
-    SignUp,
-)
+from src.presentation.dialogs.states import AdminReply, BaseMenu, FirstSeen, SignUp
 from src.presentation.dialogs.utils import SignUpCallbackFactory
 
 main_router = Router()

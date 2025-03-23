@@ -6,15 +6,7 @@ from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, SubManager, Window
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import (
-    Back,
-    Button,
-    Cancel,
-    ListGroup,
-    ManagedListGroup,
-    Next,
-    SwitchTo,
-)
+from aiogram_dialog.widgets.kbd import Back, Button, Cancel, ListGroup, Next, SwitchTo
 from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const, Format
 
