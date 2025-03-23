@@ -23,7 +23,9 @@ class LessonOptionFactory:
 
     @classmethod
     def generate(cls, name: str) -> LessonOption:
-        return LessonOption(name=name, human_name=cls.lesson_human_readable[name])
+        return LessonOption(
+            name=name, human_name=cls.lesson_human_readable.get(name, "")
+        )
 
 
 trial_l_option = LessonOptionFactory.generate(TRIAL_LESS)

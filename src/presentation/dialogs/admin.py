@@ -3,7 +3,7 @@ import logging
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
-from aiogram_dialog import Dialog, DialogManager, SubManager, Window
+from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.common import ManagedScroll
 from aiogram_dialog.widgets.input import MessageInput
@@ -24,10 +24,10 @@ from aiogram_dialog.widgets.text import Const, Format
 
 from src.application.domen.text import ru
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
-from src.infrastracture.database.sqlite import (
-    add_mclass,
-    get_all_mclasses,
-    remove_mclasses_by_name,
+from src.infrastracture.database.sqlite import add_mclass, remove_mclasses_by_name
+from src.presentation.dialogs.mass_classes.mclasses import (
+    get_mclasses_page,
+    store_mclasses,
 )
 from src.presentation.dialogs.states import Administration, AdminReply
 
@@ -83,7 +83,10 @@ async def get_image(dialog_manager: DialogManager, **kwargs):
         image = MediaAttachment(ContentType.PHOTO, file_id=MediaId(image_id))
     elif document_id := dialog_manager.dialog_data.get("document"):
         image = MediaAttachment(ContentType.DOCUMENT, file_id=MediaId(document_id))
-    return {"image": image, "description": dialog_manager.dialog_data["description"]}
+    return {
+        "image": image,
+        "description": dialog_manager.dialog_data.get("description", ""),
+    }
 
 
 async def approve_payment(
@@ -142,38 +145,6 @@ async def add_mc_to_db(
     await add_mclass(name=name_mc, image_id=image, description=description)
     await manager.event.answer("Мастер-класс добавлен.")
     await manager.switch_to(Administration.START)
-
-
-async def store_mclasses(cq, _, dialog_manager: DialogManager, *args, **kwargs):
-    mclasses = [
-        {
-            "id": mclass.id,
-            "name": mclass.name,
-            "description": mclass.description,
-            "file_id": mclass.file_id,
-        }
-        for mclass in await get_all_mclasses()
-    ]
-    dialog_manager.dialog_data["mclasses"] = mclasses
-
-
-async def get_mclasses_page(dialog_manager: DialogManager, **_kwargs):
-    scroll: ManagedScroll = dialog_manager.find("scroll")
-    media_number = await scroll.get_page()
-    mclasses = dialog_manager.dialog_data.get("mclasses", [])
-    mclass = mclasses[media_number]
-    image = None
-    if mclass["file_id"]:
-        image = MediaAttachment(
-            file_id=MediaId(mclass["file_id"]),
-            type=ContentType.PHOTO,
-        )
-    return {
-        "mc_count": len(mclasses),
-        "name": mclass["name"],
-        "description": mclass["description"],
-        "image": image,
-    }
 
 
 async def remove_mc_from_db(

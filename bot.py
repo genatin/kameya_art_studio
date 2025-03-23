@@ -26,6 +26,7 @@ from src.presentation.dialogs.registration import registration_dialog
 from src.presentation.dialogs.sign_up import (
     child_lessons_dialog,
     lessons_dialog,
+    mass_classes_dialog,
     signup_dialog,
 )
 from src.presentation.dialogs.utils import (
@@ -62,14 +63,18 @@ async def main():
     )
     if get_config().LOCAL:
         await redis.flushdb()
+
     users_repo = UsersService(
         config=get_config(), redis=RedisRepository(redis), repository=gspread_user
     )
 
     lesssons_repo = LessonsRepository(spreadsheet.worksheet(config.LESSONS_PAGE))
     child_repo = ChildLessonsRepository(spreadsheet.worksheet(config.CHILD_PAGE))
+    mclasses_repo = ChildLessonsRepository(spreadsheet.worksheet(config.MASTER_CL_PAGE))
 
-    gspread_repository = GspreadRepository(users_repo, lesssons_repo, child_repo)
+    gspread_repository = GspreadRepository(
+        users_repo, lesssons_repo, child_repo, mclasses_repo
+    )
     dp = create_dispatcher(redis, repository=gspread_repository)
 
     dp.errors.register(
@@ -88,6 +93,7 @@ async def main():
         menu_dialog,
         signup_dialog,
         lessons_dialog,
+        mass_classes_dialog,
         child_lessons_dialog,
         admin_reply_dialog,
         admin_dialog,

@@ -29,6 +29,11 @@ class Lessons(StatesGroup):
     START = State()
 
 
+class MassClasses(StatesGroup):
+    START = State()
+    TICKETS = State()
+
+
 class ChildLessons(StatesGroup):
     START = State()
     TICKETS = State()

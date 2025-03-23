@@ -11,3 +11,7 @@ class LessonsRepository(BaseRepository):
 
 class ChildLessonsRepository(BaseRepository):
     pass
+
+
+class MCLassesRepository(BaseRepository):
+    pass

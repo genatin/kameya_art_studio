@@ -97,6 +97,7 @@ async def notify_admins(
         f"Телефоне: <b>{user.phone}</b>\n"
         f"Количество билетов: {lesson_activity.num_tickets or 1}\n"
         f"Занятие: {lesson_activity.activity_type.human_name}\n"
+        f"Тема: {lesson_activity.topic}\n"
         f"Вариант посещения: <b><u>{lesson_activity.lesson_option.human_name}</u></b>"
     )
     builder = InlineKeyboardBuilder()

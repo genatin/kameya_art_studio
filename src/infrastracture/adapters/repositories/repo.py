@@ -8,6 +8,7 @@ from src.infrastracture.adapters.interfaces.repositories import BaseRepository
 from src.infrastracture.adapters.repositories.lessons import (
     ChildLessonsRepository,
     LessonsRepository,
+    MCLassesRepository,
 )
 from src.infrastracture.repository.users import UsersService
 
@@ -15,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class GspreadRepository:
-    def __init__(self, user_repo, lessons_repo, child_lessons_repo):
+    def __init__(self, user_repo, lessons_repo, child_lessons_repo, mclasses_repo):
         self.user: UsersService = user_repo
         self.lessons_repo: LessonsRepository = lessons_repo
         self.child_lessons_repo: ChildLessonsRepository = child_lessons_repo
+        self.mclasses_repo: MCLassesRepository = mclasses_repo
 
     def __get_repo(
         self,
@@ -29,6 +31,8 @@ class GspreadRepository:
                 return self.lessons_repo
             case ActivityEnum.CHILD_STUDIO.value:
                 return self.child_lessons_repo
+            case ActivityEnum.MASS_CLASS.value:
+                return self.mclasses_repo
             case _:
                 raise NotImplementedError
 
