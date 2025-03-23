@@ -16,10 +16,11 @@ RUN poetry config virtualenvs.create false && \
     rm -rf ~/.cache ~/.config/pypoetry/auth.toml
 
 
-COPY ./src /src
-COPY ./bot.py /bot.py
-COPY ./service_account.json /service_account.json
+COPY init_db.py service_account.json ./
 
+COPY ./src ./src
+COPY ./bot.py ./bot.py
 
 ENTRYPOINT ["tini", "--" ]
-CMD [ "poetry", "run", "python", "bot.py" ]
+
+CMD ["/bin/bash", "-c", "python ./init_db.py && python ./bot.py"]

@@ -11,6 +11,7 @@ services:
       - redis
     volumes:
       - ./static_data:/static_data
+      - ./sqlite_data:/sqlite_data
 
   redis:
     image: redis:6.2-alpine
@@ -19,11 +20,10 @@ services:
       - ${REDIS_PORT}:${REDIS_PORT}
     volumes:
       - cache:/data
-    command: 
     entrypoint: redis-server --requirepass ${REDIS_PASSWORD}
 
 
 volumes:
   cache:
   static_data:
-
+  sqlite_data:

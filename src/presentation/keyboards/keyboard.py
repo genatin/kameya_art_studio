@@ -7,8 +7,17 @@ keyboard_phone = types.ReplyKeyboardMarkup(
     keyboard=[[button_phone]], row_width=1, one_time_keyboard=True, resize_keyboard=True
 )
 
-keyboard_signup = types.ReplyKeyboardMarkup(
+
+signup_keyboard = types.ReplyKeyboardMarkup(
     keyboard=[[types.KeyboardButton(text=ru.sign_up)]],
     resize_keyboard=True,
-    one_time_keyboard=True,
+)
+
+
+add_or_remove_mc = types.ReplyKeyboardMarkup(
+    keyboard=[
+        [types.KeyboardButton(text=ru.admin_add)],
+        [types.KeyboardButton(text=ru.admin_remove)],
+    ],
+    resize_keyboard=True,
 )

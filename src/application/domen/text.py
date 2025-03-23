@@ -18,3 +18,8 @@ class ru:
     stay_form = "Оставить заявку"
 
     reply_to_user_form = "Ответить пользователю"
+    admin = "Администрирование"
+    admin_add = "Добавить"
+    admin_remove = "Удалить"
+
+    admin_mc = "Мастер-классы"

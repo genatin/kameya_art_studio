@@ -12,7 +12,7 @@ from src.application.domen.text import ru
 from src.application.models import UserDTO
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import Registration
-from src.presentation.keyboards.keyboard import keyboard_phone, keyboard_signup
+from src.presentation.keyboards.keyboard import keyboard_phone, signup_keyboard
 
 _FINISHED = "finished"
 _REPOSITORY = "repository"
@@ -69,7 +69,7 @@ async def registration_complete(
         message = "Что-то пошло не так, попробуйте ещё раз. Если ошибка повторяется, то попробуйте через пару часов. Мы уже разбираемся."
         show_mode = ShowMode.NO_UPDATE
 
-    await callback.message.answer(message, reply_markup=keyboard_signup)
+    await callback.message.answer(message, reply_markup=signup_keyboard)
     await manager.done(show_mode=show_mode)
 
 

@@ -18,8 +18,8 @@ from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.infrastracture.adapters.repositories.users import RepositoryUser
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.infrastracture.repository.users import UsersService
-from src.presentation.dialogs.admin import admin_dialog
-from src.presentation.dialogs.base_menu import menu_dialog, router
+from src.presentation.dialogs.admin import admin_dialog, admin_reply_dialog
+from src.presentation.dialogs.base_menu import menu_dialog
 from src.presentation.dialogs.first_seen import first_seen_dialog
 from src.presentation.dialogs.registration import registration_dialog
 from src.presentation.dialogs.sign_up import (
@@ -32,6 +32,7 @@ from src.presentation.dialogs.utils import (
     on_unknown_intent,
     on_unknown_state,
 )
+from src.presentation.handlers.router import main_router
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,8 @@ async def main():
         db=0,
         password=config.REDIS_PASSWORD.get_secret_value(),
     )
+    if get_config().LOCAL:
+        await redis.flushdb()
     users_repo = UsersService(
         config=get_config(), redis=RedisRepository(redis), repository=gspread_user
     )
@@ -77,13 +80,14 @@ async def main():
     )
     # dp.errors.register(error_handler)
     dp.include_routers(
-        router,
+        main_router,
         registration_dialog,
         first_seen_dialog,
         menu_dialog,
         signup_dialog,
         lessons_dialog,
         child_lessons_dialog,
+        admin_reply_dialog,
         admin_dialog,
     )
     dp.startup.register(polling_startup)

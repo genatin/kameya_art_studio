@@ -83,7 +83,8 @@ async def get_user(
     user = await repository.user.get_user(dialog_manager.event.from_user.id, after_reg)
     if user and not user.phone:
         user = None
-    return {"user": user}
+    is_admin = user.id in get_config().ADMINS if user else False
+    return {"user": user, "is_admin": is_admin}
 
 
 async def notify_admins(

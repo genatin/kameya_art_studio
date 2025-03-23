@@ -1,29 +1,24 @@
 import logging
 
-from aiogram import F, Router
-from aiogram.filters import Command
-from aiogram.types import CallbackQuery, ContentType, Message
-from aiogram_dialog import Dialog, DialogManager, LaunchMode, StartMode, Window
+from aiogram import F
+from aiogram.types import ContentType
+from aiogram_dialog import Dialog, LaunchMode, Window
 from aiogram_dialog.widgets.kbd import Back, Start
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
 from src.application.domen.text import ru
 from src.config import get_config
-from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.registration import send_contact
 from src.presentation.dialogs.states import (
-    Admin,
+    Administration,
     BaseMenu,
-    FirstSeen,
     Registration,
     SignUp,
 )
-from src.presentation.dialogs.utils import SignUpCallbackFactory, get_user
+from src.presentation.dialogs.utils import get_user
 
-router = Router()
 logger = logging.getLogger(__name__)
-
 
 menu_dialog = Dialog(
     Window(
@@ -49,6 +44,9 @@ menu_dialog = Dialog(
             state=Registration.GET_CONTACT,
             on_click=send_contact,
         ),
+        Start(
+            Const(ru.admin), id="admin", when=F["is_admin"], state=Administration.START
+        ),
         Start(Const("О студии"), id="aaa", state=BaseMenu.ABOUT_US),
         state=BaseMenu.START,
         getter=get_user,
@@ -66,44 +64,3 @@ menu_dialog = Dialog(
     ),
     launch_mode=LaunchMode.ROOT,
 )
-
-
-@router.message(Command("start"))
-async def cmd_hello(
-    message: Message,
-    dialog_manager: DialogManager,
-    repository: GspreadRepository,
-):
-    user = await repository.user.get_user(message.from_user.id)
-    state = FirstSeen.START if not user else BaseMenu.START
-    await dialog_manager.start(state, mode=StartMode.RESET_STACK)
-
-
-@router.message(Command("sign_up"))
-@router.message(F.text == ru.sign_up)
-async def sign_up_handler(
-    message: Message, dialog_manager: DialogManager, repository: GspreadRepository
-):
-    await dialog_manager.start(SignUp.START, mode=StartMode.RESET_STACK)
-
-
-@router.message(Command("registration"))
-async def registration_handler(
-    message: Message,
-    dialog_manager: DialogManager,
-    repository: GspreadRepository,
-):
-    await repository.user.remove_user(message.from_user.id)
-    await dialog_manager.start(BaseMenu.START, data="after_reg")
-
-
-@router.callback_query(SignUpCallbackFactory.filter())
-async def sign_up_callback_handler(
-    cq: CallbackQuery,
-    callback_data: SignUpCallbackFactory,
-    dialog_manager: DialogManager,
-    repository: GspreadRepository,
-):
-    await dialog_manager.start(
-        Admin.REPLY, data=callback_data.dict(), mode=StartMode.RESET_STACK
-    )

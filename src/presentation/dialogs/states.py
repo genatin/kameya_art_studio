@@ -34,8 +34,19 @@ class ChildLessons(StatesGroup):
     TICKETS = State()
 
 
-class Admin(StatesGroup):
+class AdminReply(StatesGroup):
     REPLY = State()
     SEND = State()
     CONFIRM_PAYMENT = State()
     PAYMENT = State()
+
+
+class Administration(StatesGroup):
+    START = State()
+    ADD_MC = State()
+    REMOVE_MC = State()
+    CHANGE_MC = State()
+
+    NAME_MC = State()
+    DESCRIPTION_MC = State()
+    SEND = State()
