@@ -5,8 +5,20 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, SubManager, Window
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
+from aiogram_dialog.widgets.common import ManagedScroll
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Button, Cancel, ListGroup, Next, SwitchTo
+from aiogram_dialog.widgets.kbd import (
+    Back,
+    Button,
+    Cancel,
+    CurrentPage,
+    Next,
+    NextPage,
+    PrevPage,
+    Row,
+    StubScroll,
+    SwitchTo,
+)
 from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -21,6 +33,7 @@ from src.presentation.dialogs.states import Administration, AdminReply
 
 logger = logging.getLogger(__name__)
 _PARSE_MODE_TO_USER = ParseMode.MARKDOWN
+_CANCEL = Row(Cancel(Const("Назад")), Button(Const(" "), id="ss"))
 
 
 async def message_admin_handler(
@@ -128,22 +141,54 @@ async def add_mc_to_db(
     description = manager.dialog_data["description"]
     await add_mclass(name=name_mc, image_id=image, description=description)
     await manager.event.answer("Мастер-класс добавлен.")
-    await manager.done()
+    await manager.switch_to(Administration.START)
 
 
-async def get_mclasses(**kwargs):
+async def store_mclasses(cq, _, dialog_manager: DialogManager, *args, **kwargs):
     mclasses = [
-        {"id": mclass.id, "name": mclass.name} for mclass in await get_all_mclasses()
+        {
+            "id": mclass.id,
+            "name": mclass.name,
+            "description": mclass.description,
+            "file_id": mclass.file_id,
+        }
+        for mclass in await get_all_mclasses()
     ]
-    return {"mclasses": mclasses}
+    dialog_manager.dialog_data["mclasses"] = mclasses
+
+
+async def get_mclasses_page(dialog_manager: DialogManager, **_kwargs):
+    scroll: ManagedScroll = dialog_manager.find("scroll")
+    media_number = await scroll.get_page()
+    mclasses = dialog_manager.dialog_data.get("mclasses", [])
+    mclass = mclasses[media_number]
+    image = None
+    if mclass["file_id"]:
+        image = MediaAttachment(
+            file_id=MediaId(mclass["file_id"]),
+            type=ContentType.PHOTO,
+        )
+    return {
+        "mc_count": len(mclasses),
+        "name": mclass["name"],
+        "description": mclass["description"],
+        "image": image,
+    }
 
 
 async def remove_mc_from_db(
-    callback: CallbackQuery, button: Button, sub_manager: SubManager, *_
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager, *_
 ):
-    await remove_mclasses_by_name(sub_manager.item_id)
-    await callback.answer("Мастер-класс удалён")
-    await sub_manager.done()
+    scroll: ManagedScroll = dialog_manager.find("scroll")
+    media_number = await scroll.get_page()
+    mclasses = dialog_manager.dialog_data.get("mclasses", [])
+    await remove_mclasses_by_name(mclasses[media_number]["name"])
+    del mclasses[media_number]
+    l_mclasses = len(mclasses)
+    if l_mclasses > 0:
+        await scroll.set_page(0)
+    else:
+        await dialog_manager.switch_to(Administration.START)
 
 
 admin_reply_dialog = Dialog(
@@ -159,7 +204,7 @@ admin_reply_dialog = Dialog(
         Format("Сообщение будет выглядеть так: \n\n{dialog_data[admin_message]}"),
         Const(
             "Пользователю отправится подтверждение об оплате",
-            when="{dialog_data[payment_confirm]}",
+            when=F["dialog_data"]["payment_confirm"],
         ),
         DynamicMedia("image", when="image"),
         Back(Const("Исправить")),
@@ -186,15 +231,25 @@ admin_reply_dialog = Dialog(
 admin_dialog = Dialog(
     Window(
         Const("Вы вошли в режим администрирования, что вы хотите изменить"),
-        SwitchTo(Const(ru.mass_class), id="change_ms", state=Administration.CHANGE_MC),
+        SwitchTo(
+            Const(ru.mass_class),
+            id="change_ms",
+            state=Administration.CHANGE_MC,
+            on_click=store_mclasses,
+        ),
+        _CANCEL,
         state=Administration.START,
     ),
     Window(
-        Const(ru.mass_class),
+        Const(f"{ru.mass_class}ы"),
         Next(Const(ru.admin_add)),
         SwitchTo(
-            Const(ru.admin_remove), id="remove_mc", state=Administration.REMOVE_MC
+            Const(ru.admin_current),
+            id="remove_mc",
+            state=Administration.REMOVE_MC,
+            when=F["dialog_data"]["mclasses"],
         ),
+        _CANCEL,
         state=Administration.CHANGE_MC,
     ),
     Window(
@@ -211,13 +266,13 @@ admin_dialog = Dialog(
         ),
         MessageInput(photo_handler),
         state=Administration.DESCRIPTION_MC,
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
         DynamicMedia("image", when="image"),
         Format("__*ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ*__", when=~F["description"]),
         Format(
-            "Мастер класс будет выглядеть так: \n\n{dialog_data[name_mc]}\n\n{dialog_data[description]}"
+            "Мастер класс будет выглядеть так: \n\n*Название мастер-класса: {dialog_data[name_mc]}\nОписание: {dialog_data[description]}*"
         ),
         Back(Const("Исправить")),
         Button(Const("Добавить"), id="good", on_click=add_mc_to_db),
@@ -228,16 +283,23 @@ admin_dialog = Dialog(
     Window(
         Const("Выберите мастер-класс, который хотите удалить", when=F["mclasses"]),
         Const("Мастер-классы отсутствуют", when=~F["mclasses"]),
-        ListGroup(
-            Button(
-                Format("{item[name]}"), id="remove_mclass", on_click=remove_mc_from_db
-            ),
-            id="select_search",
-            item_id_getter=lambda item: item["name"],
-            items="mclasses",
+        Format("*Тема: {name}*\nОписание: {description}"),
+        Button(
+            Const(ru.admin_remove),
+            id="remove_mc",
+            on_click=remove_mc_from_db,
+            when="mc_count",
+        ),
+        DynamicMedia(selector="image", when="image"),
+        StubScroll(id="scroll", pages="mc_count"),
+        Row(
+            PrevPage(scroll="scroll"),
+            CurrentPage(scroll="scroll", text=Format("{current_page1}")),
+            NextPage(scroll="scroll"),
         ),
         SwitchTo(Const("Назад"), id="__back__", state=Administration.CHANGE_MC),
-        getter=get_mclasses,
+        getter=get_mclasses_page,
         state=Administration.REMOVE_MC,
+        parse_mode=_PARSE_MODE_TO_USER,
     ),
 )

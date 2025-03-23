@@ -19,7 +19,9 @@ class ru:
 
     reply_to_user_form = "Ответить пользователю"
     admin = "Администрирование"
+
     admin_add = "Добавить"
+    admin_current = "Существующие"
     admin_remove = "Удалить"
 
     admin_mc = "Мастер-классы"

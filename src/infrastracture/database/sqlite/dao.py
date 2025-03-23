@@ -1,4 +1,5 @@
 import logging
+from typing import Sequence
 
 from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -44,6 +45,7 @@ async def remove_mclasses_by_name(session: AsyncSession, name: str) -> None:
             return
         await session.delete(mclass)
         await session.commit()
+        logger.info(f"Mclass with {name=} successful removed")
     except SQLAlchemyError as exc:
         logger.error("Removing mclass failed", exc_info=exc)
         await session.rollback()
