@@ -17,6 +17,7 @@ from src.infrastracture.adapters.repositories.lessons import (
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.infrastracture.adapters.repositories.users import RepositoryUser
 from src.infrastracture.database.redis.repository import RedisRepository
+from src.infrastracture.database.sqlite.base import create_tables
 from src.infrastracture.repository.users import UsersService
 from src.presentation.dialogs.admin import admin_dialog, admin_reply_dialog
 from src.presentation.dialogs.base_menu import menu_dialog
@@ -50,6 +51,7 @@ async def main():
     spreadsheet = gspread.service_account(filename=config.SERVICE_FILE_NAME).open(
         config.GSHEET_NAME
     )
+    await create_tables()
     gspread_user = RepositoryUser(spreadsheet.worksheet(config.USERS_PAGE))
     gspread_user.run_background_update()
     redis = Redis(

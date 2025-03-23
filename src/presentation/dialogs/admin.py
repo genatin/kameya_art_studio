@@ -126,20 +126,22 @@ async def add_mc_to_db(
     name_mc = manager.dialog_data["name_mc"]
     image = manager.dialog_data["image"]
     description = manager.dialog_data["description"]
-    add_mclass(name=name_mc, image=image, description=description)
+    await add_mclass(name=name_mc, image_id=image, description=description)
     await manager.event.answer("Мастер-класс добавлен.")
     await manager.done()
 
 
 async def get_mclasses(**kwargs):
-    mclasses = [{"id": mclass[0], "name": mclass[1]} for mclass in get_all_mclasses()]
+    mclasses = [
+        {"id": mclass.id, "name": mclass.name} for mclass in await get_all_mclasses()
+    ]
     return {"mclasses": mclasses}
 
 
 async def remove_mc_from_db(
     callback: CallbackQuery, button: Button, sub_manager: SubManager, *_
 ):
-    remove_mclasses_by_name(sub_manager.item_id)
+    await remove_mclasses_by_name(sub_manager.item_id)
     await callback.answer("Мастер-класс удалён")
     await sub_manager.done()
 

@@ -79,7 +79,7 @@ async def error_handler(error_event: ErrorEvent):
 async def get_user(
     dialog_manager: DialogManager, repository: GspreadRepository, **kwargs
 ) -> dict[str, Any]:
-    after_reg = True if dialog_manager.start_data == "after_reg" else False
+    after_reg = dialog_manager.start_data == "after_reg"
     user = await repository.user.get_user(dialog_manager.event.from_user.id, after_reg)
     if user and not user.phone:
         user = None

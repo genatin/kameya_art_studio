@@ -21,7 +21,7 @@ async def cmd_hello(
 ):
     user = await repository.user.get_user(message.from_user.id)
     state = FirstSeen.START if not user else BaseMenu.START
-    await dialog_manager.start(state, mode=StartMode.RESET_STACK)
+    await dialog_manager.start(state)
 
 
 @main_router.message(Command("sign_up"))
