@@ -48,6 +48,7 @@ class AdminReply(StatesGroup):
 
 class Administration(StatesGroup):
     START = State()
+    MC_MAIN = State()
     ADD_MC = State()
     REMOVE_MC = State()
     CHANGE_MC = State()

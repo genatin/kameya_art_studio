@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class UsersService:
-
     def __init__(self, config, repository, redis) -> None:
         self.config: Config = config
         self.__redis: RedisRepository = redis

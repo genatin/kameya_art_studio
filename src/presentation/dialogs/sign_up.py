@@ -315,13 +315,23 @@ mass_classes_dialog = Dialog(
     Window(
         Const("Выберите мастер-класс, который хотите удалить", when=F["mclasses"]),
         Const("Мастер-классы отсутствуют", when=~F["mclasses"]),
-        Format("*Тема: {name}*\nОписание: {description}"),
+        Format("*Тема: {mclass[name]}*\nОписание: {mclass[description]}"),
         DynamicMedia(selector="image", when="image"),
         StubScroll(id="scroll", pages="mc_count"),
         Row(
-            PrevPage(scroll="scroll"),
-            CurrentPage(scroll="scroll", text=Format("{current_page1}")),
+            Button(Const(" "), id="but"),
             NextPage(scroll="scroll"),
+            when=(F["media_number"] == 0) & F["next_p"],
+        ),
+        Row(
+            PrevPage(scroll="scroll"),
+            NextPage(scroll="scroll"),
+            when=(F["media_number"] > 0) & F["next_p"],
+        ),
+        Row(
+            PrevPage(scroll="scroll"),
+            Button(Const(" "), id="but1"),
+            when=(~F["next_p"]) & (F["media_number"] > 0),
         ),
         Row(
             Start(
@@ -329,7 +339,7 @@ mass_classes_dialog = Dialog(
                 id="bact_to_signup",
                 state=SignUp.START,
             ),
-            Button(Const("Дальше"), id="next", on_click=next_with_lessons),
+            Button(Const("Записаться"), id="next", on_click=next_with_lessons),
         ),
         getter=get_mclasses_page,
         state=MassClasses.START,

@@ -1,7 +1,7 @@
 import logging
-from typing import Sequence
+from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @connection
 async def add_mclass(
-    session: AsyncSession, name: str, image_id: str, description: str = None
+    session: AsyncSession | None, name: str, image_id: str, description: str = None
 ):
     try:
         mclass = MClass(name=name, file_id=image_id, description=description)
@@ -27,17 +27,59 @@ async def add_mclass(
 
 
 @connection
-async def get_all_mclasses(session: AsyncSession) -> list[MClass]:
+async def get_all_mclasses(session: AsyncSession | None) -> list[MClass]:
     return (await session.execute(select(MClass))).scalars().all()
 
 
 @connection
-async def get_mclass_by_name(session: AsyncSession, name: str) -> MClass:
+async def update_mclass_name_by_name(
+    session: AsyncSession | None, old_name: str, new_name: str
+) -> MClass | None:
+    try:
+        mclass = await get_mclass_by_name(session, old_name)
+        mclass.name = new_name
+        await session.commit()
+        return mclass
+    except SQLAlchemyError as exc:
+        logger.error(f"Update new_name mclass {old_name=} failed", exc_info=exc)
+        await session.rollback()
+
+
+@connection
+async def update_mclass_description_by_name(
+    session: AsyncSession | None, name: str, new_description: str
+) -> MClass | None:
+    try:
+        mclass = await get_mclass_by_name(session, name)
+        mclass.description = new_description
+        await session.commit()
+        return mclass
+    except SQLAlchemyError as exc:
+        logger.error(f"Update description mclass {name=} failed", exc_info=exc)
+        await session.rollback()
+
+
+@connection
+async def update_mclass_photo_by_name(
+    session: AsyncSession | None, name: str, file_id: str
+) -> MClass | None:
+    try:
+        mclass = await get_mclass_by_name(session, name)
+        mclass.file_id = file_id
+        await session.commit()
+        return mclass
+    except SQLAlchemyError as exc:
+        logger.error(f"Update description mclass {name=} failed", exc_info=exc)
+        await session.rollback()
+
+
+@connection
+async def get_mclass_by_name(session: AsyncSession | None, name: str) -> MClass:
     return await session.scalar(select(MClass).filter_by(name=name))
 
 
 @connection
-async def remove_mclasses_by_name(session: AsyncSession, name: str) -> None:
+async def remove_mclasses_by_name(session: AsyncSession | None, name: str) -> None:
     try:
         mclass = await get_mclass_by_name(session, name)
         if mclass is None:

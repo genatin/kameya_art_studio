@@ -17,7 +17,9 @@ async def get_mclasses_page(dialog_manager: DialogManager, **_kwargs):
     if not mclasses:
         mclasses = dialog_manager.start_data.get("mclasses", [])
         dialog_manager.dialog_data["mclasses"] = mclasses
+    l_mclasses = len(mclasses)
     mclass = mclasses[media_number]
+    dialog_manager.dialog_data["mclass"] = mclass
     image = None
     if mclass["file_id"]:
         image = MediaAttachment(
@@ -25,9 +27,10 @@ async def get_mclasses_page(dialog_manager: DialogManager, **_kwargs):
             type=ContentType.PHOTO,
         )
     return {
-        "mc_count": len(mclasses),
-        "name": mclass["name"],
-        "description": mclass["description"],
+        "media_number": media_number,
+        "next_p": (l_mclasses - media_number) > 1,
+        "mc_count": l_mclasses,
+        "mclass": mclass,
         "image": image,
     }
 

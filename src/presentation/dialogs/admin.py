@@ -24,7 +24,13 @@ from aiogram_dialog.widgets.text import Const, Format
 
 from src.application.domen.text import ru
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
-from src.infrastracture.database.sqlite import add_mclass, remove_mclasses_by_name
+from src.infrastracture.database.sqlite import (
+    add_mclass,
+    remove_mclasses_by_name,
+    update_mclass_description_by_name,
+    update_mclass_name_by_name,
+    update_mclass_photo_by_name,
+)
 from src.presentation.dialogs.mass_classes.mclasses import (
     get_mclasses_page,
     store_mclasses,
@@ -121,8 +127,17 @@ async def name_mc_handler(
     message_input: MessageInput,
     manager: DialogManager,
 ):
-    manager.dialog_data["name_mc"] = message.text
-    await manager.next()
+
+    if manager.dialog_data.pop("edit", None):
+        mclass = await update_mclass_name_by_name(
+            old_name=manager.dialog_data["mclass"]["name"], new_name=message.text
+        )
+        if mclass:
+            await message.answer("Имя мастер-класса успешно изменено")
+        await manager.switch_to(Administration.START)
+    else:
+        manager.dialog_data["name_mc"] = message.text
+        await manager.next()
 
 
 async def photo_handler(
@@ -130,14 +145,33 @@ async def photo_handler(
     message_input: MessageInput,
     manager: DialogManager,
 ):
-    manager.dialog_data["description"] = message.text or message.caption
-    manager.dialog_data["image"] = message.photo[0].file_id if message.photo else ""
+    description = message.text or message.caption
+    file_id = message.photo[0].file_id if message.photo else ""
+    if manager.dialog_data.pop("edit", None):
+        mclass_name = manager.dialog_data["mclass"]["name"]
+        if description:
+            mc = await update_mclass_description_by_name(
+                name=mclass_name, new_description=description
+            )
+            if mc:
+                await message.answer("Описание мастер-класса успешно изменено")
+        if file_id:
+            mc = await update_mclass_photo_by_name(name=mclass_name, file_id=file_id)
+            if mc:
+                await message.answer("Картинка мастер-класса успешно изменена")
+        await manager.switch_to(Administration.START)
 
-    await manager.next()
+    else:
+        manager.dialog_data["description"] = description
+        manager.dialog_data["image"] = file_id
+        await manager.next()
 
 
 async def add_mc_to_db(
-    callback: CallbackQuery, button: Button, manager: DialogManager, *_
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+    *_,
 ):
     name_mc = manager.dialog_data["name_mc"]
     image = manager.dialog_data["image"]
@@ -160,6 +194,15 @@ async def remove_mc_from_db(
         await scroll.set_page(0)
     else:
         await dialog_manager.switch_to(Administration.START)
+
+
+async def edit_mc(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+    *_,
+):
+    manager.dialog_data["edit"] = True
 
 
 admin_reply_dialog = Dialog(
@@ -205,7 +248,7 @@ admin_dialog = Dialog(
         SwitchTo(
             Const(ru.mass_class),
             id="change_ms",
-            state=Administration.CHANGE_MC,
+            state=Administration.MC_MAIN,
             on_click=store_mclasses,
         ),
         _CANCEL,
@@ -221,7 +264,7 @@ admin_dialog = Dialog(
             when=F["dialog_data"]["mclasses"],
         ),
         _CANCEL,
-        state=Administration.CHANGE_MC,
+        state=Administration.MC_MAIN,
     ),
     Window(
         Format(
@@ -254,7 +297,14 @@ admin_dialog = Dialog(
     Window(
         Const("Выберите мастер-класс, который хотите удалить", when=F["mclasses"]),
         Const("Мастер-классы отсутствуют", when=~F["mclasses"]),
-        Format("*Тема: {name}*\nОписание: {description}"),
+        Format("*Тема: {mclass[name]}*\nОписание: {mclass[description]}"),
+        SwitchTo(
+            Const(ru.admin_change),
+            id="admin_change_mc",
+            state=Administration.CHANGE_MC,
+            when="mc_count",
+            on_click=edit_mc,
+        ),
         Button(
             Const(ru.admin_remove),
             id="remove_mc",
@@ -264,13 +314,34 @@ admin_dialog = Dialog(
         DynamicMedia(selector="image", when="image"),
         StubScroll(id="scroll", pages="mc_count"),
         Row(
-            PrevPage(scroll="scroll"),
-            CurrentPage(scroll="scroll", text=Format("{current_page1}")),
+            Button(Const(" "), id="but"),
             NextPage(scroll="scroll"),
+            when=(F["media_number"] == 0) & F["next_p"],
         ),
-        SwitchTo(Const("Назад"), id="__back__", state=Administration.CHANGE_MC),
+        Row(
+            PrevPage(scroll="scroll"),
+            NextPage(scroll="scroll"),
+            when=(F["media_number"] > 0) & F["next_p"],
+        ),
+        Row(
+            PrevPage(scroll="scroll"),
+            Button(Const(" "), id="but1"),
+            when=(~F["next_p"]) & (F["media_number"] > 0),
+        ),
+        SwitchTo(Const("Назад"), id="__back__", state=Administration.MC_MAIN),
         getter=get_mclasses_page,
         state=Administration.REMOVE_MC,
+        parse_mode=_PARSE_MODE_TO_USER,
+    ),
+    Window(
+        Format("*Мастер-класс: {dialog_data[mclass][name]}*\n\nЧто поменять?"),
+        SwitchTo(Const("Название"), id="edit_name_mc", state=Administration.NAME_MC),
+        SwitchTo(
+            Const("Описание и/или изображение"),
+            id="edit_des_mc",
+            state=Administration.DESCRIPTION_MC,
+        ),
+        state=Administration.CHANGE_MC,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
 )

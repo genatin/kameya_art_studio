@@ -23,5 +23,6 @@ class ru:
     admin_add = "Добавить"
     admin_current = "Существующие"
     admin_remove = "Удалить"
+    admin_change = "Изменить"
 
     admin_mc = "Мастер-классы"
