@@ -16,7 +16,7 @@ signup_keyboard = types.ReplyKeyboardMarkup(
 
 add_or_remove_mc = types.ReplyKeyboardMarkup(
     keyboard=[
-        [types.KeyboardButton(text=ru.admin_add)],
+        [types.KeyboardButton(text=ru.admin_create)],
         [types.KeyboardButton(text=ru.admin_remove)],
     ],
     resize_keyboard=True,

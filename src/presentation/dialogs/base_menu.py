@@ -44,10 +44,10 @@ menu_dialog = Dialog(
             state=Registration.GET_CONTACT,
             on_click=send_contact,
         ),
+        Start(Const("О студии"), id="aaa", state=BaseMenu.ABOUT_US),
         Start(
             Const(ru.admin), id="admin", when=F["is_admin"], state=Administration.START
         ),
-        Start(Const("О студии"), id="aaa", state=BaseMenu.ABOUT_US),
         state=BaseMenu.START,
         getter=get_user,
     ),

@@ -1,11 +1,12 @@
 import logging
 import traceback
+from html import escape
 from typing import Any
 
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters.callback_data import CallbackData
-from aiogram.types import ErrorEvent, ReplyKeyboardRemove
+from aiogram.types import ErrorEvent, Message, ReplyKeyboardRemove
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.api.entities.events import ChatEvent
@@ -124,3 +125,28 @@ async def notify_admins(
             )
         except Exception as e:
             logger.error(repr(e))
+
+
+def safe_text_with_link(message: Message) -> str:
+    original_text = message.text or message.caption
+    entities = message.entities or []
+
+    parts = []
+    last_pos = 0
+
+    for entity in entities:
+        if entity.type == "url":
+            # Экранируем текст до ссылки
+            parts.append(escape(original_text[last_pos : entity.offset]))
+            # Берем URL без изменений
+            url = original_text[entity.offset : entity.offset + entity.length]
+            # Экранируем текст ссылки и создаем HTML-тег
+            parts.append(
+                f"<a href='{url}'>{escape(original_text[entity.offset:entity.offset+entity.length])}</a>"
+            )
+            last_pos = entity.offset + entity.length
+
+    # Добавляем остаток текста
+    parts.append(escape(original_text[last_pos:]))
+
+    return "".join(parts)

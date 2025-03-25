@@ -38,6 +38,7 @@ from src.presentation.dialogs.mass_classes.mclasses import (
     store_mclasses,
 )
 from src.presentation.dialogs.states import Administration, AdminMC, AdminReply
+from src.presentation.dialogs.utils import safe_text_with_link
 
 logger = logging.getLogger(__name__)
 _PARSE_MODE_TO_USER = ParseMode.MARKDOWN
@@ -51,12 +52,10 @@ async def message_admin_handler(
     message_input: MessageInput,
     manager: DialogManager,
 ):
-    manager.dialog_data["admin_message"] = (
-        f"Ответ от Камея Арт Студии:\n\n_{message.text or message.caption}_"
-    )
-
+    safe_text = safe_text_with_link(message)
+    manager.dialog_data["admin_message"] = f"Ответ от Камея Арт Студии:\n\n{safe_text}"
     if message.photo or message.document:
-        manager.dialog_data["admin_message"] += "\n\n_(Ниже прикрепляем документ)_"
+        manager.dialog_data["admin_message"] += "\n\nНиже прикрепляем документ"
         if message.photo:
             manager.dialog_data[FILE_ID] = message.photo[0].file_id
         if message.document:
@@ -68,12 +67,11 @@ async def message_admin_handler(
 async def send_to_user(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ):
-
     if manager.dialog_data["admin_message"]:
         await manager.event.bot.send_message(
             chat_id=manager.start_data["user_id"],
             text=manager.dialog_data["admin_message"],
-            parse_mode=_PARSE_MODE_TO_USER,
+            parse_mode=ParseMode.HTML,
         )
     if manager.dialog_data.get(FILE_ID):
         await manager.event.bot.send_photo(
@@ -111,7 +109,7 @@ async def approve_payment(
     )
 
     manager.dialog_data["approve_message"] = (
-        "Оплату получили, благодарим вас.\nВ случае отмены необходимо за 48 часов уведомить в этом чате о переносе, иначе сертификат сгорит!\n"
+        f"Оплату получили, благодарим вас.\nВ случае отмены необходимо за 48 часов связаться с нами [тут](tg://user?id=476152516)!\n"
     )
     await manager.event.bot.send_message(
         chat_id=manager.start_data["user_id"],
@@ -291,7 +289,7 @@ admin_reply_dialog = Dialog(
         Button(Const("Отправить"), id="good", on_click=send_to_user),
         state=AdminReply.SEND,
         getter=get_image,
-        parse_mode=_PARSE_MODE_TO_USER,
+        parse_mode=ParseMode.HTML,
     ),
     Window(
         Const("Сообщение отправлено\n\nПодтвердить оплату?"),
@@ -358,7 +356,7 @@ change_mclass = Dialog(
         ),
         Row(
             Cancel(Const("Назад")),
-            Next(Const(ru.admin_add)),
+            Next(Const(f"{ru.admin_create} мастер-класс")),
         ),
         getter=get_mclasses_page,
         state=AdminMC.PAGE,
@@ -368,7 +366,7 @@ change_mclass = Dialog(
         Format(
             "*Введите название мастер-класса*\n_Например: Трансформеры в стиле Рембрандта_"
         ),
-        MessageInput(name_mc_handler),
+        MessageInput(name_mc_handler, content_types=[ContentType.TEXT]),
         state=AdminMC.NAME,
         parse_mode=ParseMode.MARKDOWN,
     ),
