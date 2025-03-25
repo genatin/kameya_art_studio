@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from typing import Any, Callable
 
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
@@ -45,6 +45,7 @@ from src.application.models import UserDTO
 from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.mass_classes.mclasses import (
+    FILE_ID,
     get_mclasses_page,
     store_mclasses,
 )
@@ -179,7 +180,7 @@ async def complete(result, _, dialog_manager: DialogManager, **kwargs):
     await dialog_manager.next()
 
 
-async def acts_getter(dialog_manager: DialogManager, **kwargs):
+async def acts_getter(start_data: Any, dialog_manager: DialogManager):
     await store_mclasses(None, dialog_manager)
 
 
@@ -315,7 +316,7 @@ mass_classes_dialog = Dialog(
         Const("Выберите мастер-класс, который хотите удалить", when=F["mclasses"]),
         Const("Мастер-классы отсутствуют", when=~F["mclasses"]),
         Format("*Тема: {mclass[name]}*\nОписание: {mclass[description]}"),
-        DynamicMedia(selector="image", when="image"),
+        DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id="scroll", pages="mc_count"),
         Row(
             Button(Const(" "), id="but"),
@@ -353,4 +354,5 @@ mass_classes_dialog = Dialog(
         ),
         state=MassClasses.TICKETS,
     ),
+    on_start=store_mclasses,
 )

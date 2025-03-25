@@ -1,6 +1,8 @@
 import logging
+import traceback
 from typing import Any
 
+from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import ErrorEvent, ReplyKeyboardRemove
@@ -61,16 +63,18 @@ async def on_unknown_state(event, dialog_manager: DialogManager):
 
 
 async def error_handler(error_event: ErrorEvent):
+    message = error_event.update.message or error_event.update.callback_query.message
+
     await error_event.update.bot.send_message(
         get_config().DEVELOPER_ID,
-        f"User_id: {error_event.update.message.from_user.id}\n"
-        f'Username: <a href="tg://user?id={error_event.update.message.from_user.id}">{error_event.update.message.from_user.username}\n</a>'
-        f"Message: {error_event.update.message.text} \n\nError:\n{error_event.exception.with_traceback()}",
+        f"User_id: {message.from_user.id}\n"
+        f'Username: <a href="tg://user?id={message.from_user.id}">{message.from_user.username}\n</a>'
+        f"Message: {message.text} \n\nError:\n{traceback.format_exc()}",
         disable_notification=True,
-        parse_mode=error_event.update.ParseMode.HTML,
+        parse_mode=ParseMode.HTML,
     )
     logger.error(f"Failed", exc_info=error_event.exception)
-    await error_event.update.message.answer(
+    await message.answer(
         "Ой, случилось что-то непредвиденное, пока разработчик чинит ошибку"
         " вы всегда можете оборвать действие нажав или отправив сообщение /start"
     )

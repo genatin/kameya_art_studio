@@ -51,9 +51,8 @@ class Administration(StatesGroup):
 
 
 class AdminMC(StatesGroup):
-    START = State()
-    ADD = State()
     PAGE = State()
+    ADD = State()
     CHANGE = State()
 
     NAME = State()

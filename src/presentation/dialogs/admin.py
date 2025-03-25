@@ -4,7 +4,7 @@ from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.api.entities import LaunchMode, MediaAttachment, MediaId, StartMode
+from aiogram_dialog.api.entities import MediaAttachment, MediaId, ShowMode
 from aiogram_dialog.widgets.common import ManagedScroll
 from aiogram_dialog.widgets.input import MessageInput, TextInput
 from aiogram_dialog.widgets.kbd import (
@@ -33,6 +33,7 @@ from src.infrastracture.database.sqlite import (
     update_mclass_photo_by_name,
 )
 from src.presentation.dialogs.mass_classes.mclasses import (
+    FILE_ID,
     get_mclasses_page,
     store_mclasses,
 )
@@ -57,7 +58,7 @@ async def message_admin_handler(
     if message.photo or message.document:
         manager.dialog_data["admin_message"] += "\n\n_(Ниже прикрепляем документ)_"
         if message.photo:
-            manager.dialog_data["image"] = message.photo[0].file_id
+            manager.dialog_data[FILE_ID] = message.photo[0].file_id
         if message.document:
             manager.dialog_data["document"] = message.document.file_id
 
@@ -74,9 +75,9 @@ async def send_to_user(
             text=manager.dialog_data["admin_message"],
             parse_mode=_PARSE_MODE_TO_USER,
         )
-    if manager.dialog_data.get("image"):
+    if manager.dialog_data.get(FILE_ID):
         await manager.event.bot.send_photo(
-            chat_id=manager.start_data["user_id"], photo=manager.dialog_data["image"]
+            chat_id=manager.start_data["user_id"], photo=manager.dialog_data[FILE_ID]
         )
     if manager.dialog_data.get("document"):
         await manager.event.bot.send_document(
@@ -88,12 +89,12 @@ async def send_to_user(
 
 async def get_image(dialog_manager: DialogManager, **kwargs):
     image = None
-    if image_id := dialog_manager.dialog_data.get("image"):
+    if image_id := dialog_manager.dialog_data.get(FILE_ID):
         image = MediaAttachment(ContentType.PHOTO, file_id=MediaId(image_id))
     elif document_id := dialog_manager.dialog_data.get("document"):
         image = MediaAttachment(ContentType.DOCUMENT, file_id=MediaId(document_id))
     return {
-        "image": image,
+        FILE_ID: image,
         "description": dialog_manager.dialog_data.get("description", ""),
     }
 
@@ -134,11 +135,15 @@ async def description_handler(
         )
         dialog_manager.dialog_data[_IS_EDIT] = False
         if mc:
+            scroll: ManagedScroll = dialog_manager.find("scroll")
+            media_number = await scroll.get_page()
+            dialog_manager.dialog_data["mclasses"][media_number][
+                "description"
+            ] = new_description
             await event.answer("Описание мастер-класса успешно изменено")
-            await dialog_manager.start(Administration.START)
         else:
             await event.answer(ru.sth_error)
-            await dialog_manager.start(Administration.START)
+        await dialog_manager.switch_to(AdminMC.PAGE)
     else:
         dialog_manager.dialog_data["description"] = new_description
         await dialog_manager.next()
@@ -147,59 +152,86 @@ async def description_handler(
 async def name_mc_handler(
     message: Message,
     message_input: MessageInput,
-    manager: DialogManager,
+    dialog_manager: DialogManager,
 ):
-    logger.info(f"---> {manager.dialog_data.get(_IS_EDIT)}")
-    if manager.dialog_data.get(_IS_EDIT):
+    if dialog_manager.dialog_data.get(_IS_EDIT):
         mclass = await update_mclass_name_by_name(
-            old_name=manager.dialog_data["mclass"]["name"], new_name=message.text
+            old_name=dialog_manager.dialog_data["mclass"]["name"], new_name=message.text
         )
         if mclass:
+            scroll: ManagedScroll = dialog_manager.find("scroll")
+            media_number = await scroll.get_page()
+            dialog_manager.dialog_data["mclasses"][media_number]["name"] = message.text
             await message.answer("Имя мастер-класса успешно изменено")
-        await manager.start(Administration.START)
+        else:
+            await message.answer(ru.sth_error)
+        await dialog_manager.switch_to(AdminMC.PAGE)
     else:
-        manager.dialog_data["name_mc"] = message.text
-        await manager.next()
+        dialog_manager.dialog_data["name_mc"] = message.text
+        await dialog_manager.next()
+
+
+async def change_photo(
+    message: Message, dialog_manager: DialogManager, file_id: str = ""
+):
+    mclass_name = dialog_manager.dialog_data["mclass"]["name"]
+    mc = await update_mclass_photo_by_name(name=mclass_name, file_id=file_id)
+    if mc:
+        scroll: ManagedScroll = dialog_manager.find("scroll")
+        media_number = await scroll.get_page()
+        dialog_manager.dialog_data["mclasses"][media_number][FILE_ID] = file_id
+        dialog_manager.dialog_data[FILE_ID] = file_id
+        await message.answer(
+            f"Картинка мастер-класса успешно {'изменена' if file_id else 'удалена'}"
+        )
+    else:
+        await message.answer(ru.sth_error)
 
 
 async def photo_handler(
     message: Message,
     message_input: MessageInput,
-    manager: DialogManager,
+    dialog_manager: DialogManager,
 ):
     file_id = message.photo[0].file_id if message.photo else ""
-    logger.info(f"--->photo {manager.dialog_data.get(_IS_EDIT)}")
     if not file_id:
         await message.answer(
             "Нужно приложить картинку, НЕ ДОКУМЕНТ или нажмите кнопку ниже"
         )
         return
-    if manager.dialog_data.get(_IS_EDIT):
-        manager.dialog_data[_IS_EDIT] = False
-        mclass_name = manager.dialog_data["mclass"]["name"]
-        if file_id:
-            mc = await update_mclass_photo_by_name(name=mclass_name, file_id=file_id)
-            if mc:
-                await message.answer("Картинка мастер-класса успешно изменена")
-        await manager.start(Administration.START)
+    if dialog_manager.dialog_data.get(_IS_EDIT):
+        dialog_manager.dialog_data[_IS_EDIT] = False
+        await change_photo(message, dialog_manager, file_id)
+        await dialog_manager.switch_to(AdminMC.PAGE)
 
     else:
-        manager.dialog_data["image"] = file_id
-        await manager.next()
+        dialog_manager.dialog_data[FILE_ID] = file_id
+        await dialog_manager.next()
 
 
 async def add_mc_to_db(
     callback: CallbackQuery,
     button: Button,
-    manager: DialogManager,
+    dialog_manager: DialogManager,
     *_,
 ):
-    name_mc = manager.dialog_data["name_mc"]
-    image = manager.dialog_data.get("image", "")
-    description = manager.dialog_data.get("description", "")
-    await add_mclass(name=name_mc, image_id=image, description=description)
-    await manager.event.answer("Мастер-класс добавлен.")
-    await manager.start(Administration.START)
+    mclasses = dialog_manager.dialog_data["mclasses"]
+    name_mc = dialog_manager.dialog_data["name_mc"]
+    file_id = dialog_manager.dialog_data.get(FILE_ID, "")
+    description = dialog_manager.dialog_data.get("description", "")
+    await add_mclass(name=name_mc, image_id=file_id, description=description)
+    await dialog_manager.event.answer("Мастер-класс добавлен.")
+    mclasses.append(
+        {
+            "id": len(mclasses),
+            "name": name_mc,
+            "description": description,
+            FILE_ID: file_id,
+        }
+    )
+    scroll: ManagedScroll = dialog_manager.find("scroll")
+    await scroll.set_page(len(mclasses) - 1)
+    await dialog_manager.switch_to(AdminMC.PAGE)
 
 
 async def remove_mc_from_db(
@@ -217,6 +249,19 @@ async def remove_mc_from_db(
         await dialog_manager.start(Administration.START)
 
 
+async def no_photo(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+    *_,
+):
+    if dialog_manager.dialog_data.get(_IS_EDIT):
+        await change_photo(callback.message, dialog_manager, "")
+        await dialog_manager.switch_to(AdminMC.PAGE, show_mode=ShowMode.SEND)
+    else:
+        await dialog_manager.next()
+
+
 async def edit_mc(
     callback: CallbackQuery,
     button: Button,
@@ -224,7 +269,6 @@ async def edit_mc(
     *_,
 ):
     manager.dialog_data[_IS_EDIT] = True
-    logger.info(f"-- edit > {manager.dialog_data[_IS_EDIT]}")
 
 
 admin_reply_dialog = Dialog(
@@ -242,7 +286,7 @@ admin_reply_dialog = Dialog(
             "Пользователю отправится подтверждение об оплате",
             when=F["dialog_data"]["payment_confirm"],
         ),
-        DynamicMedia("image", when="image"),
+        DynamicMedia(FILE_ID, when=FILE_ID),
         Back(Const("Исправить")),
         Button(Const("Отправить"), id="good", on_click=send_to_user),
         state=AdminReply.SEND,
@@ -270,7 +314,7 @@ admin_dialog = Dialog(
         Start(
             Const(ru.mass_class),
             id="change_ms",
-            state=AdminMC.START,
+            state=AdminMC.PAGE,
         ),
         _CANCEL,
         state=Administration.START,
@@ -279,57 +323,10 @@ admin_dialog = Dialog(
 
 change_mclass = Dialog(
     Window(
-        Const(f"{ru.mass_class}ы"),
-        Next(Const(ru.admin_add)),
-        SwitchTo(
-            Const(ru.admin_current),
-            id="remove_mc",
-            state=AdminMC.PAGE,
-            when=F["dialog_data"]["mclasses"],
-        ),
-        _CANCEL,
-        state=AdminMC.START,
-    ),
-    Window(
         Format(
-            "*Введите название мастер-класса*\n_Например: Трансформеры в стиле Рембрандта_"
+            "*Тема: {mclass[name]}*\nОписание: {mclass[description]}", when="mclass"
         ),
-        MessageInput(name_mc_handler),
-        state=AdminMC.NAME,
-        parse_mode=ParseMode.MARKDOWN,
-    ),
-    Window(
-        Format(
-            "*Введите описание для мастер-класса, если требуется* \n\n_Например: Погрузитесь в удивительное сочетание современной поп-культуры и классической живописи! \nНа мастер-классе вы научитесь изображать легендарных Трансформеров, вдохновляясь техникой светотени и драматизмом Рембрандта. Узнаете, как сочетать динамику футуристических персонажей с глубокими, насыщенными тонами старинной живописи. Идеально для тех, кто хочет расширить свои художественные горизонты и создать нечто уникальное!_"
-        ),
-        Next(Const("Без описания")),
-        TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
-        state=AdminMC.DESCRIPTION,
-        parse_mode=_PARSE_MODE_TO_USER,
-    ),
-    Window(
-        Format("Приложите фото, если требуется"),
-        Next(Const("Без фото")),
-        MessageInput(photo_handler),
-        state=AdminMC.PHOTO,
-        parse_mode=_PARSE_MODE_TO_USER,
-    ),
-    Window(
-        DynamicMedia("image", when="image"),
-        Format("__*ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ*__", when=~F["description"]),
-        Format(
-            "Мастер класс будет выглядеть так: \n\n*Название мастер-класса: {dialog_data[name_mc]}"
-        ),
-        Format("\nОписание: {description}*", when="description"),
-        Back(Const("Исправить")),
-        Button(Const("Добавить"), id="good", on_click=add_mc_to_db),
-        state=AdminMC.SEND,
-        getter=get_image,
-        parse_mode=_PARSE_MODE_TO_USER,
-    ),
-    Window(
-        Format("*Тема: {mclass[name]}*\nОписание: {mclass[description]}"),
-        DynamicMedia(selector="image", when="image"),
+        DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id="scroll", pages="mc_count"),
         SwitchTo(
             Const(ru.admin_change),
@@ -359,14 +356,55 @@ change_mclass = Dialog(
             Button(Const(" "), id="but1"),
             when=(~F["next_p"]) & (F["media_number"] > 0),
         ),
-        SwitchTo(Const("Назад"), id="__back__", state=AdminMC.START),
+        Row(
+            Cancel(Const("Назад")),
+            Next(Const(ru.admin_add)),
+        ),
         getter=get_mclasses_page,
         state=AdminMC.PAGE,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
+        Format(
+            "*Введите название мастер-класса*\n_Например: Трансформеры в стиле Рембрандта_"
+        ),
+        MessageInput(name_mc_handler),
+        state=AdminMC.NAME,
+        parse_mode=ParseMode.MARKDOWN,
+    ),
+    Window(
+        Format(
+            "*Введите описание для мастер-класса, если требуется* \n\n_Например: Погрузитесь в удивительное сочетание современной поп-культуры и классической живописи! \nНа мастер-классе вы научитесь изображать легендарных Трансформеров, вдохновляясь техникой светотени и драматизмом Рембрандта. Узнаете, как сочетать динамику футуристических персонажей с глубокими, насыщенными тонами старинной живописи. Идеально для тех, кто хочет расширить свои художественные горизонты и создать нечто уникальное!_"
+        ),
+        Next(Const("Без описания")),
+        TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
+        state=AdminMC.DESCRIPTION,
+        parse_mode=_PARSE_MODE_TO_USER,
+    ),
+    Window(
+        Format("Приложите фото, если требуется"),
+        Button(Const("Без фото"), id="next_or_edit", on_click=no_photo),
+        MessageInput(photo_handler),
+        state=AdminMC.PHOTO,
+        parse_mode=_PARSE_MODE_TO_USER,
+    ),
+    Window(
+        DynamicMedia(FILE_ID, when=FILE_ID),
+        Format("__*ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ*__", when=~F["description"]),
+        Format(
+            "Мастер класс будет выглядеть так: \n\n*Название мастер-класса: {dialog_data[name_mc]}",
+            when=F["dialog_data"]["name_mc"],
+        ),
+        Format("\nОписание: {description}*", when="description"),
+        Back(Const("Исправить")),
+        Button(Const("Добавить"), id="add_mc", on_click=add_mc_to_db),
+        state=AdminMC.SEND,
+        getter=get_image,
+        parse_mode=_PARSE_MODE_TO_USER,
+    ),
+    Window(
         Format("*Мастер-класс: {dialog_data[mclass][name]}*\n\nЧто поменять?"),
-        SwitchTo(Const("Название"), id="edit_name_mc", state=AdminMC.NAME),
+        SwitchTo(Const("Тема"), id="edit_name_mc", state=AdminMC.NAME),
         SwitchTo(
             Const("Описание"),
             id="edit_des_mc",
