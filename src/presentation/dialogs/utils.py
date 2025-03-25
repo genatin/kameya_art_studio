@@ -61,19 +61,19 @@ async def on_unknown_state(event, dialog_manager: DialogManager):
 
 
 async def error_handler(error_event: ErrorEvent):
-    message_from_user = error_event.update.message.from_user
     await error_event.update.bot.send_message(
         get_config().DEVELOPER_ID,
-        # f"User_id: {message_from_user.id}\n",
-        f'Username: <a href="tg://user?id={message_from_user.id}">{message_from_user.username}\n</a>'
-        f"Message: {error_event.update.message.text} \n\nError:",
+        f"User_id: {error_event.update.message.from_user.id}\n"
+        f'Username: <a href="tg://user?id={error_event.update.message.from_user.id}">{error_event.update.message.from_user.username}\n</a>'
+        f"Message: {error_event.update.message.text} \n\nError:\n{error_event.exception.with_traceback()}",
         disable_notification=True,
-        parse_mode="HTML",
+        parse_mode=error_event.update.ParseMode.HTML,
     )
-    # await error_event.update.message.answer(
-    #     "Ой, случилось что-то непредвиденное, пока разработчик чинит ошибку"
-    #     " вы всегда можете оборвать действие нажав или отправив сообщение /cancel"
-    # )
+    logger.error(f"Failed", exc_info=error_event.exception)
+    await error_event.update.message.answer(
+        "Ой, случилось что-то непредвиденное, пока разработчик чинит ошибку"
+        " вы всегда можете оборвать действие нажав или отправив сообщение /start"
+    )
 
 
 async def get_user(

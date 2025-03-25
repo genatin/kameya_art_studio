@@ -26,3 +26,6 @@ class ru:
     admin_change = "Изменить"
 
     admin_mc = "Мастер-классы"
+
+    # error text
+    sth_error = "Что-то пошло не так"

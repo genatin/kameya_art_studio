@@ -6,8 +6,10 @@ from pydantic import BaseModel
 
 
 def pydantic_hook(obj: Any):
+    logger.info(f"---> {obj=}")
     if isinstance(obj, BaseModel):
         return obj.model_dump(exclude_defaults=True)
+    return str(obj)
 
 
 decode: Final[Callable[..., Any]] = Decoder[dict[str, Any]]().decode

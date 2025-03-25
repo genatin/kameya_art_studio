@@ -48,11 +48,15 @@ class AdminReply(StatesGroup):
 
 class Administration(StatesGroup):
     START = State()
-    MC_MAIN = State()
-    ADD_MC = State()
-    REMOVE_MC = State()
-    CHANGE_MC = State()
 
-    NAME_MC = State()
-    DESCRIPTION_MC = State()
+
+class AdminMC(StatesGroup):
+    START = State()
+    ADD = State()
+    PAGE = State()
+    CHANGE = State()
+
+    NAME = State()
+    DESCRIPTION = State()
+    PHOTO = State()
     SEND = State()

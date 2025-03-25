@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
@@ -35,7 +36,7 @@ async def get_mclasses_page(dialog_manager: DialogManager, **_kwargs):
     }
 
 
-async def store_mclasses(cq, _, dialog_manager: DialogManager, *args, **kwargs):
+async def store_mclasses(start_data: Any, manager: DialogManager):
     mclasses = [
         {
             "id": mclass.id,
@@ -45,4 +46,4 @@ async def store_mclasses(cq, _, dialog_manager: DialogManager, *args, **kwargs):
         }
         for mclass in await get_all_mclasses()
     ]
-    dialog_manager.dialog_data["mclasses"] = mclasses
+    manager.dialog_data["mclasses"] = mclasses

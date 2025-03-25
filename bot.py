@@ -19,7 +19,11 @@ from src.infrastracture.adapters.repositories.users import RepositoryUser
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.infrastracture.database.sqlite.base import create_tables
 from src.infrastracture.repository.users import UsersService
-from src.presentation.dialogs.admin import admin_dialog, admin_reply_dialog
+from src.presentation.dialogs.admin import (
+    admin_dialog,
+    admin_reply_dialog,
+    change_mclass,
+)
 from src.presentation.dialogs.base_menu import menu_dialog
 from src.presentation.dialogs.first_seen import first_seen_dialog
 from src.presentation.dialogs.registration import registration_dialog
@@ -85,7 +89,7 @@ async def main():
         on_unknown_state,
         ExceptionTypeFilter(UnknownState),
     )
-    # dp.errors.register(error_handler)
+    dp.errors.register(error_handler)
     dp.include_routers(
         main_router,
         registration_dialog,
@@ -97,6 +101,7 @@ async def main():
         child_lessons_dialog,
         admin_reply_dialog,
         admin_dialog,
+        change_mclass,
     )
     dp.startup.register(polling_startup)
     setup_dialogs(dp)

@@ -179,9 +179,8 @@ async def complete(result, _, dialog_manager: DialogManager, **kwargs):
     await dialog_manager.next()
 
 
-async def act_getter(dialog_manager: DialogManager, **kwargs):
-    await store_mclasses(None, None, dialog_manager)
-    return {}
+async def acts_getter(dialog_manager: DialogManager, **kwargs):
+    await store_mclasses(None, dialog_manager)
 
 
 signup_dialog = Dialog(
@@ -213,7 +212,6 @@ signup_dialog = Dialog(
             ),
             Button(Const(" "), id="ss"),
         ),
-        getter=act_getter,
         state=SignUp.START,
     ),
     Window(
@@ -240,6 +238,7 @@ signup_dialog = Dialog(
         getter=_form_presentation,
         parse_mode=ParseMode.HTML,
     ),
+    on_start=acts_getter,
     launch_mode=LaunchMode.ROOT,
 )
 
