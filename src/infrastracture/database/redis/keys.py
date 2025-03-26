@@ -5,3 +5,7 @@ from .key_builder import StorageKey
 
 class UserKey(StorageKey, prefix="users"):
     key: Any
+
+
+class AdminKey(StorageKey, prefix="admin"):
+    key: Any

@@ -4,14 +4,13 @@ from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.api.entities import MediaAttachment, MediaId, ShowMode
+from aiogram_dialog.api.entities import LaunchMode, MediaAttachment, MediaId, ShowMode
 from aiogram_dialog.widgets.common import ManagedScroll
 from aiogram_dialog.widgets.input import MessageInput, TextInput
 from aiogram_dialog.widgets.kbd import (
     Back,
     Button,
     Cancel,
-    CurrentPage,
     Next,
     NextPage,
     PrevPage,
@@ -41,7 +40,7 @@ from src.presentation.dialogs.states import Administration, AdminMC, AdminReply
 from src.presentation.dialogs.utils import safe_text_with_link
 
 logger = logging.getLogger(__name__)
-_PARSE_MODE_TO_USER = ParseMode.MARKDOWN
+_PARSE_MODE_TO_USER = ParseMode.HTML
 _CANCEL = Row(Cancel(Const("Назад")), Button(Const(" "), id="ss"))
 _IS_EDIT = "is_edit"
 _DESCRIPTION_MC = "description_mc"
@@ -109,7 +108,7 @@ async def approve_payment(
     )
 
     manager.dialog_data["approve_message"] = (
-        f"Оплату получили, благодарим вас.\nВ случае отмены необходимо за 48 часов связаться с нами [тут](tg://user?id=476152516)!\n"
+        'Оплату получили, благодарим вас.\n\n<b>В случае отмены необходимо за 48 часов связаться с <a href="https://t.me/+79095266566">нами</a>!</b>'
     )
     await manager.event.bot.send_message(
         chat_id=manager.start_data["user_id"],
@@ -272,7 +271,7 @@ async def edit_mc(
 admin_reply_dialog = Dialog(
     Window(
         Const(
-            "Введите сообщение, которое хотите отправить пользователю \n\n*(можно прикрепить файл ИЛИ фото)*"
+            "Введите сообщение, которое хотите отправить пользователю \n\n<b>(можно прикрепить файл ИЛИ фото)</b>"
         ),
         MessageInput(message_admin_handler),
         state=AdminReply.REPLY,
@@ -303,6 +302,8 @@ admin_reply_dialog = Dialog(
         Back(Const("Нет")),
         state=AdminReply.PAYMENT,
     ),
+    launch_mode=LaunchMode.ROOT,
+    # on_start=
 )
 
 
@@ -322,7 +323,8 @@ admin_dialog = Dialog(
 change_mclass = Dialog(
     Window(
         Format(
-            "*Тема: {mclass[name]}*\nОписание: {mclass[description]}", when="mclass"
+            "<b>Тема: {mclass[name]}</b>\nОписание: {mclass[description]}",
+            when="mclass",
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id="scroll", pages="mc_count"),
@@ -372,7 +374,7 @@ change_mclass = Dialog(
     ),
     Window(
         Format(
-            "*Введите описание для мастер-класса, если требуется* \n\n_Например: Погрузитесь в удивительное сочетание современной поп-культуры и классической живописи! \nНа мастер-классе вы научитесь изображать легендарных Трансформеров, вдохновляясь техникой светотени и драматизмом Рембрандта. Узнаете, как сочетать динамику футуристических персонажей с глубокими, насыщенными тонами старинной живописи. Идеально для тех, кто хочет расширить свои художественные горизонты и создать нечто уникальное!_"
+            "<b>Введите описание для мастер-класса, если требуется</b> \n\n<i>Например: Погрузитесь в удивительное сочетание современной поп-культуры и классической живописи! \nНа мастер-классе вы научитесь изображать легендарных Трансформеров, вдохновляясь техникой светотени и драматизмом Рембрандта. Узнаете, как сочетать динамику футуристических персонажей с глубокими, насыщенными тонами старинной живописи. Идеально для тех, кто хочет расширить свои художественные горизонты и создать нечто уникальное!</i>"
         ),
         Next(Const("Без описания")),
         TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
@@ -388,12 +390,12 @@ change_mclass = Dialog(
     ),
     Window(
         DynamicMedia(FILE_ID, when=FILE_ID),
-        Format("__*ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ*__", when=~F["description"]),
+        Format("<b><i>ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ</i></b>", when=~F["description"]),
         Format(
-            "Мастер класс будет выглядеть так: \n\n*Название мастер-класса: {dialog_data[name_mc]}",
+            "Мастер класс будет выглядеть так: \n\n<b>Название мастер-класса: {dialog_data[name_mc]}</b>",
             when=F["dialog_data"]["name_mc"],
         ),
-        Format("\nОписание: {description}*", when="description"),
+        Format("\nОписание: {description}", when="description"),
         Back(Const("Исправить")),
         Button(Const("Добавить"), id="add_mc", on_click=add_mc_to_db),
         state=AdminMC.SEND,
@@ -401,7 +403,7 @@ change_mclass = Dialog(
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
-        Format("*Мастер-класс: {dialog_data[mclass][name]}*\n\nЧто поменять?"),
+        Format("<b>Мастер-класс: {dialog_data[mclass][name]}</b>\n\nЧто поменять?"),
         SwitchTo(Const("Тема"), id="edit_name_mc", state=AdminMC.NAME),
         SwitchTo(
             Const("Описание"),

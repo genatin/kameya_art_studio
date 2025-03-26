@@ -10,9 +10,7 @@ from aiogram_dialog.widgets.kbd import (
     Back,
     Button,
     Counter,
-    CurrentPage,
     ManagedCounter,
-    Next,
     NextPage,
     PrevPage,
     Row,
@@ -32,7 +30,6 @@ from src.application.domen.models.activity_type import (
     master_class_act,
 )
 from src.application.domen.models.lesson_option import (
-    ONE_LESS,
     LessonOption,
     LessonOptionFactory,
     one_l_option,
@@ -132,7 +129,7 @@ async def stay_form(
     user: UserDTO = await repository.user.get_user(manager.event.from_user.id)
 
     num_row = repository.signup_user(lesson_activity=lesson_activity, user=user)
-    await notify_admins(manager.event, user, lesson_activity, num_row)
+    await notify_admins(manager, user, lesson_activity, num_row)
     await callback.message.answer(ru.application_form, parse_mode=ParseMode.HTML)
     await manager.done()
 
@@ -313,9 +310,10 @@ async def on_page_change(dialog_manager: DialogManager, *args):
 
 mass_classes_dialog = Dialog(
     Window(
-        Const("Выберите мастер-класс, который хотите удалить", when=F["mclasses"]),
-        Const("Мастер-классы отсутствуют", when=~F["mclasses"]),
-        Format("*Тема: {mclass[name]}*\nОписание: {mclass[description]}"),
+        Const("Выберите мастер-класс, который хотите выбрать"),
+        Format(
+            "*Тема: {mclass[name]}*\nОписание: {mclass[description]}", when="mclass"
+        ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id="scroll", pages="mc_count"),
         Row(

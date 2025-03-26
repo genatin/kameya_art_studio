@@ -8,9 +8,8 @@ from redis.typing import ExpiryT
 
 from src.application.models import UserDTO
 from src.application.utils import mjson
-
-from .key_builder import StorageKey
-from .keys import UserKey
+from src.infrastracture.database.redis.key_builder import StorageKey
+from src.infrastracture.database.redis.keys import UserKey
 
 T = TypeVar("T", bound=Any)
 
@@ -21,6 +20,13 @@ class RedisRepository:
 
     async def get(self, key: StorageKey, validator: type[T]) -> Optional[T]:
         value: Optional[Any] = await self.client.get(key.pack())
+        if value is None:
+            return None
+        value = mjson.decode(value)
+        return TypeAdapter[T](validator).validate_python(value)
+
+    async def getdel(self, key: StorageKey, validator: type[T]) -> Any:
+        value: Optional[Any] = await self.client.getdel(key.pack())
         if value is None:
             return None
         value = mjson.decode(value)

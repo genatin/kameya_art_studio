@@ -8,8 +8,12 @@ from aiogram_dialog import DialogManager, StartMode
 from src.application.domen.text import ru
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import AdminReply, BaseMenu, FirstSeen, SignUp
-from src.presentation.dialogs.utils import SignUpCallbackFactory
+from src.presentation.dialogs.utils import (
+    SignUpCallbackFactory,
+    close_app_form_for_other_admins,
+)
 
+logger = logging.getLogger(__name__)
 main_router = Router()
 
 
@@ -47,8 +51,10 @@ async def sign_up_callback_handler(
     cq: CallbackQuery,
     callback_data: SignUpCallbackFactory,
     dialog_manager: DialogManager,
-    repository: GspreadRepository,
 ):
-    await dialog_manager.start(
-        AdminReply.REPLY, data=callback_data.dict(), mode=StartMode.RESET_STACK
+    await dialog_manager.start(AdminReply.REPLY, data=callback_data.dict())
+    await close_app_form_for_other_admins(
+        dialog_manager,
+        user_id=callback_data.user_id,
+        responding_admin_id=cq.from_user.id,
     )

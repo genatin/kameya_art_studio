@@ -9,16 +9,18 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import ErrorEvent, Message, ReplyKeyboardRemove
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, ShowMode, StartMode
-from aiogram_dialog.api.entities.events import ChatEvent
 
 from src.application.domen.models import LessonActivity
 from src.application.domen.text import ru
 from src.application.models import UserDTO
 from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
+from src.infrastracture.database.redis.keys import AdminKey
+from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.dialogs.states import BaseMenu
 
 logger = logging.getLogger(__name__)
+_DAYS_2 = 60 * 60 * 24 * 7
 
 
 class SignUpCallbackFactory(CallbackData, prefix="signup"):
@@ -74,10 +76,10 @@ async def error_handler(error_event: ErrorEvent):
         disable_notification=True,
         parse_mode=ParseMode.HTML,
     )
-    logger.error(f"Failed", exc_info=error_event.exception)
+    logger.error("Failed", exc_info=error_event.exception)
     await message.answer(
         "Ой, случилось что-то непредвиденное, пока разработчик чинит ошибку"
-        " вы всегда можете оборвать действие нажав или отправив сообщение /start"
+        " вы всегда можете начать сначала, отправив сообщение /start"
     )
 
 
@@ -93,7 +95,7 @@ async def get_user(
 
 
 async def notify_admins(
-    event: ChatEvent, user: UserDTO, lesson_activity: LessonActivity, num_row: int
+    manager: DialogManager, user: UserDTO, lesson_activity: LessonActivity, num_row: int
 ):
     message_to_admin = (
         "<u>Пользователь создал заявку:</u>\n\n"
@@ -114,17 +116,40 @@ async def notify_admins(
             num_row=num_row,
         ),
     )
-
+    redis_repository: RedisRepository = manager.middleware_data["redis_repository"]
+    send_mes_ids = {}
     for admin_id in get_config().ADMINS:
         try:
-            await event.bot.send_message(
+            mess = await manager.event.bot.send_message(
                 admin_id,
                 message_to_admin,
-                parse_mode="HTML",
+                parse_mode=ParseMode.HTML,
                 reply_markup=builder.as_markup(),
             )
-        except Exception as e:
-            logger.error(repr(e))
+            send_mes_ids[admin_id] = mess.message_id
+        except Exception as exc:
+            logger.error("Failed while notify admins", exc_info=exc)
+    await redis_repository.set(AdminKey(key=user.id), send_mes_ids, ex=_DAYS_2)
+
+
+async def close_app_form_for_other_admins(
+    dialog_manager: DialogManager, user_id: int, responding_admin_id: int
+):
+    redis_repository: RedisRepository = dialog_manager.middleware_data[
+        "redis_repository"
+    ]
+    admin_mess_ids = await redis_repository.getdel(AdminKey(key=user_id), dict)
+    for admin_id in get_config().ADMINS:
+        if responding_admin_id == admin_id:
+            continue
+        try:
+            await dialog_manager.event.bot.edit_message_text(
+                "Другой администратор уже ответил на заявку",
+                chat_id=admin_id,
+                message_id=admin_mess_ids[str(admin_id)],
+            )
+        except Exception as exc:
+            logger.error("Failed while edit admin message", exc_info=exc)
 
 
 def safe_text_with_link(message: Message) -> str:

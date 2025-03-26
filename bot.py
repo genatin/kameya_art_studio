@@ -68,8 +68,9 @@ async def main():
     if get_config().LOCAL:
         await redis.flushdb()
 
+    redis_repository = RedisRepository(redis)
     users_repo = UsersService(
-        config=get_config(), redis=RedisRepository(redis), repository=gspread_user
+        config=get_config(), redis=redis_repository, repository=gspread_user
     )
 
     lesssons_repo = LessonsRepository(spreadsheet.worksheet(config.LESSONS_PAGE))
@@ -79,7 +80,9 @@ async def main():
     gspread_repository = GspreadRepository(
         users_repo, lesssons_repo, child_repo, mclasses_repo
     )
-    dp = create_dispatcher(redis, repository=gspread_repository)
+    dp = create_dispatcher(
+        redis, repository=gspread_repository, redis_repository=redis_repository
+    )
 
     dp.errors.register(
         on_unknown_intent,
