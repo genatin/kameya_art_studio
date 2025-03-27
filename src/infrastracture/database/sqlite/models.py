@@ -1,7 +1,7 @@
 from enum import StrEnum
 
 from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.application.domen.text import ru
 from src.infrastracture.database.sqlite.db import Base
@@ -21,7 +21,7 @@ class ActivityType(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
 
     activities: Mapped[list["Activity"]] = relationship(
-        "Activity", back_populates="activity_type"
+        "Activity", back_populates="activity_type", cascade="all, delete"
     )
 
     def __repr__(self):
@@ -43,9 +43,3 @@ class Activity(Base):
     activity_type: Mapped["ActivityType"] = relationship(
         "ActivityType", back_populates="activities"
     )
-
-    @validates("activity_type")
-    def validate_activity_type(self, key, activity_type):
-        if not any(activity_type.name == t.value for t in ActivityTypeEnum):
-            raise ValueError("Invalid activity type")
-        return activity_type

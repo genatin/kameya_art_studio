@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.domen.models.activity_type import ActivityType as ActType
-from src.infrastracture.database.sqlite.base import connection
+from src.infrastracture.database.sqlite.base import connection, de_emojify
 from src.infrastracture.database.sqlite.models import Activity, ActivityType
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 @connection
 async def get_act_type_by_name(session: AsyncSession, name: str) -> ActivityType | None:
-    return await session.scalar(select(ActivityType).where(ActivityType.name == name))
+    return await session.scalar(
+        select(ActivityType).where(ActivityType.name == de_emojify(name))
+    )
 
 
 @connection
@@ -50,8 +52,8 @@ async def get_all_activity_by_type(
     stmt = (
         select(Activity)
         .join(ActivityType)  # Используем relationship для join
-        .where(ActivityType.name == activity_type)
-        .order_by(Activity.id.desc())
+        .where(ActivityType.name == de_emojify(activity_type))
+        .order_by(Activity.created_at.asc())
     )
     return await session.scalars(stmt)
 
@@ -109,7 +111,7 @@ async def get_activity_by_theme_and_type(
     stmt = (
         select(Activity)
         .join(Activity.activity_type)  # Используем relationship для join
-        .where(Activity.theme == theme, ActivityType.name == type_name)
+        .where(Activity.theme == theme, ActivityType.name == de_emojify(type_name))
     )
     return await session.scalar(stmt)
 

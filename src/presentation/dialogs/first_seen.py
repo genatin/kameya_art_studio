@@ -32,7 +32,9 @@ async def add_user_firstly(cq: CallbackQuery, _, manager: DialogManager):
 first_seen_dialog = Dialog(
     Window(
         DynamicMedia("video"),
-        Const("---------- О нас\n\n----"),
+        Const(
+            "Приветствуем в творческом пространстве 🎨✨\nРады видеть вас в нашей арт-студии Камея! Здесь вы найдете мастер-классы, уроки и вдохновение для любого уровня."
+        ),
         Button(Const("Поехали!"), id="first_seend", on_click=add_user_firstly),
         state=FirstSeen.START,
         getter=getter_first_seen_video,

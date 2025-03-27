@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import Callable
 
 from aiogram import F
@@ -62,8 +63,7 @@ logger = logging.getLogger(__name__)
 
 
 _LESSON_ACTIVITY = "lesson_activity"
-_IS_DESCRIPTION = F["activity"]["description"]
-_IS_FILE_ID = F["dialog_data"][FILE_ID]
+_IS_FILE_ID = F[FILE_ID] | F["dialog_data"][FILE_ID]
 _ACTIVITY_EXISTS = F["dialog_data"]["activities"]
 
 
@@ -202,7 +202,7 @@ async def on_page_change(dialog_manager: DialogManager, *args):
 
 signup_dialog = Dialog(
     Window(
-        Const("Выберите занятие, которое хотите посетить"),
+        Format("{signup_message}"),
         Button(
             Const(mclass_act.human_name),
             id=mclass_act.name,
@@ -232,6 +232,7 @@ signup_dialog = Dialog(
             ),
             Button(Const(" "), id="ss"),
         ),
+        getter={"signup_message": random.choice(ru.random_signup)},
         state=SignUp.START,
     ),
     Window(

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 async def send_contact(cq: CallbackQuery, _, manager: DialogManager):
     manager.dialog_data[_FINISHED] = False
     await cq.message.answer(
-        "Ой, Вы ещё не зарегистрированы, для регистрации потребуется ваш номер телефона",
+        "Для регистрации потребуется ваш номер телефона",
         reply_markup=keyboard_phone,
     )
 
@@ -45,7 +45,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
     dialog_manager.dialog_data[_FINISHED] = True
     user_dict: dict = dialog_manager.dialog_data["user"]
 
-    user_dict["theme"] = dialog_manager.find("theme").get_value()
+    user_dict["name"] = dialog_manager.find("name").get_value()
     user_dict["phone"] = "+" + dialog_manager.find("phone").get_value().lstrip("+")
     user_dict["last_name"] = dialog_manager.find("last_name").get_value()
     return user_dict
@@ -58,7 +58,7 @@ async def registration_complete(
 
     user = UserDTO(**manager.dialog_data["user"])
 
-    await callback.message.answer("Ещё совсем чуть-чуть...")
+    await callback.message.answer("бип буп...")
     is_success = await repository.user.update_user(user)
     # TODO сделать отправку админу
     if is_success:
@@ -94,13 +94,13 @@ registration_dialog = Dialog(
         parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
-        Format("*Введите ваше имя*\n_Например: Илья_"),
-        TextInput(id="theme", on_success=next_or_end),
+        Format("*Введите Ваше полное имя*\n_Например: Илья_"),
+        TextInput(id="name", on_success=next_or_end),
         state=Registration.NAME,
         parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
-        Const("*Введите вашу фамилию*\n_Например: Репин_"),
+        Const("*Введите Вашу фамилию*\n_Например: Репин_"),
         TextInput("last_name", on_success=next_or_end),
         state=Registration.LASTNAME,
         parse_mode=ParseMode.MARKDOWN,

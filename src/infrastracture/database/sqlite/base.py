@@ -1,9 +1,16 @@
+import re
+
+import emoji
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastracture.database.sqlite.db import Base, async_session, engine
 from src.infrastracture.database.sqlite.models import ActivityType, ActivityTypeEnum
+
+
+def de_emojify(text):
+    return emoji.replace_emoji(text, replace="")
 
 
 async def _create_db():
@@ -28,8 +35,9 @@ async def init_db(session: AsyncSession):
     try:
         # Создаем предопределенные типы, если их нет
         for activity_type in ActivityTypeEnum:
-            if activity_type.value not in existing_types:
-                session.add(ActivityType(name=activity_type.value))
+            safe_str = de_emojify(activity_type)
+            if safe_str not in existing_types:
+                session.add(ActivityType(name=safe_str))
 
         await session.commit()
     except IntegrityError:

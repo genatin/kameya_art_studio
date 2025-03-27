@@ -142,7 +142,9 @@ async def description_handler(
     if dialog_manager.dialog_data.get(_IS_EDIT):
         mclass_name = dialog_manager.dialog_data["activity"]["theme"]
         mc = await update_activity_description_by_name(
-            theme=mclass_name, new_description=new_description
+            type_name=dialog_manager.dialog_data["act_type"],
+            theme=mclass_name,
+            new_description=new_description,
         )
         dialog_manager.dialog_data[_IS_EDIT] = False
         if mc:
@@ -383,7 +385,7 @@ admin_dialog = Dialog(
 
 change_activity_dialog = Dialog(
     Window(
-        Format("Меню настройки {dialog_data[act_type]}"),
+        Format("Меню настройки {dialog_data[act_type]}\n\n"),
         Format(
             "<b>Тема: {activity[theme]}</b>\nОписание: {activity[description]}",
             when="activity",
@@ -468,7 +470,7 @@ change_activity_dialog = Dialog(
             "{dialog_data[act_type]} будет выглядеть так: \n\n<b>Тема: {dialog_data[theme_activity]}</b>",
             when=F["dialog_data"]["theme_activity"],
         ),
-        Format("\nОписание: {description}", when="description"),
+        Format("\n<b>Описание:</b> {description}", when="description"),
         Row(
             _BACK, Button(Const("Добавить"), id="add_mc", on_click=add_activities_to_db)
         ),

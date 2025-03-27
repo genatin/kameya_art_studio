@@ -1,9 +1,10 @@
 import logging
 
 from aiogram import F
+from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import ContentType
 from aiogram_dialog import Dialog, LaunchMode, Window
-from aiogram_dialog.widgets.kbd import Back, Start
+from aiogram_dialog.widgets.kbd import Back, Start, Url
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -26,10 +27,9 @@ menu_dialog = Dialog(
             path=get_config().WELCOME_IMAGE_PATH,
             type=ContentType.PHOTO,
         ),
-        Format("Рады тебя видеть, {user.name}!", when=F["user"]),
         Format(
-            "{event.from_user.full_name} привет, \n\n--- здесь вы можете записаться на ---",
-            when=~F["user"],
+            "{user.name}, добро пожаловать в нашу творческую мастерскую! 🎨",
+            when=F["user"],
         ),
         Start(
             Const("✍️ Записаться"),
@@ -37,8 +37,12 @@ menu_dialog = Dialog(
             state=SignUp.START,
             when=F["user"],
         ),
+        Format(
+            "👋 {event.from_user.full_name} приветствуем в Арт-Студии Камея.\n\n<i>Для регистрации нажмите кнопку ниже</i>",
+            when=~F["user"],
+        ),
         Start(
-            Const("✍️ Записаться"),
+            Const("📝 Зарегистрироваться"),
             id="sign_up",
             when=~F["user"],
             state=Registration.GET_CONTACT,
@@ -50,6 +54,7 @@ menu_dialog = Dialog(
         ),
         state=BaseMenu.START,
         getter=get_user,
+        parse_mode=ParseMode.HTML,
     ),
     Window(
         StaticMedia(
@@ -57,10 +62,15 @@ menu_dialog = Dialog(
             type=ContentType.PHOTO,
         ),
         Format(
-            "{event.from_user.full_name} привет, \n\n--- здесь вы можете записаться на урок ---\n\nчтобы продолжить понадобится ваш номер телефона"
+            """<b>О нашей арт-студии 🎨✨\n\nМы — пространство, где рождается творчество! Наша студия объединяет художников, новичков и всех, кто хочет раскрыть свой творческий потенциал.\n🔹 Мастер-классы и уроки для любого уровня\n🔹 Уютная атмосфера и индивидуальный подход\n🔹 Профессиональные материалы и поддержка педагогов\nПриходите за вдохновением, оставайтесь за результатом!</b>\n<i>Творите с удовольствием! 🖌️</i>"""
+        ),
+        Url(
+            Const("Как к нам добраться"),
+            Const("https://yandex.ru/maps/-/CHRzUEOc"),
         ),
         Back(text=Const(ru.back_step)),
         state=BaseMenu.ABOUT_US,
+        parse_mode=ParseMode.HTML,
     ),
     launch_mode=LaunchMode.ROOT,
 )
