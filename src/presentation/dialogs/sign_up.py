@@ -200,9 +200,14 @@ async def on_page_change(dialog_manager: DialogManager, *args):
     ]
 
 
+async def get_random_message(dialog_manager: DialogManager, **kwargs):
+    r = random.choice(ru.random_signup)
+    return {"random_signup_message": r}
+
+
 signup_dialog = Dialog(
     Window(
-        Format("{signup_message}"),
+        Format("{random_signup_message}"),
         Button(
             Const(mclass_act.human_name),
             id=mclass_act.name,
@@ -232,7 +237,7 @@ signup_dialog = Dialog(
             ),
             Button(Const(" "), id="ss"),
         ),
-        getter={"signup_message": random.choice(ru.random_signup)},
+        getter=get_random_message,
         state=SignUp.START,
     ),
     Window(
