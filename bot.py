@@ -12,23 +12,26 @@ from src.application.factory.telegram import create_dispatcher
 from src.config import get_config
 from src.infrastracture.adapters.repositories.lessons import (
     ChildLessonsRepository,
+    EveningSketchRepository,
     LessonsRepository,
+    MCLassesRepository,
 )
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.infrastracture.adapters.repositories.users import RepositoryUser
 from src.infrastracture.database.redis.repository import RedisRepository
-from src.infrastracture.database.sqlite.base import create_tables
+from src.infrastracture.database.sqlite.base import init_db
 from src.infrastracture.repository.users import UsersService
 from src.presentation.dialogs.admin import (
     admin_dialog,
     admin_reply_dialog,
-    change_mclass,
+    change_activity_dialog,
 )
 from src.presentation.dialogs.base_menu import menu_dialog
 from src.presentation.dialogs.first_seen import first_seen_dialog
 from src.presentation.dialogs.registration import registration_dialog
 from src.presentation.dialogs.sign_up import (
     child_lessons_dialog,
+    evening_sketch_dialog,
     lessons_dialog,
     mass_classes_dialog,
     signup_dialog,
@@ -56,7 +59,7 @@ async def main():
     spreadsheet = gspread.service_account(filename=config.SERVICE_FILE_NAME).open(
         config.GSHEET_NAME
     )
-    await create_tables()
+    await init_db()
     gspread_user = RepositoryUser(spreadsheet.worksheet(config.USERS_PAGE))
     gspread_user.run_background_update()
     redis = Redis(
@@ -75,10 +78,13 @@ async def main():
 
     lesssons_repo = LessonsRepository(spreadsheet.worksheet(config.LESSONS_PAGE))
     child_repo = ChildLessonsRepository(spreadsheet.worksheet(config.CHILD_PAGE))
-    mclasses_repo = ChildLessonsRepository(spreadsheet.worksheet(config.MASTER_CL_PAGE))
+    mclasses_repo = MCLassesRepository(spreadsheet.worksheet(config.MASTER_CL_PAGE))
+    evening_sketch_repo = EveningSketchRepository(
+        spreadsheet.worksheet(config.EVENING_PAGE)
+    )
 
     gspread_repository = GspreadRepository(
-        users_repo, lesssons_repo, child_repo, mclasses_repo
+        users_repo, lesssons_repo, child_repo, mclasses_repo, evening_sketch_repo
     )
     dp = create_dispatcher(
         redis, repository=gspread_repository, redis_repository=redis_repository
@@ -92,7 +98,7 @@ async def main():
         on_unknown_state,
         ExceptionTypeFilter(UnknownState),
     )
-    dp.errors.register(error_handler)
+    # dp.errors.register(error_handler)
     dp.include_routers(
         main_router,
         registration_dialog,
@@ -102,9 +108,10 @@ async def main():
         lessons_dialog,
         mass_classes_dialog,
         child_lessons_dialog,
+        evening_sketch_dialog,
         admin_reply_dialog,
         admin_dialog,
-        change_mclass,
+        change_activity_dialog,
     )
     dp.startup.register(polling_startup)
     setup_dialogs(dp)

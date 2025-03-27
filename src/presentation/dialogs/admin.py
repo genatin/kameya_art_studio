@@ -22,28 +22,42 @@ from aiogram_dialog.widgets.kbd import (
 from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const, Format
 
+from src.application.domen.models.activity_type import (
+    child_studio_act,
+    evening_sketch_act,
+    lesson_act,
+    mclass_act,
+)
 from src.application.domen.text import ru
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.infrastracture.database.sqlite import (
-    add_mclass,
-    remove_mclasses_by_name,
-    update_mclass_description_by_name,
-    update_mclass_name_by_name,
-    update_mclass_photo_by_name,
+    add_activity,
+    remove_activity_by_theme_and_type,
+    update_activity_description_by_name,
+    update_activity_fileid_by_name,
+    update_activity_name_by_name,
 )
 from src.presentation.dialogs.mass_classes.mclasses import (
     FILE_ID,
-    get_mclasses_page,
-    store_mclasses,
+    get_activity_page,
+    store_activities_by_type,
 )
-from src.presentation.dialogs.states import Administration, AdminMC, AdminReply
+from src.presentation.dialogs.states import (
+    Administration,
+    AdminMC,
+    AdminReply,
+    BaseMenu,
+)
 from src.presentation.dialogs.utils import safe_text_with_link
 
 logger = logging.getLogger(__name__)
 _PARSE_MODE_TO_USER = ParseMode.HTML
-_CANCEL = Row(Cancel(Const("Назад")), Button(Const(" "), id="ss"))
+_CANCEL = Row(
+    Start(Const("Назад"), "empty", BaseMenu.START), Button(Const(" "), id="ss")
+)
 _IS_EDIT = "is_edit"
 _DESCRIPTION_MC = "description_mc"
+_BACK = Back(Const("Назад"))
 
 
 async def message_admin_handler(
@@ -108,7 +122,7 @@ async def approve_payment(
     )
 
     manager.dialog_data["approve_message"] = (
-        'Оплату получили, благодарим вас.\n\n<b>В случае отмены необходимо за 48 часов связаться с <a href="https://t.me/+79095266566">нами</a>!</b>'
+        'Оплату получили, благодарим вас.\n\n<b>В случае отмены необходимо за 48 часов связаться с <a href="https://t.me/+79963673783">нами</a>!</b>'
     )
     await manager.event.bot.send_message(
         chat_id=manager.start_data["user_id"],
@@ -126,15 +140,15 @@ async def description_handler(
         d.get_value() if (d := dialog_manager.find(_DESCRIPTION_MC)) else ""
     )
     if dialog_manager.dialog_data.get(_IS_EDIT):
-        mclass_name = dialog_manager.dialog_data["mclass"]["name"]
-        mc = await update_mclass_description_by_name(
-            name=mclass_name, new_description=new_description
+        mclass_name = dialog_manager.dialog_data["activity"]["theme"]
+        mc = await update_activity_description_by_name(
+            theme=mclass_name, new_description=new_description
         )
         dialog_manager.dialog_data[_IS_EDIT] = False
         if mc:
             scroll: ManagedScroll = dialog_manager.find("scroll")
             media_number = await scroll.get_page()
-            dialog_manager.dialog_data["mclasses"][media_number][
+            dialog_manager.dialog_data["activities"][media_number][
                 "description"
             ] = new_description
             await event.answer("Описание мастер-класса успешно изменено")
@@ -152,31 +166,39 @@ async def name_mc_handler(
     dialog_manager: DialogManager,
 ):
     if dialog_manager.dialog_data.get(_IS_EDIT):
-        mclass = await update_mclass_name_by_name(
-            old_name=dialog_manager.dialog_data["mclass"]["name"], new_name=message.text
+        activity = await update_activity_name_by_name(
+            activity_type=dialog_manager.dialog_data["act_type"],
+            old_theme=dialog_manager.dialog_data["activity"]["theme"],
+            new_theme=message.text,
         )
-        if mclass:
+        if activity:
             scroll: ManagedScroll = dialog_manager.find("scroll")
             media_number = await scroll.get_page()
-            dialog_manager.dialog_data["mclasses"][media_number]["name"] = message.text
+            dialog_manager.dialog_data["activities"][media_number][
+                "theme"
+            ] = message.text
             await message.answer("Имя мастер-класса успешно изменено")
         else:
             await message.answer(ru.sth_error)
         await dialog_manager.switch_to(AdminMC.PAGE)
     else:
-        dialog_manager.dialog_data["name_mc"] = message.text
+        dialog_manager.dialog_data["theme_activity"] = message.text
         await dialog_manager.next()
 
 
 async def change_photo(
     message: Message, dialog_manager: DialogManager, file_id: str = ""
 ):
-    mclass_name = dialog_manager.dialog_data["mclass"]["name"]
-    mc = await update_mclass_photo_by_name(name=mclass_name, file_id=file_id)
-    if mc:
-        scroll: ManagedScroll = dialog_manager.find("scroll")
-        media_number = await scroll.get_page()
-        dialog_manager.dialog_data["mclasses"][media_number][FILE_ID] = file_id
+    mclass_name = dialog_manager.dialog_data["activity"]["theme"]
+    activity = await update_activity_fileid_by_name(
+        type_name=dialog_manager.dialog_data["act_type"],
+        theme=mclass_name,
+        file_id=file_id,
+    )
+    if activity:
+        scroll: ManagedScroll | None = dialog_manager.find("scroll")
+        media_number = await scroll.get_page() if scroll else 0
+        dialog_manager.dialog_data["activities"][media_number][FILE_ID] = file_id
         dialog_manager.dialog_data[FILE_ID] = file_id
         await message.answer(
             f"Картинка мастер-класса успешно {'изменена' if file_id else 'удалена'}"
@@ -206,41 +228,59 @@ async def photo_handler(
         await dialog_manager.next()
 
 
-async def add_mc_to_db(
+async def add_activities_to_db(
     callback: CallbackQuery,
     button: Button,
     dialog_manager: DialogManager,
     *_,
 ):
-    mclasses = dialog_manager.dialog_data["mclasses"]
-    name_mc = dialog_manager.dialog_data["name_mc"]
+    act_type = dialog_manager.dialog_data["act_type"]
+    activities = dialog_manager.dialog_data["activities"]
+    theme_activity = dialog_manager.dialog_data["theme_activity"]
     file_id = dialog_manager.dialog_data.get(FILE_ID, "")
     description = dialog_manager.dialog_data.get("description", "")
-    await add_mclass(name=name_mc, image_id=file_id, description=description)
-    await dialog_manager.event.answer("Мастер-класс добавлен.")
-    mclasses.append(
+    act = await add_activity(
+        activity_type=act_type,
+        theme=theme_activity,
+        image_id=file_id,
+        description=description,
+    )
+    if not act:
+        await callback.message.answer(
+            f"Не удалось добавить {act_type}, попробуйте позже"
+        )
+        return await dialog_manager.start(BaseMenu.START)
+
+    await callback.message.answer(f"{act_type} добавлен.")
+    activities.append(
         {
-            "id": len(mclasses),
-            "name": name_mc,
+            "id": len(activities),
+            "theme": theme_activity,
             "description": description,
             FILE_ID: file_id,
         }
     )
-    scroll: ManagedScroll = dialog_manager.find("scroll")
-    await scroll.set_page(len(mclasses) - 1)
-    await dialog_manager.switch_to(AdminMC.PAGE)
+
+    scroll: ManagedScroll | None = dialog_manager.find("scroll")
+    if scroll:
+        await scroll.set_page(len(activities) - 1)
+        return await dialog_manager.switch_to(AdminMC.PAGE)
+    await dialog_manager.start(Administration.START)
 
 
-async def remove_mc_from_db(
+async def remove_activity_from_db(
     callback: CallbackQuery, button: Button, dialog_manager: DialogManager, *_
 ):
     scroll: ManagedScroll = dialog_manager.find("scroll")
     media_number = await scroll.get_page()
-    mclasses = dialog_manager.dialog_data.get("mclasses", [])
-    await remove_mclasses_by_name(mclasses[media_number]["name"])
-    del mclasses[media_number]
-    l_mclasses = len(mclasses)
-    if l_mclasses > 0:
+    activities = dialog_manager.dialog_data.get("activities", [])
+    await remove_activity_by_theme_and_type(
+        type_name=dialog_manager.dialog_data["act_type"],
+        theme=activities[media_number]["theme"],
+    )
+    del activities[media_number]
+    l_activities = len(activities)
+    if l_activities > 0:
         await scroll.set_page(max(0, media_number - 1))
     else:
         await dialog_manager.start(Administration.START)
@@ -256,6 +296,7 @@ async def no_photo(
         await change_photo(callback.message, dialog_manager, "")
         await dialog_manager.switch_to(AdminMC.PAGE, show_mode=ShowMode.SEND)
     else:
+        dialog_manager.dialog_data[FILE_ID] = ""
         await dialog_manager.next()
 
 
@@ -298,12 +339,12 @@ admin_reply_dialog = Dialog(
     ),
     Window(
         Const("Вы уверены, что хотите подтвердить оплату"),
-        Button(Const("Да"), id="payment_approve", on_click=approve_payment),
-        Back(Const("Нет")),
+        Row(
+            Button(Const("Да"), id="payment_approve", on_click=approve_payment),
+            Back(Const("Нет")),
+        ),
         state=AdminReply.PAYMENT,
     ),
-    launch_mode=LaunchMode.ROOT,
-    # on_start=
 )
 
 
@@ -314,32 +355,53 @@ admin_dialog = Dialog(
             Const(ru.mass_class),
             id="change_ms",
             state=AdminMC.PAGE,
+            data={"act_type": mclass_act},
+        ),
+        Start(
+            Const(ru.lesson),
+            id="change_lesson",
+            state=AdminMC.PAGE,
+            data={"act_type": lesson_act},
+        ),
+        Start(
+            Const(ru.child_studio),
+            id="child_studio",
+            state=AdminMC.PAGE,
+            data={"act_type": child_studio_act},
+        ),
+        Start(
+            Const(ru.evening_sketch),
+            id="even_sketch",
+            state=AdminMC.PAGE,
+            data={"act_type": evening_sketch_act},
         ),
         _CANCEL,
         state=Administration.START,
     ),
+    launch_mode=LaunchMode.ROOT,
 )
 
-change_mclass = Dialog(
+change_activity_dialog = Dialog(
     Window(
+        Format("Меню настройки {dialog_data[act_type]}"),
         Format(
-            "<b>Тема: {mclass[name]}</b>\nОписание: {mclass[description]}",
-            when="mclass",
+            "<b>Тема: {activity[theme]}</b>\nОписание: {activity[description]}",
+            when="activity",
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
-        StubScroll(id="scroll", pages="mc_count"),
+        StubScroll(id="scroll", pages="len_activities"),
         SwitchTo(
             Const(ru.admin_change),
             id="admin_change_mc",
             state=AdminMC.CHANGE,
-            when="mc_count",
+            when="len_activities",
             on_click=edit_mc,
         ),
         Button(
             Const(ru.admin_remove),
             id="remove_mc",
-            on_click=remove_mc_from_db,
-            when="mc_count",
+            on_click=remove_activity_from_db,
+            when="len_activities",
         ),
         Row(
             Button(Const(" "), id="but"),
@@ -358,15 +420,26 @@ change_mclass = Dialog(
         ),
         Row(
             Cancel(Const("Назад")),
-            Next(Const(f"{ru.admin_create} мастер-класс")),
+            Next(
+                Format("Создать {dialog_data[act_type]}"),
+                # кнопка активна всегда для мастер-классов, в остальных случаях
+                # только если активностей нет совсем
+                when=(
+                    (F["dialog_data"]["act_type"] == ru.mass_class)
+                    | (
+                        (~(F["dialog_data"]["act_type"] == ru.mass_class))
+                        & (F["len_activities"] == 0)
+                    )
+                ),
+            ),
         ),
-        getter=get_mclasses_page,
+        getter=get_activity_page,
         state=AdminMC.PAGE,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
         Format(
-            "*Введите название мастер-класса*\n_Например: Трансформеры в стиле Рембрандта_"
+            "*Введите тему активности*\n_Например: Трансформеры в стиле Рембрандта_"
         ),
         MessageInput(name_mc_handler, content_types=[ContentType.TEXT]),
         state=AdminMC.NAME,
@@ -374,16 +447,16 @@ change_mclass = Dialog(
     ),
     Window(
         Format(
-            "<b>Введите описание для мастер-класса, если требуется</b> \n\n<i>Например: Погрузитесь в удивительное сочетание современной поп-культуры и классической живописи! \nНа мастер-классе вы научитесь изображать легендарных Трансформеров, вдохновляясь техникой светотени и драматизмом Рембрандта. Узнаете, как сочетать динамику футуристических персонажей с глубокими, насыщенными тонами старинной живописи. Идеально для тех, кто хочет расширить свои художественные горизонты и создать нечто уникальное!</i>"
+            "<b>Введите описание для {dialog_data[act_type]} и отправьте сообщением</b> \n\nНапример:\n<i>Погрузитесь в удивительное сочетание современной поп-культуры и классической живописи! \nНа мастер-классе вы научитесь изображать легендарных Трансформеров, вдохновляясь техникой светотени и драматизмом Рембрандта. Узнаете, как сочетать динамику футуристических персонажей с глубокими, насыщенными тонами старинной живописи. Идеально для тех, кто хочет расширить свои художественные горизонты и создать нечто уникальное!</i>"
         ),
-        Next(Const("Без описания")),
+        Row(_BACK, Next(Const("Без описания"))),
         TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
         state=AdminMC.DESCRIPTION,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
-        Format("Приложите фото, если требуется"),
-        Button(Const("Без фото"), id="next_or_edit", on_click=no_photo),
+        Format("Приложите фото и отправьте сообщением"),
+        Row(_BACK, Button(Const("Без фото"), id="next_or_edit", on_click=no_photo)),
         MessageInput(photo_handler),
         state=AdminMC.PHOTO,
         parse_mode=_PARSE_MODE_TO_USER,
@@ -392,18 +465,21 @@ change_mclass = Dialog(
         DynamicMedia(FILE_ID, when=FILE_ID),
         Format("<b><i>ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ</i></b>", when=~F["description"]),
         Format(
-            "Мастер класс будет выглядеть так: \n\n<b>Название мастер-класса: {dialog_data[name_mc]}</b>",
-            when=F["dialog_data"]["name_mc"],
+            "{dialog_data[act_type]} будет выглядеть так: \n\n<b>Тема: {dialog_data[theme_activity]}</b>",
+            when=F["dialog_data"]["theme_activity"],
         ),
         Format("\nОписание: {description}", when="description"),
-        Back(Const("Исправить")),
-        Button(Const("Добавить"), id="add_mc", on_click=add_mc_to_db),
+        Row(
+            _BACK, Button(Const("Добавить"), id="add_mc", on_click=add_activities_to_db)
+        ),
         state=AdminMC.SEND,
         getter=get_image,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
-        Format("<b>Мастер-класс: {dialog_data[mclass][name]}</b>\n\nЧто поменять?"),
+        Format(
+            "<b>{dialog_data[act_type]}: {dialog_data[activity][theme]}</b>\n\nЧто поменять?"
+        ),
         SwitchTo(Const("Тема"), id="edit_name_mc", state=AdminMC.NAME),
         SwitchTo(
             Const("Описание"),
@@ -418,5 +494,5 @@ change_mclass = Dialog(
         state=AdminMC.CHANGE,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
-    on_start=store_mclasses,
+    on_start=store_activities_by_type,
 )

@@ -15,3 +15,7 @@ class ChildLessonsRepository(BaseRepository):
 
 class MCLassesRepository(BaseRepository):
     pass
+
+
+class EveningSketchRepository(BaseRepository):
+    pass

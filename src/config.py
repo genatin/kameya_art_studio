@@ -30,13 +30,6 @@ class Config(BaseSettings):
     WELCOME_IMAGE_PATH: Path = STATIC_DATA / Path("welcome_photo.jpg")
     WELCOME_VIDEO_PATH: Path = STATIC_DATA / Path("welcome_video.mp4")
 
-    LESSONS_FOLDER: Path = Path("lessons")
-    # lessons images
-    LESSONS_IMAGE_PATH: Path = STATIC_DATA / LESSONS_FOLDER / Path("lessons.jpg")
-    CHILD_LESS_IMAGE_PATH: Path = (
-        STATIC_DATA / LESSONS_FOLDER / Path("child_lessons.jpg")
-    )
-
     DB_PATH: Path = "/sqlite_data/kamey_art.db"  # Храним БД в volume
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

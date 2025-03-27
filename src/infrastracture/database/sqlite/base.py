@@ -1,6 +1,14 @@
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastracture.database.sqlite.db import Base, async_session, engine
+from src.infrastracture.database.sqlite.models import ActivityType, ActivityTypeEnum
+
+
+async def _create_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 def connection(func):
@@ -13,6 +21,18 @@ def connection(func):
     return wrapper
 
 
-async def create_tables():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+@connection
+async def init_db(session: AsyncSession):
+    await _create_db()
+    existing_types = (await session.execute(select(ActivityType.name))).all()
+    try:
+        # Создаем предопределенные типы, если их нет
+        for activity_type in ActivityTypeEnum:
+            if activity_type.value not in existing_types:
+                session.add(ActivityType(name=activity_type.value))
+
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+    finally:
+        await session.close()

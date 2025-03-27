@@ -9,7 +9,7 @@ class ActivityEnum(Enum):
     LESSON = "lesson"
     CHILD_STUDIO = "child_studio"
     EVENING_SKETCH = "evening_sketch"
-    MASS_CLASS = "mass_class"
+    MASS_CLASS = "mclasses"
 
 
 class ActivityType(BaseModel):
@@ -17,7 +17,7 @@ class ActivityType(BaseModel):
     human_name: str
 
 
-class ActivityFactory:
+class ActivityTypeFactory:
     activity_human_readable = {
         ActivityEnum.MASS_CLASS: ru.mass_class,
         ActivityEnum.LESSON: ru.lesson,
@@ -34,7 +34,7 @@ class ActivityFactory:
         )
 
 
-master_class_act = ActivityFactory.generate(ActivityEnum.MASS_CLASS)
-lesson_act = ActivityFactory.generate(ActivityEnum.LESSON)
-child_studio_act = ActivityFactory.generate(ActivityEnum.CHILD_STUDIO)
-evening_sketch_act = ActivityFactory.generate(ActivityEnum.EVENING_SKETCH)
+mclass_act = ActivityTypeFactory.generate(ActivityEnum.MASS_CLASS)
+lesson_act = ActivityTypeFactory.generate(ActivityEnum.LESSON)
+child_studio_act = ActivityTypeFactory.generate(ActivityEnum.CHILD_STUDIO)
+evening_sketch_act = ActivityTypeFactory.generate(ActivityEnum.EVENING_SKETCH)

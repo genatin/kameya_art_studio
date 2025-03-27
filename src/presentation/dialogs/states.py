@@ -34,6 +34,11 @@ class MassClasses(StatesGroup):
     TICKETS = State()
 
 
+class EveningSketch(StatesGroup):
+    START = State()
+    TICKETS = State()
+
+
 class ChildLessons(StatesGroup):
     START = State()
     TICKETS = State()
@@ -52,7 +57,6 @@ class Administration(StatesGroup):
 
 class AdminMC(StatesGroup):
     PAGE = State()
-    ADD = State()
     CHANGE = State()
 
     NAME = State()

@@ -3,6 +3,7 @@ import traceback
 from html import escape
 from typing import Any
 
+import aiogram.utils.markdown as fmt
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters.callback_data import CallbackData
@@ -72,7 +73,7 @@ async def error_handler(error_event: ErrorEvent):
         get_config().DEVELOPER_ID,
         f"User_id: {message.from_user.id}\n"
         f'Username: <a href="tg://user?id={message.from_user.id}">{message.from_user.username}\n</a>'
-        f"Message: {message.text} \n\nError:\n{traceback.format_exc()}",
+        f"Message: {message.text} \n\nError:\n{repr(error_event.exception)}",
         disable_notification=True,
         parse_mode=ParseMode.HTML,
     )
@@ -167,7 +168,7 @@ def safe_text_with_link(message: Message) -> str:
             url = original_text[entity.offset : entity.offset + entity.length]
             # Экранируем текст ссылки и создаем HTML-тег
             parts.append(
-                f"<a href='{url}'>{escape(original_text[entity.offset:entity.offset+entity.length])}</a>"
+                f"<a href='{url}'>{escape(original_text[entity.offset:entity.offset + entity.length])}</a>"
             )
             last_pos = entity.offset + entity.length
 

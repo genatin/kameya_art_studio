@@ -45,7 +45,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
     dialog_manager.dialog_data[_FINISHED] = True
     user_dict: dict = dialog_manager.dialog_data["user"]
 
-    user_dict["name"] = dialog_manager.find("name").get_value()
+    user_dict["theme"] = dialog_manager.find("theme").get_value()
     user_dict["phone"] = "+" + dialog_manager.find("phone").get_value().lstrip("+")
     user_dict["last_name"] = dialog_manager.find("last_name").get_value()
     return user_dict
@@ -95,7 +95,7 @@ registration_dialog = Dialog(
     ),
     Window(
         Format("*Введите ваше имя*\n_Например: Илья_"),
-        TextInput(id="name", on_success=next_or_end),
+        TextInput(id="theme", on_success=next_or_end),
         state=Registration.NAME,
         parse_mode=ParseMode.MARKDOWN,
     ),
