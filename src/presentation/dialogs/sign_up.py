@@ -12,6 +12,7 @@ from aiogram_dialog.widgets.kbd import (
     Button,
     Column,
     Counter,
+    CurrentPage,
     ManagedCounter,
     NextPage,
     PrevPage,
@@ -65,6 +66,10 @@ logger = logging.getLogger(__name__)
 _LESSON_ACTIVITY = "lesson_activity"
 _IS_FILE_ID = F[FILE_ID] | F["dialog_data"][FILE_ID]
 _ACTIVITY_EXISTS = F["dialog_data"]["activities"]
+_THEME_AND_DESCRIPTION_HTML = Format(
+    "<b>{activity[theme]}</b>\n\n<i>{activity[description]}</i>",
+    when="activity",
+)
 
 
 async def store_lesson_activity(manager: DialogManager, data):
@@ -271,10 +276,7 @@ signup_dialog = Dialog(
 lessons_dialog = Dialog(
     Window(
         Const("Уроки скоро появятся", when=~_ACTIVITY_EXISTS),
-        Format(
-            "<b>Тема: {activity[theme]}</b>\nОписание: {activity[description]}",
-            when="activity",
-        ),
+        _THEME_AND_DESCRIPTION_HTML,
         DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
         Column(
             _TRIALLESSON_BUT(),
@@ -295,10 +297,7 @@ lessons_dialog = Dialog(
 child_lessons_dialog = Dialog(
     Window(
         Const("Детская студия скоро появятся", when=~_ACTIVITY_EXISTS),
-        Format(
-            "<b>Тема: {activity[theme]}</b>\nОписание: {activity[description]}",
-            when="activity",
-        ),
+        _THEME_AND_DESCRIPTION_HTML,
         DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
         Column(
             _ONELESSON_BUT(next_with_lessons),
@@ -328,25 +327,28 @@ child_lessons_dialog = Dialog(
 mass_classes_dialog = Dialog(
     Window(
         Const("Мастер классы скоро появятся", when=~_ACTIVITY_EXISTS),
-        Const("Выберите мастер-класс, который хотите выбрать", when=_ACTIVITY_EXISTS),
-        Format(
-            "<b>Тема: {activity[theme]}</b>\nОписание: {activity[description]}",
-            when="activity",
+        Const(
+            "С помощью кнопок ниже выберите мастер-класс\n",
+            when=(_ACTIVITY_EXISTS & (F["len_activities"] > 1)),
         ),
+        _THEME_AND_DESCRIPTION_HTML,
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id="scroll", pages="len_activities"),
         Row(
             Button(Const(" "), id="but"),
-            NextPage(scroll="scroll"),
+            CurrentPage(scroll="scroll", text=Format("{current_page1}/{pages}")),
+            NextPage(scroll="scroll", text=Const(">")),
             when=(F["media_number"] == 0) & F["next_p"],
         ),
         Row(
-            PrevPage(scroll="scroll"),
-            NextPage(scroll="scroll"),
+            PrevPage(scroll="scroll", text=Const("<")),
+            CurrentPage(scroll="scroll", text=Format("{current_page1}/{pages}")),
+            NextPage(scroll="scroll", text=Const(">")),
             when=(F["media_number"] > 0) & F["next_p"],
         ),
         Row(
-            PrevPage(scroll="scroll"),
+            PrevPage(scroll="scroll", text=Const("<")),
+            CurrentPage(scroll="scroll", text=Format("{current_page1}/{pages}")),
             Button(Const(" "), id="but1"),
             when=(~F["next_p"]) & (F["media_number"] > 0),
         ),
@@ -363,12 +365,15 @@ mass_classes_dialog = Dialog(
         parse_mode=ParseMode.HTML,
     ),
     Window(
-        Const("Выберите необходимое количество билетов"),
+        Const(
+            "Выберите необходимое количество билетов\n\n<i>Количество ограничено</i>"
+        ),
         _COUNTER,
         Row(
             Back(Const("Назад")),
             Button(Const("Дальше"), id="done", on_click=result_after_ticket),
         ),
+        parse_mode=ParseMode.HTML,
         state=MassClasses.TICKETS,
     ),
     on_start=store_activities_by_type,
@@ -378,10 +383,7 @@ mass_classes_dialog = Dialog(
 evening_sketch_dialog = Dialog(
     Window(
         Const("Вечерние наброски появятся", when=~_ACTIVITY_EXISTS),
-        Format(
-            "<b>Тема: {activity[theme]}</b>\nОписание: {activity[description]}",
-            when="activity",
-        ),
+        _THEME_AND_DESCRIPTION_HTML,
         DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
         Column(
             _CLASSIC_LESS_BUT(next_with_lessons),

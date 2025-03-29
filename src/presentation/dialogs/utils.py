@@ -3,7 +3,6 @@ import traceback
 from html import escape
 from typing import Any
 
-import aiogram.utils.markdown as fmt
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters.callback_data import CallbackData

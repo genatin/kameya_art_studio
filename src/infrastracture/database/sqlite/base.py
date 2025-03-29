@@ -1,5 +1,3 @@
-import re
-
 import emoji
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError

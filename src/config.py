@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Config(BaseSettings):
     # Желательно вместо str использовать SecretStr
     # для конфиденциальных данных, например, токена бота
-    LOCAL: bool = False
+    LOCAL: bool = Field(default=False)
 
     bot_token: SecretStr
     DEVELOPER_ID: str

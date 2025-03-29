@@ -98,7 +98,7 @@ async def main():
         on_unknown_state,
         ExceptionTypeFilter(UnknownState),
     )
-    # dp.errors.register(error_handler)
+    dp.errors.register(error_handler)
     dp.include_routers(
         main_router,
         registration_dialog,
