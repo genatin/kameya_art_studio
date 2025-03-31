@@ -1,13 +1,14 @@
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Sequence
 
 from gspread.cell import Cell
 from gspread.worksheet import Worksheet
 
 from src.application.domen.models import LessonActivity
 from src.application.models import UserDTO, UserTgId
+from src.infrastracture.database.sqlite.models import Activity, ActivityType
 
 logger = logging.getLogger(__name__)
 
@@ -54,3 +55,54 @@ class BaseRepository(ABC):
         range_str = response["updates"]["updatedRange"]
         m_obj = re.search(r"\d+", range_str)
         return range_str[m_obj.start() : m_obj.end()]
+
+
+class ActivityAbstractRepository(ABC):
+
+    @abstractmethod
+    def get_act_type_by_name(self, name: str) -> ActivityType | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def add_activity(
+        self,
+        activity_type: str,
+        theme: str,
+        image_id: str,
+        description: str = None,
+    ) -> Activity | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_all_activity_by_type(self, activity_type: str) -> Sequence[Activity]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def update_activity_name_by_name(
+        self, activity_type: str, old_theme: str, new_theme: str
+    ) -> Activity | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def update_activity_description_by_name(
+        self, type_name: str, theme: str, new_description: str
+    ) -> Activity | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_activity_by_theme_and_type(
+        self,
+        type_name: str,
+        theme: str,
+    ) -> Activity:
+        raise NotImplementedError
+
+    @abstractmethod
+    def update_activity_fileid_by_name(
+        self, type_name: str, theme: str, file_id: str
+    ) -> Activity | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def remove_activity_by_theme_and_type(self, type_name: str, theme: str) -> None:
+        raise NotImplementedError

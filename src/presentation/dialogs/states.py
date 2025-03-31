@@ -17,6 +17,7 @@ class BaseMenu(StatesGroup):
     START = State()
     SIGN_UP = State()
     ABOUT_US = State()
+    HOW_TO = State()
     END = State()
 
 
@@ -27,6 +28,7 @@ class SignUp(StatesGroup):
 
 class Lessons(StatesGroup):
     START = State()
+    OPTION = State()
 
 
 class MassClasses(StatesGroup):
@@ -36,11 +38,13 @@ class MassClasses(StatesGroup):
 
 class EveningSketch(StatesGroup):
     START = State()
+    OPTION = State()
     TICKETS = State()
 
 
 class ChildLessons(StatesGroup):
     START = State()
+    OPTION = State()
     TICKETS = State()
 
 
@@ -55,7 +59,7 @@ class Administration(StatesGroup):
     START = State()
 
 
-class AdminMC(StatesGroup):
+class AdminActivity(StatesGroup):
     PAGE = State()
     CHANGE = State()
 

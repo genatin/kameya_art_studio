@@ -46,6 +46,24 @@ async def registration_handler(
     await dialog_manager.start(BaseMenu.START, data="after_reg")
 
 
+@main_router.message(Command("about"))
+async def about_handler(
+    message: Message,
+    dialog_manager: DialogManager,
+    repository: GspreadRepository,
+):
+    await dialog_manager.start(BaseMenu.ABOUT_US)
+
+
+@main_router.message(Command("how_to"))
+async def how_to_handler(
+    message: Message,
+    dialog_manager: DialogManager,
+    repository: GspreadRepository,
+):
+    await dialog_manager.start(BaseMenu.HOW_TO)
+
+
 @main_router.callback_query(SignUpCallbackFactory.filter())
 async def sign_up_callback_handler(
     cq: CallbackQuery,

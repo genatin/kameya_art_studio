@@ -65,5 +65,8 @@ class RepositoryUser(UsersAbstractRepository):
 
     def update_user(self, user: UserDTO) -> None | str:
         cell = self.__get_user_cell(user=user)
-        if cell:
-            return self._user_worksheet.batch_update(user.compile_batch(cell.row))
+        return (
+            self._user_worksheet.batch_update(user.compile_batch(cell.row))
+            if cell
+            else None
+        )

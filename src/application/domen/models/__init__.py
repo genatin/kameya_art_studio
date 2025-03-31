@@ -17,7 +17,7 @@ class LessonActivity(BaseModel):
     topic: str = Field(default="undefined")
     num_tickets: int = Field(default=1)
     status: str = Field(default="не оплачено")
-    datetime: str = Field(default_factory=_moscow_time_factory)  # type: ignore
+    datetime: str = Field(default_factory=_moscow_time_factory)
 
     def model_dump_for_store(self) -> dict:
         return {

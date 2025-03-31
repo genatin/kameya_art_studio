@@ -1,26 +1,25 @@
 import logging
+from typing import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.domen.models.activity_type import ActivityType as ActType
-from src.infrastracture.database.sqlite.base import connection, de_emojify
+from src.infrastracture.database.sqlite.base import de_emojify
 from src.infrastracture.database.sqlite.models import Activity, ActivityType
 
 logger = logging.getLogger(__name__)
 
 
-@connection
 async def get_act_type_by_name(session: AsyncSession, name: str) -> ActivityType | None:
     return await session.scalar(
         select(ActivityType).where(ActivityType.name == de_emojify(name))
     )
 
 
-@connection
 async def add_activity(
-    session: AsyncSession | None,
+    session: AsyncSession,
     activity_type: str,
     theme: str,
     image_id: str,
@@ -45,22 +44,20 @@ async def add_activity(
         await session.rollback()
 
 
-@connection
 async def get_all_activity_by_type(
-    session: AsyncSession | None, activity_type: str
-) -> list[Activity]:
+    session: AsyncSession, activity_type: str
+) -> Sequence[Activity]:
     stmt = (
         select(Activity)
         .join(ActivityType)  # Используем relationship для join
         .where(ActivityType.name == de_emojify(activity_type))
         .order_by(Activity.created_at.asc())
     )
-    return await session.scalars(stmt)
+    return (await session.scalars(stmt)).all()
 
 
-@connection
 async def update_activity_name_by_name(
-    session: AsyncSession | None, activity_type: ActType, old_theme: str, new_theme: str
+    session: AsyncSession, activity_type: ActType, old_theme: str, new_theme: str
 ) -> Activity | None:
     try:
         activity = await get_activity_by_theme_and_type(
@@ -74,9 +71,8 @@ async def update_activity_name_by_name(
         await session.rollback()
 
 
-@connection
 async def update_activity_description_by_name(
-    session: AsyncSession | None, type_name: str, theme: str, new_description: str
+    session: AsyncSession, type_name: str, theme: str, new_description: str
 ) -> Activity | None:
     try:
         activity = await get_activity_by_theme_and_type(session, type_name, theme)
@@ -88,9 +84,8 @@ async def update_activity_description_by_name(
         await session.rollback()
 
 
-@connection
 async def update_activity_fileid_by_name(
-    session: AsyncSession | None, type_name: str, theme: str, file_id: str
+    session: AsyncSession, type_name: str, theme: str, file_id: str
 ) -> Activity | None:
     try:
         activity = await get_activity_by_theme_and_type(session, type_name, theme)
@@ -102,9 +97,8 @@ async def update_activity_fileid_by_name(
         await session.rollback()
 
 
-@connection
 async def get_activity_by_theme_and_type(
-    session: AsyncSession | None,
+    session: AsyncSession,
     type_name: str,
     theme: str,
 ) -> Activity:
@@ -116,9 +110,8 @@ async def get_activity_by_theme_and_type(
     return await session.scalar(stmt)
 
 
-@connection
 async def remove_activity_by_theme_and_type(
-    session: AsyncSession | None, type_name: str, theme: str
+    session: AsyncSession, type_name: str, theme: str
 ) -> None:
     try:
         activity = await get_activity_by_theme_and_type(session, type_name, theme)

@@ -54,7 +54,7 @@ class UserDTO:
 
         return data
 
-    def compile_batch(self, row_id: int):
+    def compile_batch(self, row_id: int) -> list[dict[str, str]]:
         batch = []
         for i, field in zip(string.ascii_lowercase, self.__annotations__.keys()):
             value = getattr(self, field)

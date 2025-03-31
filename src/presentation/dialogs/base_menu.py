@@ -4,7 +4,7 @@ from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import ContentType
 from aiogram_dialog import Dialog, LaunchMode, Window
-from aiogram_dialog.widgets.kbd import Back, Start, Url
+from aiogram_dialog.widgets.kbd import Back, Next, Start, Url
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -64,12 +64,23 @@ menu_dialog = Dialog(
         Format(
             """<b>О нашей арт-студии 🎨✨\n\nМы — пространство, где рождается творчество! Наша студия объединяет художников, новичков и всех, кто хочет раскрыть свой творческий потенциал.\n🔹 Мастер-классы и уроки для любого уровня\n🔹 Уютная атмосфера и индивидуальный подход\n🔹 Профессиональные материалы и поддержка педагогов\nПриходите за вдохновением, оставайтесь за результатом!</b>\n<i>Творите с удовольствием! 🖌️</i>"""
         ),
+        Next(Const("Как к нам добраться")),
+        Back(text=Const(ru.back_step)),
+        state=BaseMenu.ABOUT_US,
+        parse_mode=ParseMode.HTML,
+    ),
+    Window(
+        StaticMedia(
+            path=f"{get_config().WELCOME_IMAGE_PATH}",
+            type=ContentType.PHOTO,
+        ),
+        Const("Как добраяться\n\n[Текст]"),
         Url(
-            Const("Как к нам добраться"),
+            Const("Яндекс Карты"),
             Const("https://yandex.ru/maps/-/CHRzUEOc"),
         ),
         Back(text=Const(ru.back_step)),
-        state=BaseMenu.ABOUT_US,
+        state=BaseMenu.HOW_TO,
         parse_mode=ParseMode.HTML,
     ),
     launch_mode=LaunchMode.ROOT,

@@ -9,3 +9,7 @@ class UserKey(StorageKey, prefix="users"):
 
 class AdminKey(StorageKey, prefix="admin"):
     key: Any
+
+
+class ActivityKey(StorageKey, prefix="activity"):
+    key: Any

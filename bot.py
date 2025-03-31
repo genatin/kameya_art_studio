@@ -10,6 +10,7 @@ from redis.asyncio.client import Redis
 
 from src.application.factory.telegram import create_dispatcher
 from src.config import get_config
+from src.infrastracture.adapters.repositories.activities import ActivityRepository
 from src.infrastracture.adapters.repositories.lessons import (
     ChildLessonsRepository,
     EveningSketchRepository,
@@ -86,8 +87,12 @@ async def main():
     gspread_repository = GspreadRepository(
         users_repo, lesssons_repo, child_repo, mclasses_repo, evening_sketch_repo
     )
+    activity_repository = ActivityRepository(redis=redis_repository)
     dp = create_dispatcher(
-        redis, repository=gspread_repository, redis_repository=redis_repository
+        redis,
+        repository=gspread_repository,
+        redis_repository=redis_repository,
+        activity_repository=activity_repository,
     )
 
     dp.errors.register(

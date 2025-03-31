@@ -29,26 +29,20 @@ from src.application.domen.models.activity_type import (
     mclass_act,
 )
 from src.application.domen.text import ru
+from src.infrastracture.adapters.repositories.activities import ActivityRepository
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
-from src.infrastracture.database.sqlite import (
-    add_activity,
-    remove_activity_by_theme_and_type,
-    update_activity_description_by_name,
-    update_activity_fileid_by_name,
-    update_activity_name_by_name,
-)
-from src.presentation.dialogs.mass_classes.mclasses import (
-    FILE_ID,
-    get_activity_page,
-    store_activities_by_type,
-)
 from src.presentation.dialogs.states import (
+    AdminActivity,
     Administration,
-    AdminMC,
     AdminReply,
     BaseMenu,
 )
-from src.presentation.dialogs.utils import safe_text_with_link
+from src.presentation.dialogs.utils import (
+    FILE_ID,
+    get_activity_page,
+    safe_text_with_link,
+    store_activities_by_type,
+)
 
 logger = logging.getLogger(__name__)
 _PARSE_MODE_TO_USER = ParseMode.HTML
@@ -58,6 +52,10 @@ _CANCEL = Row(
 _IS_EDIT = "is_edit"
 _DESCRIPTION_MC = "description_mc"
 _BACK = Back(Const("Назад"))
+
+
+def _get_activity_repo(dialog_manager: DialogManager) -> ActivityRepository:
+    return dialog_manager.middleware_data["activity_repository"]
 
 
 async def message_admin_handler(
@@ -140,14 +138,15 @@ async def description_handler(
         d.get_value() if (d := dialog_manager.find(_DESCRIPTION_MC)) else ""
     )
     if dialog_manager.dialog_data.get(_IS_EDIT):
-        mclass_name = dialog_manager.dialog_data["activity"]["theme"]
-        mc = await update_activity_description_by_name(
+        activity_theme = dialog_manager.dialog_data["activity"]["theme"]
+        activ_repository = _get_activity_repo(dialog_manager)
+        activity = await activ_repository.update_activity_description_by_name(
             type_name=dialog_manager.dialog_data["act_type"],
-            theme=mclass_name,
+            theme=activity_theme,
             new_description=new_description,
         )
         dialog_manager.dialog_data[_IS_EDIT] = False
-        if mc:
+        if activity:
             scroll: ManagedScroll = dialog_manager.find("scroll")
             media_number = await scroll.get_page()
             dialog_manager.dialog_data["activities"][media_number][
@@ -156,19 +155,20 @@ async def description_handler(
             await event.answer("Описание мастер-класса успешно изменено")
         else:
             await event.answer(ru.sth_error)
-        await dialog_manager.switch_to(AdminMC.PAGE)
+        await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
         dialog_manager.dialog_data["description"] = new_description
         await dialog_manager.next()
 
 
-async def name_mc_handler(
+async def name_activity_handler(
     message: Message,
     message_input: MessageInput,
     dialog_manager: DialogManager,
 ):
     if dialog_manager.dialog_data.get(_IS_EDIT):
-        activity = await update_activity_name_by_name(
+        activ_repository = _get_activity_repo(dialog_manager)
+        activity = await activ_repository.update_activity_name_by_name(
             activity_type=dialog_manager.dialog_data["act_type"],
             old_theme=dialog_manager.dialog_data["activity"]["theme"],
             new_theme=message.text,
@@ -182,7 +182,7 @@ async def name_mc_handler(
             await message.answer("Имя мастер-класса успешно изменено")
         else:
             await message.answer(ru.sth_error)
-        await dialog_manager.switch_to(AdminMC.PAGE)
+        await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
         dialog_manager.dialog_data["theme_activity"] = message.text
         await dialog_manager.next()
@@ -192,7 +192,9 @@ async def change_photo(
     message: Message, dialog_manager: DialogManager, file_id: str = ""
 ):
     mclass_name = dialog_manager.dialog_data["activity"]["theme"]
-    activity = await update_activity_fileid_by_name(
+    activ_repository = _get_activity_repo(dialog_manager)
+
+    activity = await activ_repository.update_activity_fileid_by_name(
         type_name=dialog_manager.dialog_data["act_type"],
         theme=mclass_name,
         file_id=file_id,
@@ -223,7 +225,7 @@ async def photo_handler(
     if dialog_manager.dialog_data.get(_IS_EDIT):
         dialog_manager.dialog_data[_IS_EDIT] = False
         await change_photo(message, dialog_manager, file_id)
-        await dialog_manager.switch_to(AdminMC.PAGE)
+        await dialog_manager.switch_to(AdminActivity.PAGE)
 
     else:
         dialog_manager.dialog_data[FILE_ID] = file_id
@@ -241,7 +243,8 @@ async def add_activities_to_db(
     theme_activity = dialog_manager.dialog_data["theme_activity"]
     file_id = dialog_manager.dialog_data.get(FILE_ID, "")
     description = dialog_manager.dialog_data.get("description", "")
-    act = await add_activity(
+    activ_repository = _get_activity_repo(dialog_manager)
+    act = await activ_repository.add_activity(
         activity_type=act_type,
         theme=theme_activity,
         image_id=file_id,
@@ -266,7 +269,7 @@ async def add_activities_to_db(
     scroll: ManagedScroll | None = dialog_manager.find("scroll")
     if scroll:
         await scroll.set_page(len(activities) - 1)
-        return await dialog_manager.switch_to(AdminMC.PAGE)
+        return await dialog_manager.switch_to(AdminActivity.PAGE)
     await dialog_manager.start(Administration.START)
 
 
@@ -276,7 +279,9 @@ async def remove_activity_from_db(
     scroll: ManagedScroll = dialog_manager.find("scroll")
     media_number = await scroll.get_page()
     activities = dialog_manager.dialog_data.get("activities", [])
-    await remove_activity_by_theme_and_type(
+    activ_repository = _get_activity_repo(dialog_manager)
+
+    await activ_repository.remove_activity_by_theme_and_type(
         type_name=dialog_manager.dialog_data["act_type"],
         theme=activities[media_number]["theme"],
     )
@@ -296,7 +301,7 @@ async def no_photo(
 ):
     if dialog_manager.dialog_data.get(_IS_EDIT):
         await change_photo(callback.message, dialog_manager, "")
-        await dialog_manager.switch_to(AdminMC.PAGE, show_mode=ShowMode.SEND)
+        await dialog_manager.switch_to(AdminActivity.PAGE, show_mode=ShowMode.SEND)
     else:
         dialog_manager.dialog_data[FILE_ID] = ""
         await dialog_manager.next()
@@ -337,7 +342,6 @@ admin_reply_dialog = Dialog(
         Const("Сообщение отправлено\n\nПодтвердить оплату?"),
         Next(Const("Да")),
         Cancel(Const("Отменить")),
-        state=AdminReply.CONFIRM_PAYMENT,
     ),
     Window(
         Const("Вы уверены, что хотите подтвердить оплату"),
@@ -356,25 +360,25 @@ admin_dialog = Dialog(
         Start(
             Const(ru.mass_class),
             id="change_ms",
-            state=AdminMC.PAGE,
+            state=AdminActivity.PAGE,
             data={"act_type": mclass_act},
         ),
         Start(
             Const(ru.lesson),
             id="change_lesson",
-            state=AdminMC.PAGE,
+            state=AdminActivity.PAGE,
             data={"act_type": lesson_act},
         ),
         Start(
             Const(ru.child_studio),
             id="child_studio",
-            state=AdminMC.PAGE,
+            state=AdminActivity.PAGE,
             data={"act_type": child_studio_act},
         ),
         Start(
             Const(ru.evening_sketch),
             id="even_sketch",
-            state=AdminMC.PAGE,
+            state=AdminActivity.PAGE,
             data={"act_type": evening_sketch_act},
         ),
         _CANCEL,
@@ -395,7 +399,7 @@ change_activity_dialog = Dialog(
         SwitchTo(
             Const(ru.admin_change),
             id="admin_change_mc",
-            state=AdminMC.CHANGE,
+            state=AdminActivity.CHANGE,
             when="len_activities",
             on_click=edit_mc,
         ),
@@ -436,15 +440,15 @@ change_activity_dialog = Dialog(
             ),
         ),
         getter=get_activity_page,
-        state=AdminMC.PAGE,
+        state=AdminActivity.PAGE,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
         Format(
             "*Введите тему активности*\n_Например: Трансформеры в стиле Рембрандта_"
         ),
-        MessageInput(name_mc_handler, content_types=[ContentType.TEXT]),
-        state=AdminMC.NAME,
+        MessageInput(name_activity_handler, content_types=[ContentType.TEXT]),
+        state=AdminActivity.NAME,
         parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
@@ -453,14 +457,14 @@ change_activity_dialog = Dialog(
         ),
         Row(_BACK, Next(Const("Без описания"))),
         TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
-        state=AdminMC.DESCRIPTION,
+        state=AdminActivity.DESCRIPTION,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
         Format("Приложите фото и отправьте сообщением"),
         Row(_BACK, Button(Const("Без фото"), id="next_or_edit", on_click=no_photo)),
         MessageInput(photo_handler),
-        state=AdminMC.PHOTO,
+        state=AdminActivity.PHOTO,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
@@ -474,26 +478,26 @@ change_activity_dialog = Dialog(
         Row(
             _BACK, Button(Const("Добавить"), id="add_mc", on_click=add_activities_to_db)
         ),
-        state=AdminMC.SEND,
+        state=AdminActivity.SEND,
         getter=get_image,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
         Format(
-            "<b>{dialog_data[act_type]}: {dialog_data[activity][theme]}</b>\n\nЧто поменять?"
+            "<b>{dialog_data[act_type]}: {dialog_data[activity][theme]}</b>\n\nЧто поменять?\n\n<b>Обратите внимание, для обновления некоторых изменений требуется время (~1 мин)</b>"
         ),
-        SwitchTo(Const("Тема"), id="edit_name_mc", state=AdminMC.NAME),
+        SwitchTo(Const("Тема"), id="edit_name_mc", state=AdminActivity.NAME),
         SwitchTo(
             Const("Описание"),
             id="edit_des_mc",
-            state=AdminMC.DESCRIPTION,
+            state=AdminActivity.DESCRIPTION,
         ),
         SwitchTo(
             Const("Изображение"),
             id="edit_image_mc",
-            state=AdminMC.PHOTO,
+            state=AdminActivity.PHOTO,
         ),
-        state=AdminMC.CHANGE,
+        state=AdminActivity.CHANGE,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     on_start=store_activities_by_type,

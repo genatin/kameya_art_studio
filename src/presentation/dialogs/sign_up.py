@@ -14,6 +14,7 @@ from aiogram_dialog.widgets.kbd import (
     Counter,
     CurrentPage,
     ManagedCounter,
+    Next,
     NextPage,
     PrevPage,
     Row,
@@ -45,11 +46,6 @@ from src.application.domen.models.lesson_option import (
 from src.application.domen.text import ru
 from src.application.models import UserDTO
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
-from src.presentation.dialogs.mass_classes.mclasses import (
-    FILE_ID,
-    get_activity_page,
-    store_activities_by_type,
-)
 from src.presentation.dialogs.states import (
     BaseMenu,
     ChildLessons,
@@ -58,7 +54,12 @@ from src.presentation.dialogs.states import (
     MassClasses,
     SignUp,
 )
-from src.presentation.dialogs.utils import notify_admins
+from src.presentation.dialogs.utils import (
+    FILE_ID,
+    get_activity_page,
+    notify_admins,
+    store_activities_by_type,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,56 @@ _ACTIVITY_EXISTS = F["dialog_data"]["activities"]
 _THEME_AND_DESCRIPTION_HTML = Format(
     "<b>{activity[theme]}</b>\n\n<i>{activity[description]}</i>",
     when="activity",
+)
+_OPTION_TEXT = Const("Выберите тип посещения")
+_BACK_IN_ROW = Row(Back(Const("Назад")), Button(Const(" "), id="ss"))
+_BACK_TO_MENU_ROW = Row(
+    Start(
+        Const("Назад"),
+        id="bact_to_signup",
+        state=SignUp.START,
+    ),
+    Button(Const(" "), id="ss"),
+)
+_BACK_TO_MENU = Start(
+    Const("Назад"),
+    id="bact_to_signup",
+    state=SignUp.START,
+)
+
+
+async def on_value_changed(
+    _, widget: ManagedCounter, dialog_manager: DialogManager
+) -> None:
+    dialog_manager.dialog_data[_LESSON_ACTIVITY]["num_tickets"] = widget.get_value()
+
+
+_COUNTER = Counter(
+    id="someid",
+    default=1,
+    max_value=8,
+    on_value_changed=on_value_changed,
+)
+
+
+async def result_after_ticket(
+    _: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    await manager.start(SignUp.STAY_FORM, data=manager.dialog_data)
+
+
+_TICKET_WIDGETS = (
+    DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
+    Const(
+        "Выберите необходимое количество билетов\n\n<i>Количество билетов ограничено</i>"
+    ),
+    _COUNTER,
+    Row(
+        Back(Const("Назад")),
+        Button(Const("Дальше"), id="done", on_click=result_after_ticket),
+    ),
 )
 
 
@@ -108,30 +159,6 @@ _CLASSIC_LESS_BUT = generate_button(classic_option)
 _PRO_LESS_BUT = generate_button(pro_option)
 
 
-_BACK_TO_MENU = Row(
-    Start(
-        Const("Назад"),
-        id="bact_to_signup",
-        state=SignUp.START,
-    ),
-    Button(Const(" "), id="ss"),
-)
-
-
-async def on_value_changed(
-    _, widget: ManagedCounter, dialog_manager: DialogManager
-) -> None:
-    dialog_manager.dialog_data[_LESSON_ACTIVITY]["num_tickets"] = widget.get_value()
-
-
-_COUNTER = Counter(
-    id="someid",
-    default=1,
-    max_value=8,
-    on_value_changed=on_value_changed,
-)
-
-
 async def stay_form(
     callback: CallbackQuery,
     button: Button,
@@ -151,12 +178,7 @@ async def stay_form(
 
 async def _activity_option(cq: CallbackQuery, _, manager: DialogManager):
     activity_type = ActivityTypeFactory.generate(cq.data)
-    if less_act := manager.dialog_data.get(_LESSON_ACTIVITY):
-        less_act["act_type"] = activity_type
-    else:
-        manager.dialog_data[_LESSON_ACTIVITY] = LessonActivity(
-            activity_type=activity_type
-        )
+    manager.dialog_data[_LESSON_ACTIVITY] = LessonActivity(activity_type=activity_type)
     match activity_type.name:
         case ActivityEnum.LESSON.value:
             state = Lessons.START
@@ -186,14 +208,6 @@ async def complete(result, _, dialog_manager: DialogManager, **kwargs):
     await dialog_manager.next()
 
 
-async def result_after_ticket(
-    _: CallbackQuery,
-    button: Button,
-    manager: DialogManager,
-):
-    await manager.start(SignUp.STAY_FORM, data=manager.dialog_data)
-
-
 async def on_page_change(dialog_manager: DialogManager, *args):
     scroll: ManagedScroll | None = dialog_manager.find("scroll")
     if scroll is None:
@@ -206,8 +220,7 @@ async def on_page_change(dialog_manager: DialogManager, *args):
 
 
 async def get_random_message(dialog_manager: DialogManager, **kwargs):
-    r = random.choice(ru.random_signup)
-    return {"random_signup_message": r}
+    return {"random_signup_message": random.choice(ru.random_signup)}
 
 
 signup_dialog = Dialog(
@@ -278,6 +291,13 @@ lessons_dialog = Dialog(
         Const("Уроки скоро появятся", when=~_ACTIVITY_EXISTS),
         _THEME_AND_DESCRIPTION_HTML,
         DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
+        Row(_BACK_TO_MENU, Next(Const("Дальше"))),
+        state=Lessons.START,
+        getter=get_activity_page,
+        parse_mode=ParseMode.HTML,
+    ),
+    Window(
+        _OPTION_TEXT,
         Column(
             _TRIALLESSON_BUT(),
             _ONELESSON_BUT(),
@@ -285,8 +305,8 @@ lessons_dialog = Dialog(
             _SUBSCRIPTION_8_BUT(),
             when=_ACTIVITY_EXISTS,
         ),
-        _BACK_TO_MENU,
-        state=Lessons.START,
+        _BACK_IN_ROW,
+        state=Lessons.OPTION,
         getter=get_activity_page,
         parse_mode=ParseMode.HTML,
     ),
@@ -299,27 +319,25 @@ child_lessons_dialog = Dialog(
         Const("Детская студия скоро появятся", when=~_ACTIVITY_EXISTS),
         _THEME_AND_DESCRIPTION_HTML,
         DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
+        Row(_BACK_TO_MENU, Next(Const("Дальше"))),
+        getter=get_activity_page,
+        state=ChildLessons.START,
+        parse_mode=ParseMode.HTML,
+    ),
+    Window(
+        _OPTION_TEXT,
         Column(
             _ONELESSON_BUT(next_with_lessons),
             _SUBSCRIPTION_4_BUT(next_with_lessons),
             _SUBSCRIPTION_8_BUT(next_with_lessons),
             when=_ACTIVITY_EXISTS,
         ),
-        _BACK_TO_MENU,
+        _BACK_IN_ROW,
         getter=get_activity_page,
-        state=ChildLessons.START,
+        state=ChildLessons.OPTION,
         parse_mode=ParseMode.HTML,
     ),
-    Window(
-        DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
-        Const("Выберите необходимое количество билетов"),
-        _COUNTER,
-        Row(
-            Back(Const("Назад")),
-            Button(Const("Дальше"), id="done", on_click=result_after_ticket),
-        ),
-        state=ChildLessons.TICKETS,
-    ),
+    Window(*_TICKET_WIDGETS, state=ChildLessons.TICKETS, parse_mode=ParseMode.HTML),
     on_start=store_activities_by_type,
 )
 
@@ -364,18 +382,7 @@ mass_classes_dialog = Dialog(
         state=MassClasses.START,
         parse_mode=ParseMode.HTML,
     ),
-    Window(
-        Const(
-            "Выберите необходимое количество билетов\n\n<i>Количество ограничено</i>"
-        ),
-        _COUNTER,
-        Row(
-            Back(Const("Назад")),
-            Button(Const("Дальше"), id="done", on_click=result_after_ticket),
-        ),
-        parse_mode=ParseMode.HTML,
-        state=MassClasses.TICKETS,
-    ),
+    Window(*_TICKET_WIDGETS, state=MassClasses.TICKETS, parse_mode=ParseMode.HTML),
     on_start=store_activities_by_type,
 )
 
@@ -385,25 +392,23 @@ evening_sketch_dialog = Dialog(
         Const("Вечерние наброски появятся", when=~_ACTIVITY_EXISTS),
         _THEME_AND_DESCRIPTION_HTML,
         DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
-        Column(
-            _CLASSIC_LESS_BUT(next_with_lessons),
-            _PRO_LESS_BUT(next_with_lessons),
-            when=_ACTIVITY_EXISTS,
-        ),
-        _BACK_TO_MENU,
+        Row(_BACK_TO_MENU, Next(Const("Дальше"))),
         state=EveningSketch.START,
         getter=get_activity_page,
         parse_mode=ParseMode.HTML,
     ),
     Window(
-        DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
-        Const("Выберите необходимое количество билетов"),
-        _COUNTER,
-        Row(
-            Back(Const("Назад")),
-            Button(Const("Дальше"), id="done", on_click=result_after_ticket),
+        _OPTION_TEXT,
+        Column(
+            _CLASSIC_LESS_BUT(next_with_lessons),
+            _PRO_LESS_BUT(next_with_lessons),
+            when=_ACTIVITY_EXISTS,
         ),
-        state=EveningSketch.TICKETS,
+        _BACK_IN_ROW,
+        state=EveningSketch.OPTION,
+        getter=get_activity_page,
+        parse_mode=ParseMode.HTML,
     ),
+    Window(*_TICKET_WIDGETS, state=EveningSketch.TICKETS, parse_mode=ParseMode.HTML),
     on_start=store_activities_by_type,
 )
