@@ -168,8 +168,8 @@ async def stay_form(
     lesson_activity: LessonActivity = LessonActivity(
         **manager.start_data[_LESSON_ACTIVITY]
     )
+    await callback.message.answer("мешаем краски ✨...")
     user: UserDTO = await repository.user.get_user(manager.event.from_user.id)
-
     num_row = repository.signup_user(lesson_activity=lesson_activity, user=user)
     await notify_admins(manager, user, lesson_activity, num_row)
     await callback.message.answer(ru.application_form, parse_mode=ParseMode.HTML)

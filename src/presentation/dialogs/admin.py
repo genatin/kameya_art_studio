@@ -342,6 +342,7 @@ admin_reply_dialog = Dialog(
         Const("Сообщение отправлено\n\nПодтвердить оплату?"),
         Next(Const("Да")),
         Cancel(Const("Отменить")),
+        state=AdminReply.CONFIRM_PAYMENT,
     ),
     Window(
         Const("Вы уверены, что хотите подтвердить оплату"),

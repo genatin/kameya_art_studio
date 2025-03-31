@@ -58,7 +58,7 @@ async def registration_complete(
 
     user = UserDTO(**manager.dialog_data["user"])
 
-    await callback.message.answer("бип буп...")
+    await callback.message.answer("готовим кисти 🖌️...")
     is_success = await repository.user.update_user(user)
     # TODO сделать отправку админу
     if is_success:

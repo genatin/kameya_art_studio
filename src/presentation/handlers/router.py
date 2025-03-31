@@ -4,8 +4,10 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog.api.entities import AccessSettings
 
 from src.application.domen.text import ru
+from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import GspreadRepository
 from src.presentation.dialogs.states import AdminReply, BaseMenu, FirstSeen, SignUp
 from src.presentation.dialogs.utils import (
@@ -70,7 +72,12 @@ async def sign_up_callback_handler(
     callback_data: SignUpCallbackFactory,
     dialog_manager: DialogManager,
 ):
-    await dialog_manager.start(AdminReply.REPLY, data=callback_data.dict())
+    await dialog_manager.start(
+        AdminReply.REPLY,
+        data=callback_data.dict(),
+        mode=StartMode.NEW_STACK,
+        access_settings=AccessSettings(get_config().ADMINS),
+    )
     await close_app_form_for_other_admins(
         dialog_manager,
         user_id=callback_data.user_id,
