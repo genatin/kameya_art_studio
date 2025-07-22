@@ -2,14 +2,14 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from src.application.domen.text import ru
+from src.application.domen.text import RU
 
 
 class ActivityEnum(Enum):
-    LESSON = "lesson"
-    CHILD_STUDIO = "child_studio"
-    EVENING_SKETCH = "evening_sketch"
-    MASS_CLASS = "mclasses"
+    LESSON = 'lesson'
+    CHILD_STUDIO = 'child_studio'
+    EVENING_SKETCH = 'evening_sketch'
+    MASS_CLASS = 'mclasses'
 
 
 class ActivityType(BaseModel):
@@ -19,10 +19,10 @@ class ActivityType(BaseModel):
 
 class ActivityTypeFactory:
     activity_human_readable = {
-        ActivityEnum.MASS_CLASS: ru.mass_class,
-        ActivityEnum.LESSON: ru.lesson,
-        ActivityEnum.CHILD_STUDIO: ru.child_studio,
-        ActivityEnum.EVENING_SKETCH: ru.evening_sketch,
+        ActivityEnum.MASS_CLASS: RU.mass_class,
+        ActivityEnum.LESSON: RU.lesson,
+        ActivityEnum.CHILD_STUDIO: RU.child_studio,
+        ActivityEnum.EVENING_SKETCH: RU.evening_sketch,
     }
 
     @classmethod

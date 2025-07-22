@@ -1,0 +1,62 @@
+version: 39
+jobs:
+- name: python ci
+  steps:
+  - !CheckoutStep
+    name: checkout code
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !GenerateChecksumStep
+    name: generate dependency checksum
+    files: poetry.lock
+    targetFile: checksum
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !SetupCacheStep
+    name: set up dependency cache
+    key: poetry_cache_@file:checksum@
+    loadKeys:
+    - poetry_cache
+    paths:
+    - /root/.cache/pypoetry
+    uploadStrategy: UPLOAD_IF_NOT_HIT
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: detect build version
+    runInContainer: true
+    image: 1dev/yq:1.0.0
+    interpreter: !DefaultInterpreter
+      commands: yq '.tool.poetry.version' pyproject.toml > buildVersion
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !SetBuildVersionStep
+    name: set build version
+    buildVersion: '@file:buildVersion@'
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: build and test
+    runInContainer: true
+    image: 1dev/poetry:1.0.2
+    interpreter: !DefaultInterpreter
+      commands: |
+        set -e
+        poetry config virtualenvs.create false
+        poetry install --no-root
+        poetry run ruff check --exit-zero --output-format=json --output-file=reports/ruff-result.json --exclude=.git
+        poetry run ruff format --check
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !PublishRuffReportStep
+    name: publish ruff report
+    reportName: Ruff
+    filePatterns: reports/ruff-result.json
+    failThreshold: MEDIUM
+    condition: ALWAYS
+  triggers:
+  - !BranchUpdateTrigger {}
+  - !PullRequestUpdateTrigger {}
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400

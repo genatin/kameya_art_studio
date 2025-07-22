@@ -3,13 +3,13 @@ from typing import Any
 from .key_builder import StorageKey
 
 
-class UserKey(StorageKey, prefix="users"):
+class UserKey(StorageKey, prefix='users'):
     key: Any
 
 
-class AdminKey(StorageKey, prefix="admin"):
+class AdminKey(StorageKey, prefix='admin'):
     key: Any
 
 
-class ActivityKey(StorageKey, prefix="activity"):
+class ActivityKey(StorageKey, prefix='activity'):
     key: Any

@@ -1,72 +1,65 @@
 import logging
-from functools import partial, wraps
-from queue import Queue
-from threading import Thread
 
-from gspread.cell import Cell
-from gspread.worksheet import Worksheet
-
-from src.application.models import UserDTO, UserTgId
+from src.application.models import UserDTO
 from src.infrastracture.adapters.interfaces.repositories import UsersAbstractRepository
+from src.infrastracture.database.sqlite import dao
+from src.infrastracture.database.sqlite.db import async_session_maker
 
 logger = logging.getLogger(__name__)
 
 
 class RepositoryUser(UsersAbstractRepository):
-    def __init__(self, wsheet_user: Worksheet):
-        self.__tasks_queue: Queue = Queue(maxsize=1000)
-        self._user_worksheet = wsheet_user
+    def __init__(self) -> None:
+        self.__session_maker = async_session_maker
 
-    def __add_to_queue(f):
-        @wraps(f)
-        def wrapper(self, *args, **kwargs):
-            self.__tasks_queue.put(partial(f, self, *args, **kwargs))
+    async def get_user(self, id: int) -> UserDTO | None:
+        async with self.__session_maker() as session:
+            user = await dao.get_user(session, tg_id=id)
+            if not user:
+                return user
+            return UserDTO(
+                id=user.id,
+                nickname=user.nickname,
+                phone=user.phone,
+                name=user.name,
+                last_name=user.last_name,
+            )
 
-        return wrapper
+    async def get_users(self) -> list[UserDTO] | None:
+        async with self.__session_maker() as session:
+            users = await dao.get_users(session)
+            if not users:
+                return users
+            return [
+                UserDTO(
+                    id=user.id,
+                    nickname=user.nickname,
+                    phone=user.phone,
+                    name=user.name,
+                    last_name=user.last_name,
+                )
+                for user in users
+            ]
 
-    def run_background_update(self):
-        Thread(target=self.__background_update_sheets, daemon=True).start()
+    async def add_user(self, user: UserDTO) -> bool:
+        async with self.__session_maker() as session:
+            if await dao.get_user(session, user.id):
+                await self.update_user(user)
+                return False
+            await dao.add_user(
+                session=session,
+                tg_id=user.id,
+                nickname=user.nickname,
+                phone=user.phone,
+                name=user.name,
+                last_name=user.last_name,
+            )
+            return True
 
-    def __background_update_sheets(self):
-        while True:
-            task = self.__tasks_queue.get()
-            task()
+    async def update_user(self, user: UserDTO) -> bool:
+        async with self.__session_maker() as session:
+            return await dao.update_user(session, user.id, user.to_dict(exclude={'id'}))
 
-    def load_users_from_gsheet(self) -> dict[UserTgId, UserDTO]:
-        list_of_dicts = self._user_worksheet.get_all_records()
-        return {
-            int(user_data["id"]): UserDTO(**user_data)
-            for user_data in list_of_dicts
-            if user_data["id"]
-        }
-
-    def __get_user_cell(
-        self,
-        user: UserDTO | None = None,
-        id: int | None = None,
-    ) -> Cell | None:
-        user_id = user.id if user else id
-        return self._user_worksheet.find(str(user_id), in_column=1)
-
-    def get_user(self, id: int) -> UserDTO | None:
-        cell = self.__get_user_cell(id=id)
-        if cell:
-            values = self._user_worksheet.row_values(cell.row)
-            return UserDTO.parse_from_row(values)
-
-    @__add_to_queue
-    def add_user(self, user: UserDTO) -> None:
-        cell = self.__get_user_cell(user=user)
-        if cell:
-            self.update_user(user)
-        else:
-            values = list(user.to_dict(exclude_none=True).values())
-            self._user_worksheet.append_row(values)
-
-    def update_user(self, user: UserDTO) -> None | str:
-        cell = self.__get_user_cell(user=user)
-        return (
-            self._user_worksheet.batch_update(user.compile_batch(cell.row))
-            if cell
-            else None
-        )
+    async def delete_user(self, id: int) -> bool:
+        async with self.__session_maker() as session:
+            return await dao.delete_user(session, tg_id=id)

@@ -1,4 +1,5 @@
-from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.state import State
+from aiogram.fsm.state import StatesGroup
 
 
 class FirstSeen(StatesGroup):
@@ -26,33 +27,20 @@ class SignUp(StatesGroup):
     STAY_FORM = State()
 
 
-class Lessons(StatesGroup):
+class AcitivityPages(StatesGroup):
     START = State()
-    OPTION = State()
-
-
-class MassClasses(StatesGroup):
-    START = State()
-    TICKETS = State()
-
-
-class EveningSketch(StatesGroup):
-    START = State()
-    OPTION = State()
-    TICKETS = State()
-
-
-class ChildLessons(StatesGroup):
-    START = State()
-    OPTION = State()
     TICKETS = State()
 
 
 class AdminReply(StatesGroup):
-    REPLY = State()
+    START = State()
+    CANCEL = State()
     SEND = State()
+
+
+class AdminPayments(StatesGroup):
+    CANCEL_PAYMENT = State()
     CONFIRM_PAYMENT = State()
-    PAYMENT = State()
 
 
 class Administration(StatesGroup):
@@ -62,6 +50,7 @@ class Administration(StatesGroup):
 class AdminActivity(StatesGroup):
     PAGE = State()
     CHANGE = State()
+    REMOVE = State()
 
     NAME = State()
     DESCRIPTION = State()

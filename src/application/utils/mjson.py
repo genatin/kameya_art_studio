@@ -1,11 +1,15 @@
 import logging
-from typing import Any, Callable, Final
 
-from msgspec.json import Decoder, Encoder
+from collections.abc import Callable
+from typing import Any
+from typing import Final
+
+from msgspec.json import Decoder
+from msgspec.json import Encoder
 from pydantic import BaseModel
 
 
-def pydantic_hook(obj: Any):
+def pydantic_hook(obj: Any) -> Any:
     if isinstance(obj, BaseModel):
         return obj.model_dump(exclude_defaults=True)
     return str(obj)
