@@ -8,22 +8,28 @@ services:
     container_name: bot
     env_file: .env
     depends_on:
-      - redis
+      - keydb
     volumes:
       - ./sqlite_data:/sqlite_data
-
-  redis:
-    image: redis:6.2-alpine
-    restart: always
+    networks:
+      - app_network
+  keydb:
+    image: eqalpha/keydb:6.3.4  # Используйте актуальную версию :cite[1]
+    container_name: keydb
     ports:
-      - $REDIS_PORT:$REDIS_PORT
+      - "6379:6379"  # Проброс порта для доступа с хоста
     volumes:
       - cache:/data
-    # environment:
-    #   REDIS_PASSWORD: ${REDIS_PASSWORD}
-    entrypoint: redis-server --requirepass ${REDIS_PASSWORD}
+    command: keydb-server /etc/keydb/keydb.conf --requirepass pass  # Запуск с конфигом и паролем :cite[1]
+    networks:
+      - app_network
 
 
 volumes:
   cache:
   sqlite_data:
+
+
+networks:
+  app_network:  # Создание внутренней сети для взаимодействия контейнеров
+    driver: bridge
