@@ -14,7 +14,7 @@ services:
     networks:
       - app_network
   keydb:
-    image: eqalpha/keydb:6.3.4  # Используйте актуальную версию :cite[1]
+    image: eqalpha/keydb:latest  # Используйте актуальную версию :cite[1]
     container_name: keydb
     ports:
       - "6379:6379"  # Проброс порта для доступа с хоста
