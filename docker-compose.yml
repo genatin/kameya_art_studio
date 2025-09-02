@@ -14,15 +14,22 @@ services:
     networks:
       - app_network
   keydb:
-    image: eqalpha/keydb:latest  # Используйте актуальную версию :cite[1]
+    image: eqalpha/keydb:latest
     container_name: keydb
     ports:
-      - "6379:6379"  # Проброс порта для доступа с хоста
+      - "6379:6379" 
     volumes:
       - cache:/data
-    command: keydb-server /etc/keydb/keydb.conf --requirepass pass  # Запуск с конфигом и паролем :cite[1]
+      - ./keydb_conf/keydb.conf:/etc/keydb/keydb.conf
+    command: keydb-server /etc/keydb/keydb.conf --requirepass pass
     networks:
       - app_network
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+        reservations:
+          memory: 256M
 
 
 volumes:

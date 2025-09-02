@@ -47,7 +47,7 @@ class Config(BaseSettings):
     EVENING_PAGE: str = Field(default='вечерние наброски')
 
     REDIS_PASSWORD: SecretStr
-    REDIS_HOST: str = Field(default='redis')
+    REDIS_HOST: str = Field(default='keydb')
     REDIS_PORT: int
     users_cache_time: int = Field(default=60 * 60)
     admins: list[int]

@@ -27,6 +27,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+keydb_conf/keydb.conf
 #redis dump
 *rdb
 # PyInstaller
