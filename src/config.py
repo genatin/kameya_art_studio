@@ -95,7 +95,7 @@ class Config(BaseSettings):
         if self.LOCAL:
             self.admins = self.DEVELOPER_ID
         elif self.DEVELOPER_ID not in self.admins:
-            self.admins.append(self.DEVELOPER_ID)
+            self.admins.extend(self.DEVELOPER_ID)
         return self
 
 
