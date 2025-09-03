@@ -4,7 +4,7 @@ from src.application.domen.text import RU
 
 button_phone = types.KeyboardButton(text=RU.send_phone, request_contact=True)
 keyboard_phone = types.ReplyKeyboardMarkup(
-    keyboard=[[button_phone]], row_width=1, one_time_keyboard=True
+    keyboard=[[button_phone]], row_width=1, one_time_keyboard=True, resize_keyboard=True
 )
 
 

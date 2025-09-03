@@ -34,6 +34,18 @@ _REPOSITORY = 'repository'
 logger = logging.getLogger(__name__)
 
 
+def normalize_phone_number(phone: str) -> str:
+    pattern = r'^(\+7|8)(\d{10})$'
+    match = re.match(pattern, phone)
+    if match:
+        prefix, number = match.groups()
+        if prefix == '8':
+            return f'+7{number}'
+        else:
+            return f'+7{number}'
+    raise ValueError
+
+
 async def send_contact(cq: CallbackQuery, _, manager: DialogManager) -> None:
     manager.dialog_data[_FINISHED] = False
     await cq.message.answer(
@@ -43,7 +55,16 @@ async def send_contact(cq: CallbackQuery, _, manager: DialogManager) -> None:
 
 
 async def get_contact(msg: Message, _, manager: DialogManager) -> None:
-    phone = '+' + msg.contact.phone_number.lstrip('+')
+    try:
+        if msg.contact:
+            phone = normalize_phone_number('+' + msg.contact.phone_number.lstrip('+'))
+        else:
+            phone = normalize_phone_number(msg.text)
+    except ValueError:
+        await msg.answer('✅ Номер должен состоять из 11 цифр и начинаться с +7 или 8')
+        return None
+
+    await msg.answer('Спасибо!', reply_markup=ReplyKeyboardRemove())
 
     username = '@' + str(msg.from_user.username) if msg.from_user.username else None
     new_user = UserDTO(id=msg.from_user.id, nickname=username, phone=phone)
@@ -105,7 +126,7 @@ async def next_or_end(event, widget, dialog_manager: DialogManager, *_) -> None:
         await dialog_manager.next()
 
 
-async def on_error(
+async def on_error_name(
     message: Message, dialog_: Any, manager: DialogManager, error_: ValueError
 ) -> None:
     str_error = str(error_)
@@ -120,7 +141,14 @@ async def on_error(
             detail = '✅ Допустимая длина от 2 до 50 символов (не Гэндальф и не Йо)\n\n'
         case 'same':
             detail = '✅ Нельзя 4 одинаковые буквы подряд (это не имя, а заклинание!)\n'
+    await message.answer(f'<i>{error_to_send}{detail}</i>', parse_mode=ParseMode.HTML)
 
+
+async def on_error_phone(
+    message: Message, dialog_: Any, manager: DialogManager, error_: ValueError
+) -> None:
+    error_to_send = 'Ой-ой! Что-то пошло не так!\n\n'
+    detail = '✅ Номер должен состоять из 11 цифр и начинаться с +7 или 8\n'
     await message.answer(f'<i>{error_to_send}{detail}</i>', parse_mode=ParseMode.HTML)
 
 
@@ -138,13 +166,20 @@ def validate_name_factory(name: str) -> bool:
 
 registration_dialog = Dialog(
     Window(
-        Const('Нажмите кнопку ниже'),
-        MessageInput(get_contact, content_types=ContentType.CONTACT),
+        Const('Нажмите кнопку ниже ⬇️ или введите номер вручную'),
+        MessageInput(
+            get_contact, content_types=(ContentType.CONTACT, ContentType.TEXT)
+        ),
         state=Registration.GET_CONTACT,
     ),
     Window(
         Const('*Введите номер телефона*\n_Например: +78005553535_'),
-        TextInput(id='phone', on_success=next_or_end),
+        TextInput(
+            id='phone',
+            on_success=next_or_end,
+            type_factory=normalize_phone_number,
+            on_error=on_error_phone,
+        ),
         SwitchTo(Const(RU.back_step), id='reg_end', state=Registration.END),
         state=Registration.EDIT_CONTACT,
         parse_mode=ParseMode.MARKDOWN,
@@ -155,7 +190,7 @@ registration_dialog = Dialog(
             id='name',
             on_success=next_or_end,
             type_factory=validate_name_factory,
-            on_error=on_error,
+            on_error=on_error_name,
         ),
         state=Registration.NAME,
         parse_mode=ParseMode.MARKDOWN,
@@ -166,7 +201,7 @@ registration_dialog = Dialog(
             id='last_name',
             on_success=next_or_end,
             type_factory=validate_name_factory,
-            on_error=on_error,
+            on_error=on_error_name,
         ),
         state=Registration.LASTNAME,
         parse_mode=ParseMode.MARKDOWN,
