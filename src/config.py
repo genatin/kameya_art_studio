@@ -39,7 +39,7 @@ class Config(BaseSettings):
     LOCAL: bool = Field(default=False)
 
     bot_token: SecretStr
-    DEVELOPER_ID: list[int]
+    DEVELOPER_ID: int
     GSHEET_NAME: str = Field(default='КАМЕЯ.Арт-Студия')
     LESSONS_PAGE: str = Field(default='уроки')
     CHILD_PAGE: str = Field(default='детская студия')
@@ -95,7 +95,7 @@ class Config(BaseSettings):
         if self.LOCAL:
             self.admins = self.DEVELOPER_ID
         elif self.DEVELOPER_ID not in self.admins:
-            self.admins.extend(self.DEVELOPER_ID)
+            self.admins.append(self.DEVELOPER_ID)
         return self
 
 

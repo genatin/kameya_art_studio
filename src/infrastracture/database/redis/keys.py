@@ -13,3 +13,7 @@ class AdminKey(StorageKey, prefix='admin'):
 
 class ActivityKey(StorageKey, prefix='activity'):
     key: Any
+
+
+class AdminGetSingUps(StorageKey, prefix='signups'):
+    key: Any

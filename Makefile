@@ -4,10 +4,10 @@ DOCKER_COMPOSE=docker compose
 DOCKER_COMPOSE_RUN=$(DOCKER_COMPOSE) run --rm bot
 
 build:
-	$(DOCKER_COMPOSE) build --parallel
+	env DOCKER_BUILDKIT=1 $(DOCKER_COMPOSE) build --parallel
 
 up: build
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) up
 
 restart_bot:
 	docker compose up -d --build bot
@@ -25,8 +25,6 @@ flake:
 mypy:
 	uv run mypy src bot.py
 
-up_test:
-	uv run python test.py
 
 revision: build
 	- read -p "Enter revision message: " revision_message && \
