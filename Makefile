@@ -7,7 +7,7 @@ build:
 	env DOCKER_BUILDKIT=1 $(DOCKER_COMPOSE) build --parallel
 
 up: build
-	$(DOCKER_COMPOSE) up
+	$(DOCKER_COMPOSE) up -d
 
 restart_bot:
 	docker compose up -d --build bot
