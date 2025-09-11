@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import contextlib
 import logging
-
-from dataclasses import asdict
-from dataclasses import dataclass
-from typing import Any
-from typing import TypeAlias
+from dataclasses import asdict, dataclass
+from typing import Any, TypeAlias
 
 logger = logging.getLogger(__name__)
 

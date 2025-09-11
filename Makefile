@@ -9,6 +9,9 @@ build:
 up: build
 	$(DOCKER_COMPOSE) up -d
 
+up_local: build
+	$(DOCKER_COMPOSE) up
+
 restart_bot:
 	docker compose up -d --build bot
 

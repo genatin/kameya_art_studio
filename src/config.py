@@ -1,16 +1,10 @@
 import base64
-
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel
-from pydantic import Field
-from pydantic import SecretStr
-from pydantic import field_serializer
-from pydantic import model_validator
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
+from pydantic import BaseModel, Field, SecretStr, field_serializer, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class GoogleSettings(BaseModel):
@@ -93,7 +87,7 @@ class Config(BaseSettings):
     @model_validator(mode='after')
     def admins_setter(self) -> 'Config':
         if self.LOCAL:
-            self.admins = self.DEVELOPER_ID
+            self.admins = [self.DEVELOPER_ID]
         elif self.DEVELOPER_ID not in self.admins:
             self.admins.append(self.DEVELOPER_ID)
         return self

@@ -1,14 +1,12 @@
 from aiogram.types import ContentType
-from aiogram_dialog import Dialog
-from aiogram_dialog import Window
+from aiogram_dialog import Dialog, Window
 from aiogram_dialog.api.entities import ShowMode
 from aiogram_dialog.widgets.kbd import Start
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const
 
 from src.config import get_config
-from src.presentation.dialogs.states import BaseMenu
-from src.presentation.dialogs.states import FirstSeen
+from src.presentation.dialogs.states import BaseMenu, FirstSeen
 
 first_seen_dialog = Dialog(
     Window(

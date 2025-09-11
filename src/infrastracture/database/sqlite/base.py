@@ -1,16 +1,12 @@
 from collections.abc import Callable
 
 import emoji
-
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastracture.database.sqlite.db import Base
-from src.infrastracture.database.sqlite.db import async_session_maker
-from src.infrastracture.database.sqlite.db import engine
-from src.infrastracture.database.sqlite.models import ActivityType
-from src.infrastracture.database.sqlite.models import ActivityTypeEnum
+from src.infrastracture.database.sqlite.db import Base, async_session_maker, engine
+from src.infrastracture.database.sqlite.models import ActivityType, ActivityTypeEnum
 
 
 def de_emojify(text: str) -> str:

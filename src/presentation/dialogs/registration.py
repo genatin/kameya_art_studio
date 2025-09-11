@@ -1,25 +1,14 @@
 import logging
 import re
-
 from typing import Any
 
 from aiogram.enums.parse_mode import ParseMode
-from aiogram.types import CallbackQuery
-from aiogram.types import ContentType
-from aiogram.types import Message
-from aiogram.types import ReplyKeyboardRemove
-from aiogram_dialog import Dialog
-from aiogram_dialog import DialogManager
-from aiogram_dialog import Window
+from aiogram.types import CallbackQuery, ContentType, Message, ReplyKeyboardRemove
+from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities.modes import ShowMode
-from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.input import TextInput
-from aiogram_dialog.widgets.kbd import Button
-from aiogram_dialog.widgets.kbd import Row
-from aiogram_dialog.widgets.kbd import SwitchTo
-from aiogram_dialog.widgets.text import Const
-from aiogram_dialog.widgets.text import Format
-from aiogram_dialog.widgets.text import Jinja
+from aiogram_dialog.widgets.input import MessageInput, TextInput
+from aiogram_dialog.widgets.kbd import Button, Row, SwitchTo
+from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.application.domen.text import RU
 from src.application.models import UserDTO

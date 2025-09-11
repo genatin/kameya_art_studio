@@ -1,50 +1,46 @@
 import logging
-
 from collections.abc import Callable
 
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery
-from aiogram_dialog import Dialog
-from aiogram_dialog import DialogManager
-from aiogram_dialog import LaunchMode
-from aiogram_dialog import StartMode
-from aiogram_dialog import Window
+from aiogram_dialog import Dialog, DialogManager, LaunchMode, StartMode, Window
 from aiogram_dialog.widgets.common import ManagedScroll
-from aiogram_dialog.widgets.kbd import Back
-from aiogram_dialog.widgets.kbd import Button
-from aiogram_dialog.widgets.kbd import Counter
-from aiogram_dialog.widgets.kbd import CurrentPage
-from aiogram_dialog.widgets.kbd import FirstPage
-from aiogram_dialog.widgets.kbd import LastPage
-from aiogram_dialog.widgets.kbd import ManagedCounter
-from aiogram_dialog.widgets.kbd import NextPage
-from aiogram_dialog.widgets.kbd import PrevPage
-from aiogram_dialog.widgets.kbd import Row
-from aiogram_dialog.widgets.kbd import Start
-from aiogram_dialog.widgets.kbd import StubScroll
+from aiogram_dialog.widgets.kbd import (
+    Back,
+    Button,
+    Counter,
+    CurrentPage,
+    FirstPage,
+    LastPage,
+    ManagedCounter,
+    NextPage,
+    PrevPage,
+    Row,
+    Start,
+    StubScroll,
+)
 from aiogram_dialog.widgets.media import DynamicMedia
-from aiogram_dialog.widgets.text import Const
-from aiogram_dialog.widgets.text import Format
-from aiogram_dialog.widgets.text import Jinja
+from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.application.domen.models import LessonActivity
-from src.application.domen.models.activity_type import ActivityTypeFactory
-from src.application.domen.models.activity_type import child_studio_act
-from src.application.domen.models.activity_type import evening_sketch_act
-from src.application.domen.models.activity_type import lesson_act
-from src.application.domen.models.activity_type import mclass_act
-from src.application.domen.models.lesson_option import LessonOption
-from src.application.domen.models.lesson_option import LessonOptionFactory
+from src.application.domen.models.activity_type import (
+    ActivityTypeFactory,
+    child_studio_act,
+    evening_sketch_act,
+    lesson_act,
+    mclass_act,
+)
+from src.application.domen.models.lesson_option import LessonOption, LessonOptionFactory
 from src.application.domen.text import RU
 from src.application.models import UserDTO
 from src.infrastracture.adapters.repositories.repo import UsersRepository
-from src.presentation.dialogs.states import AcitivityPages
-from src.presentation.dialogs.states import BaseMenu
-from src.presentation.dialogs.states import SignUp
-from src.presentation.dialogs.utils import FILE_ID
-from src.presentation.dialogs.utils import get_activity_page
-from src.presentation.dialogs.utils import store_activities_by_type
+from src.presentation.dialogs.states import AcitivityPages, BaseMenu, SignUp
+from src.presentation.dialogs.utils import (
+    FILE_ID,
+    get_activity_page,
+    store_activities_by_type,
+)
 from src.presentation.notifier import Notifier
 
 logger = logging.getLogger(__name__)

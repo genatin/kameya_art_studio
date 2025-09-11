@@ -1,12 +1,8 @@
 import logging
-
 from collections.abc import Sequence
 
 import emoji
-
-from pydantic import BaseModel
-from pydantic import ConfigDict
-from pydantic import RootModel
+from pydantic import BaseModel, ConfigDict, RootModel
 
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,

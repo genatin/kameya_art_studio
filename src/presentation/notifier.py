@@ -1,5 +1,4 @@
 import logging
-
 from uuid import uuid4
 
 from aiogram.enums.parse_mode import ParseMode

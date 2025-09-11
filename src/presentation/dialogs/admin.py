@@ -3,62 +3,64 @@ import logging
 
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
-from aiogram.types import CallbackQuery
-from aiogram.types import ContentType
-from aiogram.types import InlineKeyboardButton
-from aiogram.types import InlineKeyboardMarkup
-from aiogram.types import Message
+from aiogram.types import (
+    CallbackQuery,
+    ContentType,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram_dialog import Dialog
-from aiogram_dialog import DialogManager
-from aiogram_dialog import Window
-from aiogram_dialog.api.entities import LaunchMode
-from aiogram_dialog.api.entities import MediaAttachment
-from aiogram_dialog.api.entities import MediaId
-from aiogram_dialog.api.entities import ShowMode
+from aiogram_dialog import Dialog, DialogManager, Window
+from aiogram_dialog.api.entities import LaunchMode, MediaAttachment, MediaId, ShowMode
 from aiogram_dialog.widgets.common import ManagedScroll
-from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.input import TextInput
-from aiogram_dialog.widgets.kbd import Back
-from aiogram_dialog.widgets.kbd import Button
-from aiogram_dialog.widgets.kbd import Cancel
-from aiogram_dialog.widgets.kbd import CurrentPage
-from aiogram_dialog.widgets.kbd import FirstPage
-from aiogram_dialog.widgets.kbd import LastPage
-from aiogram_dialog.widgets.kbd import Next
-from aiogram_dialog.widgets.kbd import NextPage
-from aiogram_dialog.widgets.kbd import PrevPage
-from aiogram_dialog.widgets.kbd import Row
-from aiogram_dialog.widgets.kbd import Start
-from aiogram_dialog.widgets.kbd import StubScroll
-from aiogram_dialog.widgets.kbd import SwitchTo
+from aiogram_dialog.widgets.input import MessageInput, TextInput
+from aiogram_dialog.widgets.kbd import (
+    Back,
+    Button,
+    Cancel,
+    CurrentPage,
+    FirstPage,
+    LastPage,
+    Next,
+    NextPage,
+    PrevPage,
+    Row,
+    Start,
+    StubScroll,
+    SwitchTo,
+)
 from aiogram_dialog.widgets.media import DynamicMedia
-from aiogram_dialog.widgets.text import Const
-from aiogram_dialog.widgets.text import Format
+from aiogram_dialog.widgets.text import Const, Format
 
-from src.application.domen.models.activity_type import child_studio_act
-from src.application.domen.models.activity_type import evening_sketch_act
-from src.application.domen.models.activity_type import lesson_act
-from src.application.domen.models.activity_type import mclass_act
+from src.application.domen.models.activity_type import (
+    child_studio_act,
+    evening_sketch_act,
+    lesson_act,
+    mclass_act,
+)
 from src.application.domen.text import RU
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.repository import RedisRepository
-from src.presentation.callbacks import PaymentCallback
-from src.presentation.callbacks import SignUpCallback
-from src.presentation.dialogs.states import AdminActivity
-from src.presentation.dialogs.states import Administration
-from src.presentation.dialogs.states import AdminPayments
-from src.presentation.dialogs.states import AdminReply
-from src.presentation.dialogs.states import BaseMenu
-from src.presentation.dialogs.utils import FILE_ID
-from src.presentation.dialogs.utils import close_app_form_for_other_admins
-from src.presentation.dialogs.utils import get_activity_page
-from src.presentation.dialogs.utils import message_is_sended
-from src.presentation.dialogs.utils import safe_text_with_link
-from src.presentation.dialogs.utils import store_activities_by_type
+from src.presentation.callbacks import PaymentCallback, SignUpCallback
+from src.presentation.dialogs.states import (
+    AdminActivity,
+    Administration,
+    AdminPayments,
+    AdminReply,
+    BaseMenu,
+)
+from src.presentation.dialogs.utils import (
+    FILE_ID,
+    close_app_form_for_other_admins,
+    get_activity_page,
+    message_is_sended,
+    safe_text_with_link,
+    store_activities_by_type,
+)
 from src.presentation.reminders.payment_reminder import PaymentReminder
 
 logger = logging.getLogger(__name__)
@@ -86,35 +88,18 @@ async def message_admin_handler(
         bank_name = 'Т-банк'
         phone = '+79131721538'
         repecepient_name = 'Соловицкий Кирилл Валерьевич'
-        admin_message = (
-            '✍️ <u>Для подтверждения записи, переведите деньги по номеру телефона.</u>'
-            f'\n\n<b>📞{phone}'
-            f'\n{bank_name}'
-            f'\n{repecepient_name}'
-            f'\n{cost}₽</b>'
-        )
     else:
         bank_name = 'Альфа-банк'
         phone = '+79095266566'
-        repecepient_name = (
-            '<i><tg-spoiler>Длинноречивый</tg-spoiler></i> '
-            '<b>Азаматов Назар Бахтиерович</b>'
-        )
-        admin_message = (
-            '<b>🎨 Внимание, искатели приключений и творцы волшебных миров!✨</b>'
-            '\n\n✍️ Чтобы Ваше имя было вписано в наши архивы, '
-            f'вам предстоит <b>внести оплату в виде {cost}₽ (золотых монет)</b>'
-            '\n\n<b><u>📜 Инструкция для храбрых:</u>'
-            f'\n📞 Волшебный номер: {phone}'
-            f'\n🧑‍🎨 Получатель сокровищ: </b>{repecepient_name}'
-            f'\n<b>🏛 Банк: {bank_name}'
-            f'\n💰 Стоимость: {cost}₽</b>'
-            '\n\n<i>Если драконы сомнений атакуют — зовите на помощь '
-            f'через {RU.kameya_tg_contact} или отправьте сову прямо'
-            ' к преподавателю (да, этот номер '
-            '— как магический кристалл связи 🔮).'
-            '\n\nПусть ваше творчество расцветёт, как сад Лориена! 🌿🎨</i>'
-        )
+        repecepient_name = 'Азаматов Назар Бахтиерович'
+
+    admin_message = (
+        '✍️ <u>Для подтверждения записи, переведите деньги по номеру телефона.</u>'
+        f'\n\n<b>📞{phone}'
+        f'\n{bank_name}'
+        f'\n{repecepient_name}'
+        f'\n{cost}₽</b>'
+    )
 
     dialog_manager.dialog_data['admin_message'] = admin_message
     if message.photo or message.document:

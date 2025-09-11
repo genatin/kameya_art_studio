@@ -2,44 +2,46 @@ import asyncio
 import logging
 
 import gspread
-
 from aiogram import Bot
 from aiogram.filters import ExceptionTypeFilter
-from aiogram.fsm.storage.redis import DefaultKeyBuilder
-from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
 from aiogram_dialog import setup_dialogs
-from aiogram_dialog.api.exceptions import OutdatedIntent
-from aiogram_dialog.api.exceptions import UnknownIntent
-from aiogram_dialog.api.exceptions import UnknownState
+from aiogram_dialog.api.exceptions import OutdatedIntent, UnknownIntent, UnknownState
 from redis.asyncio.client import Redis
 
 from src.application.factory.telegram import create_dispatcher
 from src.application.utils import mjson
 from src.config import get_config
 from src.infrastracture.adapters.repositories.activities import ActivityRepository
-from src.infrastracture.adapters.repositories.lessons import ChildLessonsRepository
-from src.infrastracture.adapters.repositories.lessons import EveningSketchRepository
-from src.infrastracture.adapters.repositories.lessons import LessonsRepository
-from src.infrastracture.adapters.repositories.lessons import MCLassesRepository
+from src.infrastracture.adapters.repositories.lessons import (
+    ChildLessonsRepository,
+    EveningSketchRepository,
+    LessonsRepository,
+    MCLassesRepository,
+)
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.adapters.repositories.users import RepositoryUser
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.infrastracture.database.sqlite.base import init_db
 from src.infrastracture.repository.users import UsersService
-from src.presentation.dialogs.admin import admin_dialog
-from src.presentation.dialogs.admin import admin_payments_dialog
-from src.presentation.dialogs.admin import admin_reply_dialog
-from src.presentation.dialogs.admin import change_activity_dialog
+from src.presentation.dialogs.admin import (
+    admin_dialog,
+    admin_payments_dialog,
+    admin_reply_dialog,
+    change_activity_dialog,
+)
 from src.presentation.dialogs.base_menu import menu_dialog
+from src.presentation.dialogs.developer import developer_dialog
 from src.presentation.dialogs.first_seen import first_seen_dialog
 from src.presentation.dialogs.registration import registration_dialog
-from src.presentation.dialogs.sign_up import activity_pages_dialog
-from src.presentation.dialogs.sign_up import signup_dialog
-from src.presentation.dialogs.utils import error_handler
-from src.presentation.dialogs.utils import on_unknown_intent
-from src.presentation.dialogs.utils import on_unknown_state
-from src.presentation.handlers.router import main_router
-from src.presentation.handlers.router import not_handled_router
+from src.presentation.dialogs.sign_up import activity_pages_dialog, signup_dialog
+from src.presentation.dialogs.utils import (
+    error_handler,
+    on_unknown_intent,
+    on_unknown_state,
+)
+from src.presentation.handlers.deleoper_router import developer_router
+from src.presentation.handlers.router import main_router, not_handled_router
 from src.presentation.middlewares.throttling import ThrottlingMiddleware
 from src.presentation.notifier import Notifier
 from src.presentation.reminders.payment_reminder import PaymentReminder
@@ -125,6 +127,7 @@ async def main() -> None:
     dp.errors.register(error_handler)
     dp.include_routers(
         main_router,
+        developer_router,
         registration_dialog,
         first_seen_dialog,
         menu_dialog,
@@ -134,6 +137,7 @@ async def main() -> None:
         admin_dialog,
         admin_payments_dialog,
         change_activity_dialog,
+        developer_dialog,
         not_handled_router,
     )
     dp.startup.register(polling_startup)

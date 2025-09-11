@@ -3,24 +3,20 @@ import logging
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import ContentType
-from aiogram_dialog import Dialog
-from aiogram_dialog import LaunchMode
-from aiogram_dialog import Window
-from aiogram_dialog.widgets.kbd import Back
-from aiogram_dialog.widgets.kbd import Next
-from aiogram_dialog.widgets.kbd import Start
-from aiogram_dialog.widgets.kbd import Url
+from aiogram_dialog import Dialog, LaunchMode, Window
+from aiogram_dialog.widgets.kbd import Back, Next, Start, Url
 from aiogram_dialog.widgets.media import StaticMedia
-from aiogram_dialog.widgets.text import Const
-from aiogram_dialog.widgets.text import Format
+from aiogram_dialog.widgets.text import Const, Format
 
 from src.application.domen.text import RU
 from src.config import get_config
 from src.presentation.dialogs.registration import send_contact
-from src.presentation.dialogs.states import Administration
-from src.presentation.dialogs.states import BaseMenu
-from src.presentation.dialogs.states import Registration
-from src.presentation.dialogs.states import SignUp
+from src.presentation.dialogs.states import (
+    Administration,
+    BaseMenu,
+    Registration,
+    SignUp,
+)
 from src.presentation.dialogs.utils import get_user
 from src.presentation.middlewares.middleware import RegistrationMiddleware
 

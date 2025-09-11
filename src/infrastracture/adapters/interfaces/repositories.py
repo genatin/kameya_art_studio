@@ -1,8 +1,6 @@
 import logging
 import re
-
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from contextlib import suppress
 from typing import Any

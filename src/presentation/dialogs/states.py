@@ -1,5 +1,4 @@
-from aiogram.fsm.state import State
-from aiogram.fsm.state import StatesGroup
+from aiogram.fsm.state import State, StatesGroup
 
 
 class FirstSeen(StatesGroup):
@@ -56,3 +55,7 @@ class AdminActivity(StatesGroup):
     DESCRIPTION = State()
     PHOTO = State()
     SEND = State()
+
+
+class Developer(StatesGroup):
+    START = State()

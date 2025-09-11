@@ -1,19 +1,13 @@
 import contextlib
 import logging
-
 from html import escape
 from typing import Any
 
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import ContentType
-from aiogram.types import ErrorEvent
-from aiogram.types import Message
-from aiogram.types import ReplyKeyboardRemove
-from aiogram_dialog import DialogManager
-from aiogram_dialog import ShowMode
-from aiogram_dialog.api.entities import MediaAttachment
-from aiogram_dialog.api.entities import MediaId
+from aiogram.types import ContentType, ErrorEvent, Message, ReplyKeyboardRemove
+from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.common import ManagedScroll
 
 from src.application.domen.models import LessonActivity
@@ -82,7 +76,8 @@ async def error_handler(error_event: ErrorEvent) -> None:
     logger.error('Failed', exc_info=error_event.exception)
     await message.answer(
         'Ой, случилось что-то непредвиденное, пока разработчик чинит ошибку, '
-        f'вы всегда можете написать нам 🙂 {RU.kameya_tg_contact}'
+        f'вы всегда можете написать нам 🙂 {RU.kameya_tg_contact} '
+        'или напрямую нашему разработчику через команду /report'
     )
 
 
@@ -182,8 +177,6 @@ async def get_activity_page(dialog_manager: DialogManager, **_kwargs) -> dict[st
 
 
 async def store_activities_by_type(start_data: Any, manager: DialogManager) -> None:
-    # function passed getter on start dialog
-    # you can pass ActivityType
     act_type: ActivityType | None = None
     if start_data:
         if isinstance(start_data, dict):

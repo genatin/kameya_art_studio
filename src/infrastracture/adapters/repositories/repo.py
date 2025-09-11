@@ -1,5 +1,4 @@
 import logging
-
 from typing import Any
 
 from src.application.domen.models import LessonActivity
@@ -7,10 +6,12 @@ from src.application.domen.models.activity_type import ActivityEnum
 from src.application.domen.text import RU
 from src.application.models import UserDTO
 from src.infrastracture.adapters.interfaces.repositories import BaseRepository
-from src.infrastracture.adapters.repositories.lessons import ChildLessonsRepository
-from src.infrastracture.adapters.repositories.lessons import EveningSketchRepository
-from src.infrastracture.adapters.repositories.lessons import LessonsRepository
-from src.infrastracture.adapters.repositories.lessons import MCLassesRepository
+from src.infrastracture.adapters.repositories.lessons import (
+    ChildLessonsRepository,
+    EveningSketchRepository,
+    LessonsRepository,
+    MCLassesRepository,
+)
 from src.infrastracture.repository.users import UsersService
 
 logger = logging.getLogger(__name__)

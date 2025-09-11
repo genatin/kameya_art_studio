@@ -1,22 +1,15 @@
 import logging
 
-from aiogram import F
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery
-from aiogram.types import Message
-from aiogram_dialog import DialogManager
-from aiogram_dialog import ShowMode
+from aiogram.types import CallbackQuery, Message
+from aiogram_dialog import DialogManager, ShowMode
 
 from src.application.domen.text import RU
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.repository import RedisRepository
-from src.presentation.callbacks import PaymentCallback
-from src.presentation.callbacks import SignUpCallback
-from src.presentation.dialogs.states import AdminPayments
-from src.presentation.dialogs.states import AdminReply
-from src.presentation.dialogs.states import BaseMenu
-from src.presentation.dialogs.states import SignUp
+from src.presentation.callbacks import PaymentCallback, SignUpCallback
+from src.presentation.dialogs.states import AdminPayments, AdminReply, BaseMenu, SignUp
 from src.presentation.middlewares.middleware import RegistrationMiddleware
 
 logger = logging.getLogger(__name__)
@@ -104,7 +97,7 @@ async def sign_up_callback_handler(
 
 
 @main_router.callback_query(PaymentCallback.filter())
-async def sign_up_callback_handler(
+async def sign_up_payment_handler(
     cq: CallbackQuery,
     callback_data: PaymentCallback,
     dialog_manager: DialogManager,
@@ -141,8 +134,8 @@ async def users_handler(
     column_name = 'tg_id | last_name.name | phone\n–––––––––––––––––––––––––––––––––\n'
     users_str = '\n'.join(
         (
-            f'{user.id} | {user.last_name[:12] if user.last_name else None}'
-            f' {user.name[0] if user.name else None}. | {user.phone}'
+            f'{user.id} | {user.last_name if user.last_name else None}'
+            f' {user.name if user.name else None} | {user.phone}'
         )
         for user in users
     )

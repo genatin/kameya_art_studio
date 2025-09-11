@@ -123,11 +123,6 @@ line-length = 88
 # Assume Python 3.11.
 target-version = "py311"
 
-[tool.ruff.lint.isort]
-force-wrap-aliases = true
-force-single-line = true
-combine-as-imports = false
-lines-between-types = 1
 
 [tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.

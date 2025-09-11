@@ -1,11 +1,8 @@
 import logging
-
 from collections.abc import Callable
-from typing import Any
-from typing import Final
+from typing import Any, Final
 
-from msgspec.json import Decoder
-from msgspec.json import Encoder
+from msgspec.json import Decoder, Encoder
 from pydantic import BaseModel
 
 

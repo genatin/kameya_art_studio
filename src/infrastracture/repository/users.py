@@ -1,7 +1,6 @@
 import logging
 
-from src.application.models import UserDTO
-from src.application.models import UserTgId
+from src.application.models import UserDTO, UserTgId
 from src.infrastracture.adapters.interfaces.repositories import UsersAbstractRepository
 from src.infrastracture.database.redis.repository import RedisRepository
 

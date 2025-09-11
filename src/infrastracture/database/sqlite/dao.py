@@ -1,17 +1,13 @@
 import logging
-
 from collections.abc import Sequence
 
-from sqlalchemy import select
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.domen.models.activity_type import ActivityType as ActType
 from src.infrastracture.database.sqlite.base import de_emojify
-from src.infrastracture.database.sqlite.models import Activity
-from src.infrastracture.database.sqlite.models import ActivityType
-from src.infrastracture.database.sqlite.models import User
+from src.infrastracture.database.sqlite.models import Activity, ActivityType, User
 
 logger = logging.getLogger(__name__)
 

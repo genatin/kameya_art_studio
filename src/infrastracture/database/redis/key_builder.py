@@ -1,7 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING
-from typing import Any
-from typing import ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 from uuid import UUID
 
 from pydantic import BaseModel

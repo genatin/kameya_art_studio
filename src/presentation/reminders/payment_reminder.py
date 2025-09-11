@@ -1,9 +1,7 @@
 import asyncio
 import logging
 import zoneinfo
-
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from aiogram import Bot
@@ -52,12 +50,7 @@ class PaymentReminder:
                 reminder_count = int(reminder_data['reminder_count'])
                 if reminder_count < self.MAX_REMINDER_COUNT:
                     await self._schedule_reminder(
-                        reminder_data['user_id'],
-                        reminder_count,
-                        reminder_data.get(
-                            'last_reminded',
-                            datetime.now(self.zone_info).timestamp(),
-                        ),
+                        reminder_data['user_id'], reminder_data
                     )
                 else:
                     await self.delete_payment(reminder_data['user_id'])
@@ -68,33 +61,39 @@ class PaymentReminder:
             'user_id': user_id,
             'reminder_count': 0,
             'last_reminded': last_reminded,
+            'run_date': None,
         }
-        reminder_key = self._get_reminder_key(user_id)
-
-        await self._set_reminder_data(reminder_key, reminder_data)
         await self._schedule_reminder(
             user_id,
-            int(reminder_data['reminder_count']),
-            last_reminded,
+            reminder_data,
         )
 
-    async def _schedule_reminder(
-        self, user_id: int, current_count: int, last_reminded: float | str
-    ) -> None:
-        if current_count >= self.MAX_REMINDER_COUNT:
-            return None
+    async def _schedule_reminder(self, user_id: int, reminder_data: dict) -> None:
+        last_reminded = reminder_data['last_reminded']
         if last_reminded:
             last_reminded_date = datetime.fromtimestamp(
                 float(last_reminded), self.zone_info
             )
         else:
             last_reminded_date = datetime.now(self.zone_info)
+            reminder_data['last_reminded'] = last_reminded_date
 
-        run_date = self.calculate_next_notification_time(
-            last_reminded_date, current_count
-        )
+        run_date = reminder_data.get('run_date')
+        current_count = int(reminder_data['reminder_count'])
+        if run_date:
+            run_date = datetime.fromtimestamp(float(run_date), self.zone_info)
+            if datetime.now(self.zone_info) > run_date:
+                run_date = self.adjust_to_work_hours(datetime.now(self.zone_info))
+        else:
+            run_date = self.calculate_next_notification_time(
+                last_reminded_date, current_count
+            )
+            reminder_data['run_date'] = run_date.timestamp()
+        if current_count >= self.MAX_REMINDER_COUNT:
+            return None
 
         job_key = self.get_job_key(user_id)
+
         if self.scheduler.get_job(job_key):
             logger.info('job for user %s has already exists', user_id)
         else:
@@ -112,6 +111,9 @@ class PaymentReminder:
                 current_count,
             )
 
+        reminder_key = self._get_reminder_key(user_id)
+        await self._set_reminder_data(reminder_key, reminder_data)
+
     def adjust_to_work_hours(self, time: datetime) -> datetime:
         if time.hour >= 18:
             next_day = time.date() + timedelta(days=1)
@@ -119,7 +121,9 @@ class PaymentReminder:
             next_day = time.date()
         else:
             return time
-        return datetime.combine(next_day, datetime.min.time()).replace(hour=9)
+        return datetime.combine(
+            next_day, datetime.min.time(), tzinfo=self.zone_info
+        ).replace(hour=9)
 
     def calculate_next_notification_time(
         self, last_sent_time: datetime, attempt_number: int
@@ -144,7 +148,11 @@ class PaymentReminder:
     def get_job_key(self, user_id: int) -> str:
         return f'reminder_{user_id}'
 
-    async def _process_reminder(self, user_id: int, current_count: int) -> None:
+    async def _process_reminder(
+        self,
+        user_id: int,
+        current_count: int,
+    ) -> None:
         reminder_key = self._get_reminder_key(user_id)
         reminder_data = await self._get_reminder_data(reminder_key)
 
@@ -181,11 +189,8 @@ class PaymentReminder:
             await self._set_reminder_data(reminder_key, reminder_data)
 
             # Планируем следующее
-            await self._schedule_reminder(
-                user_id,
-                int(reminder_data['reminder_count']),
-                float(reminder_data['last_reminded']),
-            )
+            reminder_data['run_date'] = None
+            await self._schedule_reminder(user_id, reminder_data)
         else:
             # Удаляем после последнего напоминания
             await self.delete_payment(reminder_key)

@@ -1,9 +1,7 @@
 import zoneinfo
-
 from datetime import datetime
 
-from pydantic import BaseModel
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from src.application.domen.models.activity_type import ActivityType
 from src.application.domen.models.lesson_option import LessonOption
