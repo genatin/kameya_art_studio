@@ -94,11 +94,12 @@ async def message_admin_handler(
         repecepient_name = 'Азаматов Назар Бахтиерович'
 
     admin_message = (
-        '✍️ <u>Для подтверждения записи, переведите деньги по номеру телефона.</u>'
-        f'\n\n<b>📞{phone}'
-        f'\n{bank_name}'
-        f'\n{repecepient_name}'
-        f'\n{cost}₽</b>'
+        '✍️ Здравствуйте!\nПолучили Вашу заявку, для подтверждения записи'
+        ', переведите деньги по реквизитам, указанным ниже. Спасибо!'
+        f'\n\n<b>📞 {phone}'
+        f'\n🏦 {bank_name}'
+        f'\n🧑‍🎨 {repecepient_name}'
+        f'\n💵 {cost}₽</b>'
     )
 
     dialog_manager.dialog_data['admin_message'] = admin_message
@@ -438,7 +439,7 @@ async def add_activities_to_db(
     if scroll:
         await scroll.set_page(len(activities) - 1)
         return await dialog_manager.switch_to(AdminActivity.PAGE)
-    await dialog_manager.start(Administration.START)
+    await dialog_manager.start(Administration.REDACTOR)
 
 
 async def remove_activity_from_db(
@@ -459,7 +460,7 @@ async def remove_activity_from_db(
         await scroll.set_page(max(0, media_number - 1))
         await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
-        await dialog_manager.start(Administration.START)
+        await dialog_manager.start(Administration.REDACTOR)
 
 
 async def no_photo(
@@ -520,6 +521,24 @@ async def redo_user_message(
         reply_markup=builder.as_markup(),
     )
     await manager.done()
+
+
+async def get_users(
+    callback: CallbackQuery, button: Button, manager: DialogManager
+) -> None:
+    repository: UsersRepository = manager.middleware_data['repository']
+    users = await repository.user.get_users()
+    column_name = 'tg_id | last_name.name | phone\n–––––––––––––––––––––––––––––––––\n'
+    users_str = '\n'.join(
+        (
+            f'{user.id} | {user.last_name if user.last_name else None}'
+            f' {user.name if user.name else None} | {user.phone}'
+        )
+        for user in users
+    )
+    manager.dialog_data['all_users_mess'] = (
+        f'Количество пользователей: {len(users)}\n\n{column_name}{users_str}'
+    )
 
 
 admin_reply_dialog = Dialog(
@@ -589,7 +608,19 @@ admin_payments_dialog = Dialog(
 
 admin_dialog = Dialog(
     Window(
-        Const('Вы вошли в режим администрирования, что вы хотите изменить'),
+        Const('Режим администрирования'),
+        SwitchTo(
+            Const('🐑 Список зарегистрированных'),
+            id='get_users',
+            state=Administration.USERS,
+            on_click=get_users,
+        ),
+        Next(Const('🎰 Редактор активностей')),
+        _CANCEL,
+        state=Administration.START,
+    ),
+    Window(
+        Const('🎰 Редактор активностей'),
         Start(
             Const(RU.child_studio),
             id='child_studio',
@@ -614,8 +645,16 @@ admin_dialog = Dialog(
             state=AdminActivity.PAGE,
             data={'act_type': evening_sketch_act},
         ),
-        _CANCEL,
-        state=Administration.START,
+        Row(Back(Const('Назад')), Button(Const(' '), id='ss')),
+        state=Administration.REDACTOR,
+    ),
+    Window(
+        Format('{dialog_data[all_users_mess]}'),
+        Row(
+            SwitchTo(Const('Назад'), id='back', state=Administration.START),
+            Button(Const(' '), id='ss'),
+        ),
+        state=Administration.USERS,
     ),
     launch_mode=LaunchMode.ROOT,
 )

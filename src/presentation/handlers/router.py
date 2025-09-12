@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode
 
 from src.application.domen.text import RU
+from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import PaymentCallback, SignUpCallback
@@ -124,7 +125,9 @@ async def delete_me_handler(
     await message.answer(f'delete is {success}')
 
 
-@main_router.message(F.text == 'users[admin]')
+@main_router.message(
+    (F.text == 'users[admin]') & (F.from_user.id.in_(get_config().admins))
+)
 async def users_handler(
     message: Message,
     dialog_manager: DialogManager,

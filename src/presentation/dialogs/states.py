@@ -44,6 +44,8 @@ class AdminPayments(StatesGroup):
 
 class Administration(StatesGroup):
     START = State()
+    REDACTOR = State()
+    USERS = State()
 
 
 class AdminActivity(StatesGroup):
