@@ -31,7 +31,7 @@ from aiogram_dialog.widgets.kbd import (
     SwitchTo,
 )
 from aiogram_dialog.widgets.media import DynamicMedia
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Format, List
 
 from src.application.domen.models.activity_type import (
     child_studio_act,
@@ -77,6 +77,29 @@ def _get_activity_repo(dialog_manager: DialogManager) -> ActivityAbstractReposit
     return dialog_manager.middleware_data['activity_repository']
 
 
+async def send_signup_message(
+    manager: DialogManager, messages: list[str], callback: CallbackQuery
+) -> None:
+    user_id = manager.start_data['user_id']
+    for m in messages:
+        await manager.event.bot.send_message(
+            chat_id=user_id,
+            text=m,
+            parse_mode=ParseMode.HTML,
+        )
+        await manager.event.bot.send_chat_action(user_id, 'typing')
+        await asyncio.sleep(2)
+    # if manager.dialog_data.get(FILE_ID):
+    #     await manager.event.bot.send_photo(
+    #         chat_id=user_id, photo=manager.dialog_data[FILE_ID]
+    #     )
+    # if manager.dialog_data.get('document'):
+    #     await manager.event.bot.send_document(
+    #         chat_id=user_id,
+    #         document=manager.dialog_data['document'],
+    #     )
+
+
 async def message_admin_handler(
     message: Message,
     message_input: MessageInput,
@@ -93,18 +116,36 @@ async def message_admin_handler(
         phone = '+79095266566'
         repecepient_name = 'Азаматов Назар Бахтиерович'
 
-    admin_message = (
-        '✍️ Здравствуйте!\nПолучили Вашу заявку, для подтверждения записи'
-        ', переведите деньги по реквизитам, указанным ниже. Спасибо!'
-        f'\n\n<b>📞 {phone}'
+    repository: UsersRepository = dialog_manager.middleware_data['repository']
+    user = await repository.user.get_user(dialog_manager.start_data['user_id'])
+
+    admin_message_1 = (
+        f'{user.name}, здравствуйте! Благодарим Вас за заявку, '
+        'мы зарезервировали для Вас место'
+    )
+    admin_messag_2 = (
+        f'💵 Стоимость участия {cost}₽'
+        f'\nДля бронирония места переведите деньги по номеру телефона:'
+        f'\n📞 {phone}'
         f'\n🏦 {bank_name}'
         f'\n🧑‍🎨 {repecepient_name}'
-        f'\n💵 {cost}₽</b>'
     )
-
-    dialog_manager.dialog_data['admin_message'] = admin_message
+    admin_message_3 = (
+        'Как только платёж поступит, мы сразу же пришлём сообщение о подтверждении '
+        'а также адрес и инструкцию, как до нас добраться'
+    )
+    admin_message_4 = (
+        'Если возникнут вопросы с переводом — просто напишите'
+        f' нам {RU.kameya_tg_contact}, поможем!'
+    )
+    dialog_manager.dialog_data['admin_messages'] = [
+        admin_message_1,
+        admin_messag_2,
+        admin_message_3,
+        admin_message_4,
+    ]
     if message.photo or message.document:
-        dialog_manager.dialog_data['admin_message'] += (
+        dialog_manager.dialog_data['admin_messages'].append(
             '<i>\n\nНиже прикрепляем документ</i>'
         )
         if message.photo:
@@ -158,40 +199,33 @@ async def send_to_user(
         )
         return await manager.done()
 
-    if manager.dialog_data['admin_message']:
-        await manager.event.bot.send_message(
-            chat_id=user_id,
-            text=manager.dialog_data['admin_message'],
-            parse_mode=ParseMode.HTML,
-        )
-    if manager.dialog_data.get(FILE_ID):
-        await manager.event.bot.send_photo(
-            chat_id=user_id, photo=manager.dialog_data[FILE_ID]
-        )
-    if manager.dialog_data.get('document'):
-        await manager.event.bot.send_document(
-            chat_id=user_id,
-            document=manager.dialog_data['document'],
-        )
-    repository: UsersRepository = manager.middleware_data['repository']
-    repository.change_values_in_signup_user(
-        manager.start_data['activity_type'],
-        int(manager.start_data['num_row']),
-        {'cost': manager.dialog_data['cost'], 'status': 'не оплачено'},
-    )
+    async with asyncio.TaskGroup() as tg:
+        if a_m := manager.dialog_data['admin_messages']:
+            task1 = tg.create_task(send_signup_message(manager, a_m, callback))
 
-    await close_app_form_for_other_admins(
-        manager,
-        user_id=user_id,
-        responding_admin_id=callback.from_user.id,
-    )
-    if manager.dialog_data.get('cost', manager.start_data['cost']) == 0:
-        return await approve_payment(callback, None, manager)
+            repository: UsersRepository = manager.middleware_data['repository']
+            repository.change_values_in_signup_user(
+                manager.start_data['activity_type'],
+                int(manager.start_data['num_row']),
+                {'cost': manager.dialog_data['cost'], 'status': 'не оплачено'},
+            )
 
-    payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
+            task2 = tg.create_task(
+                close_app_form_for_other_admins(
+                    manager,
+                    user_id=user_id,
+                    responding_admin_id=callback.from_user.id,
+                )
+            )
+            if manager.dialog_data.get('cost', manager.start_data['cost']) == 0:
+                task3 = tg.create_task(approve_payment(callback, None, manager))
 
-    await payment_notifier.add_reminder(user_id)
-    await send_user_payment(callback, button, manager)
+            payment_notifier: PaymentReminder = manager.middleware_data[
+                'payment_notifier'
+            ]
+
+            task4 = tg.create_task(payment_notifier.add_reminder(user_id))
+            task5 = tg.create_task(send_user_payment(callback, button, manager))
 
 
 async def get_image(
@@ -493,7 +527,7 @@ async def get_admin_message(dialog_manager: DialogManager, **kwargs) -> dict:
 async def act_is_free(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
-    manager.dialog_data['admin_message'] = None
+    manager.dialog_data['admin_messages'] = None
     manager.dialog_data['cost'] = 0
     redis_repository: RedisRepository = manager.middleware_data['redis_repository']
     await redis_repository.client.hset(manager.start_data['message_id'], 'cost', 0)
@@ -562,9 +596,14 @@ admin_reply_dialog = Dialog(
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
-        Format(
-            'Сообщение будет выглядеть так: \n\n{dialog_data[admin_message]}',
-            when=F['dialog_data']['admin_message'],
+        Const(
+            'Сообщения будут выглядеть так:',
+            when=F['dialog_data']['admin_messages'],
+        ),
+        List(
+            Format('{item}'),
+            when=F['dialog_data']['admin_messages'],
+            items=F['dialog_data']['admin_messages'],
         ),
         Format(
             (
@@ -573,7 +612,7 @@ admin_reply_dialog = Dialog(
                 '<b>В случае отмены необходимо за 48 часов связаться с '
                 f'нами \n{RU.kameya_tg_contact}</b>'
             ),
-            when=~F['dialog_data']['admin_message'],
+            when=~F['dialog_data']['admin_messages'],
         ),
         DynamicMedia(FILE_ID, when=FILE_ID),
         Back(Const('Исправить')),

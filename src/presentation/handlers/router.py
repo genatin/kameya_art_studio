@@ -86,13 +86,10 @@ async def sign_up_callback_handler(
     user_data['message_id'] = callback_data.message_id
     try:
         if callback_data.action == 'sign_up':
-            await dialog_manager.start(
-                AdminReply.START, data=user_data, show_mode=ShowMode.SEND
-            )
+            state = AdminReply.START
         else:
-            await dialog_manager.start(
-                AdminReply.CANCEL, data=user_data, show_mode=ShowMode.SEND
-            )
+            state = AdminReply.CANCEL
+        await dialog_manager.start(state=state, data=user_data, show_mode=ShowMode.SEND)
     except ValueError:
         await cq.message.answer('Завершите предыдущее действие')
 
