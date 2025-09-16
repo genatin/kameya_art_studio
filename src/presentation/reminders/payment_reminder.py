@@ -115,7 +115,7 @@ class PaymentReminder:
         await self._set_reminder_data(reminder_key, reminder_data)
 
     def adjust_to_work_hours(self, time: datetime) -> datetime:
-        if time.hour >= 18:
+        if time.hour >= 20:
             next_day = time.date() + timedelta(days=1)
         elif time.hour < 9:
             next_day = time.date()
