@@ -190,32 +190,29 @@ async def send_to_user(
         return await manager.done()
 
     async with asyncio.TaskGroup() as tg:
+        task_close = tg.create_task(
+            close_app_form_for_other_admins(
+                manager,
+                user_id=user_id,
+                responding_admin_id=callback.from_user.id,
+            )
+        )
         if a_m := manager.dialog_data['admin_messages']:
-            task1 = tg.create_task(send_signup_message(manager, a_m, callback))
-
+            task_send = tg.create_task(send_signup_message(manager, a_m, callback))
+        if manager.dialog_data.get('cost', manager.start_data['cost']) == 0:
+            task_approve = tg.create_task(approve_payment(callback, None, manager))
+        else:
+            payment_notifier: PaymentReminder = manager.middleware_data[
+                'payment_notifier'
+            ]
+            task_remind = tg.create_task(payment_notifier.add_reminder(user_id))
+            task_payment = tg.create_task(send_user_payment(callback, button, manager))
             repository: UsersRepository = manager.middleware_data['repository']
             repository.change_values_in_signup_user(
                 manager.start_data['activity_type'],
                 int(manager.start_data['num_row']),
                 {'cost': manager.dialog_data['cost'], 'status': 'не оплачено'},
             )
-
-            task2 = tg.create_task(
-                close_app_form_for_other_admins(
-                    manager,
-                    user_id=user_id,
-                    responding_admin_id=callback.from_user.id,
-                )
-            )
-            if manager.dialog_data.get('cost', manager.start_data['cost']) == 0:
-                task3 = tg.create_task(approve_payment(callback, None, manager))
-
-            payment_notifier: PaymentReminder = manager.middleware_data[
-                'payment_notifier'
-            ]
-
-            task4 = tg.create_task(payment_notifier.add_reminder(user_id))
-            task5 = tg.create_task(send_user_payment(callback, button, manager))
 
 
 async def get_image(
