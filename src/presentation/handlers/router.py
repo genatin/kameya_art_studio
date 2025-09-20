@@ -6,7 +6,6 @@ from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode
 
 from src.application.domen.text import RU
-from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import PaymentCallback, SignUpCallback
@@ -120,28 +119,6 @@ async def delete_me_handler(
 ) -> None:
     success = await repository.user.remove_user(message.from_user.id)
     await message.answer(f'delete is {success}')
-
-
-@main_router.message(
-    (F.text == 'users[admin]') & (F.from_user.id.in_(get_config().admins))
-)
-async def users_handler(
-    message: Message,
-    dialog_manager: DialogManager,
-    repository: UsersRepository,
-) -> None:
-    users = await repository.user.get_users()
-    column_name = 'tg_id | last_name.name | phone\n–––––––––––––––––––––––––––––––––\n'
-    users_str = '\n'.join(
-        (
-            f'{user.id} | {user.last_name if user.last_name else None}'
-            f' {user.name if user.name else None} | {user.phone}'
-        )
-        for user in users
-    )
-    await message.answer(
-        f'Количество пользователей: {len(users)}\n\n{column_name}{users_str}'
-    )
 
 
 not_handled_router = Router()

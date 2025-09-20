@@ -6,8 +6,6 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import (
     CallbackQuery,
     ContentType,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
     Message,
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -313,14 +311,11 @@ async def approve_payment(
     )
     await manager.event.bot.send_message(
         chat_id=manager.start_data['user_id'],
-        text=RU.how_to,
-        parse_mode=_PARSE_MODE_TO_USER,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(url=RU.coordinates_yandex, text='Яндекс Карты')],
-                [InlineKeyboardButton(url=RU.reviews_yandex, text='Отзывы')],
-            ]
+        text=(
+            'Чтобы узнать как до нас добраться, '
+            'введите команду или нажмите сюда 👉 /how_to'
         ),
+        parse_mode=_PARSE_MODE_TO_USER,
     )
     payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
     await payment_notifier.delete_payment(manager.start_data['user_id'])
