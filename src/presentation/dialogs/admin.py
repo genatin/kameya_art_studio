@@ -3,11 +3,7 @@ import logging
 
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
-from aiogram.types import (
-    CallbackQuery,
-    ContentType,
-    Message,
-)
+from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities import LaunchMode, MediaAttachment, MediaId, ShowMode
@@ -63,9 +59,7 @@ from src.presentation.reminders.payment_reminder import PaymentReminder
 
 logger = logging.getLogger(__name__)
 _PARSE_MODE_TO_USER = ParseMode.HTML
-_CANCEL = Row(
-    Start(Const('Назад'), 'empty', BaseMenu.START), Button(Const(' '), id='ss')
-)
+_CANCEL = Row(Start(Const('Назад'), 'empty', BaseMenu.START), Button(Const(' '), id='ss'))
 _IS_EDIT = 'is_edit'
 _DESCRIPTION_MC = 'description_mc'
 _BACK_TO_PAGE_ACTIVITY = SwitchTo(Const('Назад'), id='back', state=AdminActivity.PAGE)
@@ -151,9 +145,7 @@ async def message_admin_handler(
         if message.document:
             dialog_manager.dialog_data['document'] = message.document.file_id
 
-    redis_repository: RedisRepository = dialog_manager.middleware_data[
-        'redis_repository'
-    ]
+    redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     await redis_repository.hset(dialog_manager.start_data['message_id'], 'cost', cost)
     await dialog_manager.next()
 
@@ -292,15 +284,16 @@ async def approve_payment(
         value='оплачено',
     )
     cost = manager.dialog_data.get('cost', manager.start_data['cost'])
+    user_name = (await repository.user.get_user(manager.start_data['user_id'])).name
     if cost != 0:
         manager.dialog_data['approve_message'] = (
-            'Оплату получили, благодарим Вас, запись подтверждена!🎉\n\n'
+            f'🎉\n{user_name}, оплату получили, благодарим Вас, запись подтверждена!\n\n'
             '<b>В случае отмены необходимо за 48 часов связаться с '
             f'нами \n{RU.kameya_tg_contact}</b>'
         )
     else:
         manager.dialog_data['approve_message'] = (
-            'Благодарим Вас за регистрацию, запись подтверждена!🎉\n\n'
+            f'🎉\n{user_name}, благодарим Вас за регистрацию, запись подтверждена!\n\n'
             '<b>В случае отмены необходимо за 48 часов связаться с '
             f'нами \n{RU.kameya_tg_contact}</b>'
         )
@@ -332,9 +325,7 @@ async def approve_payment(
 async def description_handler(
     event: Message, widget, dialog_manager: DialogManager, *_
 ) -> None:
-    new_description = (
-        d.get_value() if (d := dialog_manager.find(_DESCRIPTION_MC)) else ''
-    )
+    new_description = d.get_value() if (d := dialog_manager.find(_DESCRIPTION_MC)) else ''
     if dialog_manager.dialog_data.get(_IS_EDIT):
         activity_theme = dialog_manager.dialog_data['activity']['theme']
         activ_repository = _get_activity_repo(dialog_manager)
@@ -374,9 +365,7 @@ async def name_activity_handler(
         if activity:
             scroll: ManagedScroll = dialog_manager.find('scroll')
             media_number = await scroll.get_page()
-            dialog_manager.dialog_data['activities'][media_number]['theme'] = (
-                message.text
-            )
+            dialog_manager.dialog_data['activities'][media_number]['theme'] = message.text
             await message.answer('Имя мастер-класса успешно изменено')
         else:
             await message.answer(RU.sth_error)
@@ -449,9 +438,7 @@ async def add_activities_to_db(
         description=description,
     )
     if not act:
-        await callback.message.answer(
-            f'Не удалось добавить {act_type}, попробуйте позже'
-        )
+        await callback.message.answer(f'Не удалось добавить {act_type}, попробуйте позже')
         return await dialog_manager.start(BaseMenu.START)
 
     await callback.message.answer(f'{act_type} добавлен.')
@@ -603,7 +590,7 @@ admin_reply_dialog = Dialog(
         Format(
             (
                 'Сообщение будет выглядеть так: \n\n'
-                'Благодарим Вас за регистрацию, запись подтверждена!🎉\n\n'
+                '🎉(имя_пользователя), благодарим Вас за регистрацию, запись подтверждена!\n\n'
                 '<b>В случае отмены необходимо за 48 часов связаться с '
                 f'нами \n{RU.kameya_tg_contact}</b>'
             ),
@@ -744,9 +731,7 @@ change_activity_dialog = Dialog(
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
-        Format(
-            '*Введите тему активности*\n_Например: Трансформеры в стиле Рембрандта_'
-        ),
+        Format('*Введите тему активности*\n_Например: Трансформеры в стиле Рембрандта_'),
         MessageInput(name_activity_handler, content_types=[ContentType.TEXT]),
         _BACK_TO_PAGE_ACTIVITY,
         state=AdminActivity.NAME,

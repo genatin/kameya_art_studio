@@ -29,9 +29,7 @@ class ActivityTypeFactory:
     def generate(cls, name: ActivityEnum | str) -> ActivityType:
         if isinstance(name, str):
             name = ActivityEnum(name)
-        return ActivityType(
-            name=name.value, human_name=cls.activity_human_readable[name]
-        )
+        return ActivityType(name=name.value, human_name=cls.activity_human_readable[name])
 
 
 mclass_act = ActivityTypeFactory.generate(ActivityEnum.MASS_CLASS)

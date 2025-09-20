@@ -156,9 +156,7 @@ def validate_name_factory(name: str) -> bool:
 registration_dialog = Dialog(
     Window(
         Const('Нажмите кнопку ниже ⬇️ или введите номер вручную'),
-        MessageInput(
-            get_contact, content_types=(ContentType.CONTACT, ContentType.TEXT)
-        ),
+        MessageInput(get_contact, content_types=(ContentType.CONTACT, ContentType.TEXT)),
         state=Registration.GET_CONTACT,
     ),
     Window(

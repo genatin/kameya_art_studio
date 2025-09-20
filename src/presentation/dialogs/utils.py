@@ -99,9 +99,7 @@ async def get_user(
 
 
 async def message_is_sended(dialog_manager: DialogManager, user_id: int) -> bool:
-    redis_repository: RedisRepository = dialog_manager.middleware_data[
-        'redis_repository'
-    ]
+    redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     admin_mess_ids = await redis_repository.get(AdminKey(key=user_id), dict)
     return admin_mess_ids is None
 
@@ -109,9 +107,7 @@ async def message_is_sended(dialog_manager: DialogManager, user_id: int) -> bool
 async def close_app_form_for_other_admins(
     dialog_manager: DialogManager, user_id: int, responding_admin_id: int
 ) -> None:
-    redis_repository: RedisRepository = dialog_manager.middleware_data[
-        'redis_repository'
-    ]
+    redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     admin_mess_ids = await redis_repository.getdel(AdminKey(key=user_id), dict)
     if not admin_mess_ids:
         return None

@@ -118,7 +118,7 @@ exclude = [
 ]
 
 # Same as Black.
-line-length = 88
+line-length = 90
 
 # Assume Python 3.11.
 target-version = "py311"

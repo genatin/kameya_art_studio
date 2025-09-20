@@ -49,9 +49,7 @@ class PaymentReminder:
             if reminder_data:
                 reminder_count = int(reminder_data['reminder_count'])
                 if reminder_count < self.MAX_REMINDER_COUNT:
-                    await self._schedule_reminder(
-                        reminder_data['user_id'], reminder_data
-                    )
+                    await self._schedule_reminder(reminder_data['user_id'], reminder_data)
                 else:
                     await self.delete_payment(reminder_data['user_id'])
 
@@ -179,9 +177,7 @@ class PaymentReminder:
                 await self.bot.send_message(
                     user_id, message + connect_us, parse_mode=ParseMode.HTML
                 )
-                reminder_data['last_reminded'] = datetime.now(
-                    self.zone_info
-                ).timestamp()
+                reminder_data['last_reminded'] = datetime.now(self.zone_info).timestamp()
             except Exception as exc:
                 logger.error('Failed to send reminder to %s: %s', user_id, exc)
 

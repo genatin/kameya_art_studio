@@ -37,9 +37,7 @@ class Activity(Base):
     file_id: Mapped[str] = mapped_column(String, nullable=True)
     description: Mapped[str] = mapped_column(String)
 
-    type_id: Mapped[int] = mapped_column(
-        ForeignKey('activity_types.id'), nullable=False
-    )
+    type_id: Mapped[int] = mapped_column(ForeignKey('activity_types.id'), nullable=False)
     activity_type: Mapped['ActivityType'] = relationship(
         'ActivityType', back_populates='activities'
     )

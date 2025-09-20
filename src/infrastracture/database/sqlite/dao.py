@@ -60,9 +60,7 @@ async def update_activity_name_by_name(
     session: AsyncSession, activity_type: ActType, old_theme: str, new_theme: str
 ) -> Activity | None:
     try:
-        activity = await get_activity_by_theme_and_type(
-            session, activity_type, old_theme
-        )
+        activity = await get_activity_by_theme_and_type(session, activity_type, old_theme)
         activity.theme = new_theme
         await session.commit()
         return activity
