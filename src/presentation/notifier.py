@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 _MINUTE = 60
 _HOUR = _MINUTE * 60
 _DAY = _HOUR * 24
-_DAYS_14 = _DAY * 14
+_MONTH = _DAY * 30
 
 
 class Notifier:
@@ -81,7 +81,7 @@ class Notifier:
                 logger.error('Failed while notify admins', exc_info=exc)
         # при ответе одним из администраторов у других уведомление (сообщение)
         # о заявке редактируется (удаляется кнопка). актуально 14 дней
-        await redis_repository.set(AdminKey(key=user.id), send_mes_ids, ex=_DAYS_14)
+        await redis_repository.set(AdminKey(key=user.id), send_mes_ids, ex=_MONTH)
 
         # admin message id
         signup_data = SignUpCallbackFactory(
@@ -93,5 +93,5 @@ class Notifier:
             message=message_to_admin,
         )
         await redis_repository.hset(
-            message_id, mapping=signup_data.model_dump(), ex=_DAYS_14
+            message_id, mapping=signup_data.model_dump(), ex=_MONTH
         )
