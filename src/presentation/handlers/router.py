@@ -25,7 +25,10 @@ async def cmd_hello(
     dialog_manager: DialogManager,
     repository: UsersRepository,
 ) -> None:
-    await dialog_manager.start(BaseMenu.START, mode=StartMode.RESET_STACK)
+    try:
+        await dialog_manager.start(BaseMenu.START)
+    except ValueError:
+        await message.answer(RU.cancel)
 
 
 @main_router.message(Command('sign_up'))
@@ -38,7 +41,7 @@ async def sign_up_handler(
     try:
         await dialog_manager.start(SignUp.START)
     except ValueError:
-        await message.answer('Завершите предыдущее действие')
+        await message.answer(RU.cancel)
 
 
 @main_router.message(Command('registration'))
@@ -51,7 +54,7 @@ async def registration_handler(
     try:
         await dialog_manager.start(BaseMenu.START, data='update_reg')
     except ValueError:
-        await message.answer('Завершите предыдущее действие')
+        await message.answer(RU.cancel)
 
 
 @main_router.message(Command('about'))
@@ -62,7 +65,7 @@ async def about_handler(
     try:
         await dialog_manager.start(BaseMenu.ABOUT_US)
     except ValueError:
-        await message.answer('Завершите предыдущее действие')
+        await message.answer(RU.cancel)
 
 
 @main_router.message(Command('how_to'))
@@ -70,7 +73,7 @@ async def how_to_handler(message: Message, dialog_manager: DialogManager) -> Non
     try:
         await dialog_manager.start(BaseMenu.HOW_TO)
     except ValueError:
-        await message.answer('Завершите предыдущее действие')
+        await message.answer(RU.cancel)
 
 
 @main_router.callback_query(SignUpCallback.filter())
@@ -89,7 +92,7 @@ async def sign_up_callback_handler(
             state = AdminReply.CANCEL
         await dialog_manager.start(state=state, data=user_data, show_mode=ShowMode.SEND)
     except ValueError:
-        await cq.message.answer('Завершите предыдущее действие')
+        await cq.message.answer(RU.cancel)
 
 
 @main_router.callback_query(PaymentCallback.filter())
@@ -107,7 +110,7 @@ async def sign_up_payment_handler(
         else:
             await dialog_manager.start(AdminPayments.CANCEL_PAYMENT, data=user_data)
     except ValueError:
-        await cq.message.answer('Завершите предыдущее действие')
+        await cq.message.answer(RU.cancel)
 
 
 @main_router.message(F.text == 'delete_me[admin]')
@@ -131,4 +134,13 @@ async def message_handler(
     try:
         await dialog_manager.start(BaseMenu.START)
     except ValueError:
-        await message.answer('Завершите предыдущее действие')
+        await message.answer(RU.cancel)
+
+
+@main_router.message(Command('cancel'))
+async def cmd_hello(
+    message: Message,
+    dialog_manager: DialogManager,
+    repository: UsersRepository,
+) -> None:
+    await dialog_manager.start(BaseMenu.START, mode=StartMode.RESET_STACK)
