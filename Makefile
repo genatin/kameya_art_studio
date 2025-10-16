@@ -8,6 +8,7 @@ build:
 
 up: build
 	$(DOCKER_COMPOSE) up -d
+	docker system prune -a --volumes --force
 
 up_local: build
 	$(DOCKER_COMPOSE) up
