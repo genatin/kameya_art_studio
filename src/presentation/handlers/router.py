@@ -40,7 +40,7 @@ async def cmd_hello(
 
 
 @main_router.message(Command('sign_up'))
-@main_router.message(F.text == RU.sign_up)
+@main_router.message(F.text.lower() == RU.sign_up_message)
 async def sign_up_handler(
     message: Message,
     dialog_manager: DialogManager,

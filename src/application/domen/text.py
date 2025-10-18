@@ -9,9 +9,9 @@ class classproperty(property):  # noqa: N801
 
 class RU:
     back_step = 'Назад'
-    menu = 'В стартовое меню 🏡'
+    menu = '🏡 В стартовое меню'
     send_phone = '📞 Поделиться контактом'
-    sign_up = 'Записаться'
+    sign_up_message = 'записаться'
 
     # activity
     mass_class = '🖼 Мастер-классы'
@@ -84,7 +84,7 @@ class RU:
     sth_error = 'Что-то пошло не так'
 
     # how to
-    how_to = 'Как к нам добраться?🛤'
+    how_to = '🛤 Как к нам добраться?'
     coordinates_yandex = 'https://yandex.ru/maps/?rtext=~55.762865,37.781962'
     reviews_yandex = 'https://yandex.ru/maps/org/kameya/150785368147/reviews/?ll=37.781866%2C55.762895&z=17'
     kameya_tg_contact = '@kameya_artstudio'
