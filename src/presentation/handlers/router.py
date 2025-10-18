@@ -23,7 +23,7 @@ async def _show_current_context_send_warning(
     message: Message,
     dialog_manager: DialogManager,
 ) -> None:
-    await _show_current_context_send_warning(message, dialog_manager)
+    await message.answer(RU.cancel)
     await dialog_manager.show()
 
 
