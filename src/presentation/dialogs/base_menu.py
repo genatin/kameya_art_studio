@@ -4,7 +4,7 @@ from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import ContentType
 from aiogram_dialog import Dialog, LaunchMode, Window
-from aiogram_dialog.widgets.kbd import Back, Next, Start, Url
+from aiogram_dialog.widgets.kbd import Back, Next, Start, SwitchTo, Url
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -51,7 +51,7 @@ menu_dialog = Dialog(
             state=Registration.GET_CONTACT,
             on_click=send_contact,
         ),
-        Start(Const('О студии'), id='aaa', state=BaseMenu.ABOUT_US),
+        Start(Const('🎨 О студии'), id='aaa', state=BaseMenu.ABOUT_US),
         Start(
             Const(RU.admin), id='admin', when=F['is_admin'], state=Administration.START
         ),
@@ -79,7 +79,7 @@ menu_dialog = Dialog(
             Const('Отзывы о нас'),
             Const(RU.reviews_yandex),
         ),
-        Next(Const('Как к нам добраться'), when=F['user']),
+        Next(Const(RU.how_to), when=F['user']),
         Back(text=Const(RU.back_step)),
         state=BaseMenu.ABOUT_US,
         parse_mode=ParseMode.HTML,
@@ -96,7 +96,7 @@ menu_dialog = Dialog(
             Const('Маршрут. Яндекс Карты.'),
             Const(RU.coordinates_yandex),
         ),
-        Back(text=Const(RU.back_step)),
+        SwitchTo(text=Const(RU.menu), id='menu', state=BaseMenu.START),
         state=BaseMenu.HOW_TO,
         parse_mode=ParseMode.HTML,
     ),

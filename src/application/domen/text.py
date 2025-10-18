@@ -9,6 +9,7 @@ class classproperty(property):  # noqa: N801
 
 class RU:
     back_step = 'Назад'
+    menu = 'В стартовое меню 🏡'
     send_phone = '📞 Поделиться контактом'
     sign_up = 'Записаться'
 
