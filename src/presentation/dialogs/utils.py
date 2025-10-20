@@ -5,7 +5,13 @@ from typing import Any
 
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import ContentType, ErrorEvent, Message, ReplyKeyboardRemove
+from aiogram.types import (
+    ContentType,
+    ErrorEvent,
+    Message,
+    ReplyKeyboardRemove,
+)
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.common import ManagedScroll
@@ -108,7 +114,9 @@ async def close_app_form_for_other_admins(
     dialog_manager: DialogManager, user_id: int, responding_admin_id: int
 ) -> None:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
-    admin_mess_ids = await redis_repository.getdel(AdminKey(key=user_id), dict)
+    admin_mess_ids = await redis_repository.get(AdminKey(key=user_id), dict)
+    builder = InlineKeyboardBuilder()
+    builder.button(text='Ждём пользователя 👻', callback_data='message')
     if not admin_mess_ids:
         return None
     for admin_id in get_config().admins:
@@ -118,7 +126,34 @@ async def close_app_form_for_other_admins(
             await dialog_manager.event.bot.edit_message_reply_markup(
                 chat_id=admin_id,
                 message_id=admin_mess_ids[str(admin_id)],
-                reply_markup=None,
+                reply_markup=builder.as_markup(),
+                request_timeout=1,
+            )
+        except Exception as exc:
+            logger.error('Failed while edit admin message', exc_info=exc)
+
+
+async def approve_form_for_other_admins(
+    dialog_manager: DialogManager,
+    user_id: int,
+    responding_admin_id: int,
+    message_text: str,
+) -> None:
+    redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
+    admin_mess_ids = await redis_repository.getdel(AdminKey(key=user_id), dict)
+    if not admin_mess_ids:
+        return None
+    builder = InlineKeyboardBuilder()
+    builder.button(text=message_text, callback_data='message')
+    for admin_id in get_config().admins:
+        if responding_admin_id == admin_id:
+            continue
+        try:
+            await dialog_manager.event.bot.edit_message_reply_markup(
+                chat_id=admin_id,
+                message_id=admin_mess_ids[str(admin_id)],
+                reply_markup=builder.as_markup(),
+                request_timeout=1,
             )
         except Exception as exc:
             logger.error('Failed while edit admin message', exc_info=exc)

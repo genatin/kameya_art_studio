@@ -49,6 +49,7 @@ from src.presentation.dialogs.states import (
 )
 from src.presentation.dialogs.utils import (
     FILE_ID,
+    approve_form_for_other_admins,
     close_app_form_for_other_admins,
     get_activity_page,
     message_is_sended,
@@ -262,10 +263,11 @@ async def cancel_payment(
     )
     payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
     await payment_notifier.delete_payment(manager.start_data['user_id'])
-    await close_app_form_for_other_admins(
+    await approve_form_for_other_admins(
         manager,
         user_id=manager.start_data['user_id'],
         responding_admin_id=callback.from_user.id,
+        message_text='Занятие отменено ❌',
     )
     await manager.done(show_mode=ShowMode.NO_UPDATE)
 
@@ -308,6 +310,12 @@ async def approve_payment(
         parse_mode=_PARSE_MODE_TO_USER,
     )
     payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
+    await approve_form_for_other_admins(
+        manager,
+        user_id=manager.start_data['user_id'],
+        responding_admin_id=callback.from_user.id,
+        message_text='Занятие оплачено ✅',
+    )
     await payment_notifier.delete_payment(manager.start_data['user_id'])
 
     user_phone = manager.start_data['user_phone']
