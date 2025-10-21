@@ -15,6 +15,11 @@ from src.infrastracture.database.redis.keys import UserKey
 
 T = TypeVar('T', bound=Any)
 
+_MINUTE = 60
+_HOUR = _MINUTE * 60
+_DAY = _HOUR * 24
+_MONTH = _DAY * 30
+
 
 def auto_pack_key_async(func: Callable[..., T]) -> Callable[..., T]:
     @wraps(func)
@@ -58,7 +63,7 @@ class RedisRepository:
 
     @auto_pack_key_async
     async def set(
-        self, key: StorageKey | str, value: Any, ex: ExpiryT | None = None
+        self, key: StorageKey | str, value: Any, ex: ExpiryT | None = _MONTH
     ) -> None:
         if isinstance(value, BaseModel):
             value = value.model_dump(exclude_defaults=True)
@@ -72,7 +77,7 @@ class RedisRepository:
         key: str | None = None,
         value: str | None = None,
         mapping: dict | None = None,
-        ex: ExpiryT | None = None,
+        ex: ExpiryT | None = _MONTH,
     ) -> None:
         await self.client.hset(name, key, value, mapping)
         if ex:
@@ -85,11 +90,9 @@ class RedisRepository:
     async def close(self) -> None:
         await self.client.aclose(close_connection_pool=True)
 
-    async def save_user(
-        self, key: Any, value: UserDTO, cache_time: int | None = None
-    ) -> None:
+    async def save_user(self, key: Any, value: UserDTO, ex: int | None = _MONTH) -> None:
         user_key: UserKey = UserKey(key=key)
-        await self.set(key=user_key, value=value, ex=cache_time)
+        await self.set(key=user_key, value=value, ex=ex)
 
     async def get_user(self, key: Any) -> UserDTO | None:
         user_key: UserKey = UserKey(key=key)

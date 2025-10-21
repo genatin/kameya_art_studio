@@ -152,3 +152,8 @@ async def cmd_hello(
     repository: UsersRepository,
 ) -> None:
     await dialog_manager.start(BaseMenu.START, mode=StartMode.RESET_STACK)
+
+
+@main_router.callback_query(F.data.startswith('ignore_'))
+async def ignore_callback(callback: CallbackQuery) -> None:
+    await callback.answer()

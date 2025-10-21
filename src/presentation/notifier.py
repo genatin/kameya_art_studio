@@ -67,7 +67,7 @@ class Notifier:
         )
 
         redis_repository: RedisRepository = manager.middleware_data['redis_repository']
-        send_mes_ids = {}
+        send_mes_ids = {'sended': False}
         for admin_id in get_config().admins:
             try:
                 mess = await manager.event.bot.send_message(

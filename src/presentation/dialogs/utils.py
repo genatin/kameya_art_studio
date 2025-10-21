@@ -32,6 +32,12 @@ logger = logging.getLogger(__name__)
 
 FILE_ID = 'file_id'
 
+_MINUTE = 60
+_HOUR = _MINUTE * 60
+_DAY = _HOUR * 24
+_MONTH = _DAY * 30
+_SENDED = 'sended'
+
 
 async def on_unknown_intent(event: ErrorEvent, dialog_manager: DialogManager) -> None:
     # Example of handling UnknownIntent Error and starting new dialog.
@@ -107,7 +113,9 @@ async def get_user(
 async def message_is_sended(dialog_manager: DialogManager, user_id: int) -> bool:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     admin_mess_ids = await redis_repository.get(AdminKey(key=user_id), dict)
-    return admin_mess_ids is None
+    if admin_mess_ids is None:
+        return True
+    return admin_mess_ids.get(_SENDED, False)
 
 
 async def close_app_form_for_other_admins(
@@ -116,7 +124,7 @@ async def close_app_form_for_other_admins(
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     admin_mess_ids = await redis_repository.get(AdminKey(key=user_id), dict)
     builder = InlineKeyboardBuilder()
-    builder.button(text='Ждём пользователя 👻', callback_data='message')
+    builder.button(text='Ждём пользователя 👻', callback_data='ignore_this_callback')
     if not admin_mess_ids:
         return None
     for admin_id in get_config().admins:
@@ -131,6 +139,8 @@ async def close_app_form_for_other_admins(
             )
         except Exception as exc:
             logger.error('Failed while edit admin message', exc_info=exc)
+    admin_mess_ids[_SENDED] = True
+    await redis_repository.set(AdminKey(key=user_id), admin_mess_ids, ex=_MONTH)
 
 
 async def approve_form_for_other_admins(
@@ -144,7 +154,7 @@ async def approve_form_for_other_admins(
     if not admin_mess_ids:
         return None
     builder = InlineKeyboardBuilder()
-    builder.button(text=message_text, callback_data='message')
+    builder.button(text=message_text, callback_data='ignore_this_callback')
     for admin_id in get_config().admins:
         if responding_admin_id == admin_id:
             continue
