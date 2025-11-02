@@ -50,7 +50,6 @@ class Notifier:
             f'Количество билетов: {lesson_activity.num_tickets or 1}\n'
             f'Занятие: {lesson_activity.activity_type.human_name}\n'
             f'Тема: {lesson_activity.topic}\n'
-            'Вариант посещения: '
             f'<b><u>{lesson_activity.lesson_option.human_name}</u></b>'
             f'\n\n<a href="https://t.me/{user.phone}">Связаться с пользователем</a>'
         )

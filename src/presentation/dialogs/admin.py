@@ -28,6 +28,7 @@ from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const, Format, List
 
 from src.application.domen.models.activity_type import (
+    ActivityEnum,
     child_studio_act,
     evening_sketch_act,
     lesson_act,
@@ -111,32 +112,40 @@ async def message_admin_handler(
 
     repository: UsersRepository = dialog_manager.middleware_data['repository']
     user = await repository.user.get_user(dialog_manager.start_data['user_id'])
-
-    admin_message_1 = (
-        f'{user.name}, здравствуйте! Благодарим Вас за заявку, '
-        'мы зарезервировали для Вас место'
-    )
-    admin_messag_2 = (
-        f'💵 Стоимость участия {cost}₽'
-        f'\nДля бронирония места переведите деньги по номеру телефона:'
-        f'\n📞 {phone}'
-        f'\n🏦 {bank_name}'
-        f'\n🧑‍🎨 {repecepient_name}'
-    )
-    admin_message_3 = (
-        'Как только платёж поступит, мы сразу же пришлём сообщение о подтверждении '
-        'а также адрес и инструкцию, как до нас добраться'
-    )
-    admin_message_4 = (
-        'Если возникнут вопросы с переводом — просто напишите'
-        f' нам {RU.kameya_tg_contact}, поможем!'
-    )
-    dialog_manager.dialog_data['admin_messages'] = [
-        admin_message_1,
-        admin_messag_2,
-        admin_message_3,
-        admin_message_4,
+    admin_message_1 = [
+        (
+            f'{user.name}, здравствуйте! Благодарим Вас за заявку, '
+            'мы зарезервировали для Вас место'
+        )
     ]
+    admin_messag_2 = [
+        (
+            f'Для бронирония места переведите деньги по номеру телефона:'
+            f'\n\n💵 Стоимость участия {cost}₽'
+            f'\n📞 {phone}'
+            f'\n🏦 {bank_name}'
+            f'\n🧑‍🎨 {repecepient_name}'
+        )
+    ]
+    if dialog_manager.start_data['activity_type'] == ActivityEnum.CHILD_STUDIO.value:
+        admin_message_3 = []
+    else:
+        admin_message_3 = [
+            (
+                'Как только платёж поступит, мы сразу же пришлём сообщение '
+                'о подтверждении а также адрес и инструкцию, как до нас добраться'
+            )
+        ]
+    admin_message_4 = [
+        (
+            'Если возникнут вопросы с переводом — просто напишите'
+            f' нам {RU.kameya_tg_contact}, поможем!'
+        )
+    ]
+    dialog_manager.dialog_data['admin_messages'] = (
+        admin_message_1 + admin_messag_2 + admin_message_3 + admin_message_4
+    )
+
     if message.photo or message.document:
         dialog_manager.dialog_data['admin_messages'].append(
             '<i>\n\nНиже прикрепляем документ</i>'
@@ -287,13 +296,13 @@ async def approve_payment(
     if cost != 0:
         manager.dialog_data['approve_message'] = (
             f'🎉\n{user_name}, оплату получили, благодарим Вас, запись подтверждена!\n\n'
-            '<b>В случае отмены необходимо за 48 часов связаться с '
+            '<b>В случае отмены необходимо свяжитесь с '
             f'нами \n{RU.kameya_tg_contact}</b>'
         )
     else:
         manager.dialog_data['approve_message'] = (
             f'🎉\n{user_name}, благодарим Вас за регистрацию, запись подтверждена!\n\n'
-            '<b>В случае отмены необходимо за 48 часов связаться с '
+            '<b>В случае отмены необходимо свяжитесь с '
             f'нами \n{RU.kameya_tg_contact}</b>'
         )
     await manager.event.bot.send_message(
@@ -301,14 +310,12 @@ async def approve_payment(
         text=manager.dialog_data['approve_message'],
         parse_mode=_PARSE_MODE_TO_USER,
     )
-    await manager.event.bot.send_message(
-        chat_id=manager.start_data['user_id'],
-        text=(
-            'Чтобы узнать как до нас добраться, '
-            'введите команду или нажмите сюда 👉 /how_to'
-        ),
-        parse_mode=_PARSE_MODE_TO_USER,
-    )
+    if manager.start_data['activity_type'] != ActivityEnum.CHILD_STUDIO.value:
+        await manager.event.bot.send_message(
+            chat_id=manager.start_data['user_id'],
+            text=('Чтобы узнать как до нас добраться, используйте команду 👉 /how_to'),
+            parse_mode=_PARSE_MODE_TO_USER,
+        )
     payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
     await approve_form_for_other_admins(
         manager,
