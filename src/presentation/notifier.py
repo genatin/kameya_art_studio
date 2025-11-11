@@ -24,6 +24,8 @@ _MONTH = _DAY * 30
 
 class Notifier:
     async def registration_notify(self, manager: DialogManager, user: UserDTO) -> None:
+        if user.id == get_config().DEVELOPER_ID:
+            return
         for admin_id in get_config().admins:
             try:
                 await manager.event.bot.send_message(

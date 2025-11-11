@@ -716,7 +716,7 @@ admin_dialog = Dialog(
     Window(
         Const('🖼 Изменить картинку в меню'),
         Format('Приложите фото и отправьте сообщением'),
-        _BACK_TO_PAGE_ACTIVITY,
+        SwitchTo(Const('Назад'), id='back', state=Administration.START),
         MessageInput(menu_image_handler),
         state=Administration.IMAGE,
     ),

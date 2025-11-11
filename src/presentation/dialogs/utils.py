@@ -5,12 +5,7 @@ from typing import Any
 
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import (
-    ContentType,
-    ErrorEvent,
-    Message,
-    ReplyKeyboardRemove,
-)
+from aiogram.types import ContentType, ErrorEvent, Message, ReplyKeyboardRemove
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
