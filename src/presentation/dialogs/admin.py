@@ -39,6 +39,7 @@ from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
 from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.database.redis.keys import BaseMenuImage
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import PaymentCallback, SignUpCallback
 from src.presentation.dialogs.states import (
@@ -431,6 +432,23 @@ async def photo_handler(
         await dialog_manager.next()
 
 
+async def menu_image_handler(
+    message: Message,
+    message_input: MessageInput,
+    dialog_manager: DialogManager,
+) -> None:
+    file_id = message.photo[0].file_id if message.photo else ''
+    if not file_id:
+        await message.answer(
+            'Нужно приложить картинку, НЕ ДОКУМЕНТ или нажмите кнопку ниже'
+        )
+        return
+    redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
+    await redis_repository.set(BaseMenuImage(key='menu_image'), file_id, ex=None)
+    await message.answer('Картинка главного меню успешно изменена.')
+    await dialog_manager.start(BaseMenu.START)
+
+
 async def add_activities_to_db(
     callback: CallbackQuery,
     button: Button,
@@ -649,6 +667,11 @@ admin_dialog = Dialog(
             state=Administration.USERS,
             on_click=get_users,
         ),
+        SwitchTo(
+            Const('🖼 Изменить картинку в меню'),
+            id='change_image',
+            state=Administration.IMAGE,
+        ),
         Next(Const('🎰 Редактор активностей')),
         _CANCEL,
         state=Administration.START,
@@ -689,6 +712,13 @@ admin_dialog = Dialog(
             Button(Const(' '), id='ss'),
         ),
         state=Administration.USERS,
+    ),
+    Window(
+        Const('🖼 Изменить картинку в меню'),
+        Format('Приложите фото и отправьте сообщением'),
+        _BACK_TO_PAGE_ACTIVITY,
+        MessageInput(menu_image_handler),
+        state=Administration.IMAGE,
     ),
     launch_mode=LaunchMode.ROOT,
 )

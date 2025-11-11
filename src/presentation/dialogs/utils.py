@@ -24,7 +24,7 @@ from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
 from src.infrastracture.adapters.repositories.repo import UsersRepository
-from src.infrastracture.database.redis.keys import AdminKey
+from src.infrastracture.database.redis.keys import AdminKey, BaseMenuImage
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.dialogs.states import BaseMenu
 
@@ -93,7 +93,20 @@ async def error_handler(error_event: ErrorEvent) -> None:
     )
 
 
-async def get_user(
+async def get_base_menu_image(
+    dialog_manager: DialogManager, repository: UsersRepository, **kwargs
+) -> MediaAttachment | None:
+    redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
+    base_menu_image = await redis_repository.get(BaseMenuImage(key='menu_image'), str)
+    if base_menu_image:
+        base_menu_image = MediaAttachment(
+            file_id=MediaId(base_menu_image),
+            type=ContentType.PHOTO,
+        )
+    return base_menu_image
+
+
+async def get_base_menu_data(
     dialog_manager: DialogManager, repository: UsersRepository, **kwargs
 ) -> dict[str, Any]:
     update_reg = dialog_manager.start_data == 'update_reg'
@@ -107,7 +120,12 @@ async def get_user(
         user_id = dialog_manager.event.from_user.id
     user = await repository.user.get_user(user_id, update_reg)
     is_admin = user.id in get_config().admins if user else False
-    return {'user': user, 'is_admin': is_admin}
+
+    return {
+        'user': user,
+        'is_admin': is_admin,
+        FILE_ID: await get_base_menu_image(dialog_manager, repository),
+    }
 
 
 async def message_is_sended(dialog_manager: DialogManager, user_id: int) -> bool:

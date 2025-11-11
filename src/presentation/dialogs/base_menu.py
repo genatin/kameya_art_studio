@@ -5,7 +5,7 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import ContentType
 from aiogram_dialog import Dialog, LaunchMode, Window
 from aiogram_dialog.widgets.kbd import Back, Next, Start, SwitchTo, Url
-from aiogram_dialog.widgets.media import StaticMedia
+from aiogram_dialog.widgets.media import DynamicMedia, StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
 from src.application.domen.text import RU
@@ -17,21 +17,18 @@ from src.presentation.dialogs.states import (
     Registration,
     SignUp,
 )
-from src.presentation.dialogs.utils import get_user
+from src.presentation.dialogs.utils import FILE_ID, get_base_menu_data
 from src.presentation.middlewares.middleware import RegistrationMiddleware
 
 logger = logging.getLogger(__name__)
 
 menu_dialog = Dialog(
     Window(
-        StaticMedia(
-            path=get_config().welcome_image_path,
-            type=ContentType.PHOTO,
-        ),
         Format(
             '{user.name}, добро пожаловать в нашу творческую мастерскую! 🎨',
             when=F['user'],
         ),
+        DynamicMedia(FILE_ID, when=FILE_ID),
         Start(
             Const('✍️ Записаться'),
             id='as',
@@ -56,7 +53,7 @@ menu_dialog = Dialog(
             Const(RU.admin), id='admin', when=F['is_admin'], state=Administration.START
         ),
         state=BaseMenu.START,
-        getter=get_user,
+        getter=get_base_menu_data,
         parse_mode=ParseMode.HTML,
     ),
     Window(
@@ -83,7 +80,7 @@ menu_dialog = Dialog(
         Back(text=Const(RU.back_step)),
         state=BaseMenu.ABOUT_US,
         parse_mode=ParseMode.HTML,
-        getter=get_user,
+        getter=get_base_menu_data,
     ),
     Window(
         StaticMedia(path=get_config().how_to_video_path, type=ContentType.VIDEO),

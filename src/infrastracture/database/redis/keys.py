@@ -17,3 +17,7 @@ class ActivityKey(StorageKey, prefix='activity'):
 
 class AdminGetSingUps(StorageKey, prefix='signups'):
     key: Any
+
+
+class BaseMenuImage(StorageKey, prefix='base_menu_image'):
+    key: Any

@@ -46,6 +46,7 @@ class Administration(StatesGroup):
     START = State()
     REDACTOR = State()
     USERS = State()
+    IMAGE = State()
 
 
 class AdminActivity(StatesGroup):
