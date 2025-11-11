@@ -23,14 +23,12 @@ _MONTH = _DAY * 30
 
 
 class Notifier:
-    async def registration_notify(self, manager: DialogManager, user: UserDTO) -> None:
-        if user.id == get_config().DEVELOPER_ID:
-            return
+    async def admin_notify(self, manager: DialogManager, message_str: str) -> None:
         for admin_id in get_config().admins:
             try:
                 await manager.event.bot.send_message(
                     admin_id,
-                    f'К нам пожаловало новое дарование – {user.name}!',
+                    message_str,
                     parse_mode=ParseMode.HTML,
                     disable_notification=False,
                 )

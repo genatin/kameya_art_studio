@@ -12,6 +12,7 @@ from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from src.application.domen.text import RU
 from src.application.models import UserDTO
+from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.presentation.dialogs.states import Registration
 from src.presentation.keyboards.keyboard import keyboard_phone
@@ -94,7 +95,10 @@ async def registration_complete(
                 'Ура! Регистрация завершена, теперь Вы можете творить вместе с нами!'
             )
             show_mode = ShowMode.DELETE_AND_SEND
-            await notifier.registration_notify(manager, user)
+            if user.id != get_config().DEVELOPER_ID:
+                await notifier.admin_notify(
+                    manager, f'К нам пожаловало новое дарование – {user.name}!'
+                )
         else:
             message = (
                 'Что-то пошло не так, попробуйте ещё раз. '
