@@ -122,11 +122,15 @@ class ActivityRepository(ActivityAbstractRepository):
             )
 
     async def update_activity_fileid_by_name(
-        self, activity_type: str, theme: str, file_id: str
+        self, activity_type: str, theme: str, file_id: str, content_type: str
     ) -> Activity | None:
         async with self.__session_maker() as session:
             activity = await dao.update_activity_fileid_by_name(
-                session, activity_type=activity_type, theme=theme, file_id=file_id
+                session,
+                activity_type=activity_type,
+                theme=theme,
+                file_id=file_id,
+                content_type=content_type,
             )
             if activity:
                 activity_key = self.get_activity_key(activity_type)

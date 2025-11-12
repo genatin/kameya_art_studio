@@ -407,6 +407,7 @@ async def change_photo(
         activity_type=dialog_manager.dialog_data['act_type'],
         theme=mclass_name,
         file_id=file_id,
+        content_type=content_type,
     )
     if activity:
         scroll: ManagedScroll | None = dialog_manager.find('scroll')

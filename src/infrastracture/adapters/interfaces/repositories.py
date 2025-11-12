@@ -118,7 +118,7 @@ class ActivityAbstractRepository(ABC):
 
     @abstractmethod
     async def update_activity_fileid_by_name(
-        self, activity_type: str, theme: str, file_id: str
+        self, activity_type: str, theme: str, file_id: str, content_type: str
     ) -> Activity | None:
         raise NotImplementedError
 

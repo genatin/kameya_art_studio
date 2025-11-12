@@ -85,11 +85,12 @@ async def update_activity_description_by_name(
 
 
 async def update_activity_fileid_by_name(
-    session: AsyncSession, activity_type: str, theme: str, file_id: str
+    session: AsyncSession, activity_type: str, theme: str, file_id: str, content_type: str
 ) -> Activity | None:
     try:
         activity = await get_activity_by_theme_and_type(session, activity_type, theme)
         activity.file_id = file_id
+        activity.content_type = content_type
         await session.commit()
         return activity
     except SQLAlchemyError:
