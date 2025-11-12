@@ -759,7 +759,7 @@ change_activity_dialog = Dialog(
             '<b>{activity[theme]}</b>\n\n{activity[description]}',
             when='activity',
         ),
-        # DynamicMedia(selector=FILE_ID, when=FILE_ID),
+        DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id='scroll', pages='len_activities'),
         SwitchTo(
             Const(RU.admin_change),
