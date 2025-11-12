@@ -1,4 +1,5 @@
 include .env
+include alembic/Makefile
 
 DOCKER_COMPOSE=docker compose
 DOCKER_COMPOSE_RUN=$(DOCKER_COMPOSE) run --rm bot
@@ -28,11 +29,3 @@ flake:
 
 mypy:
 	uv run mypy src bot.py
-
-
-revision: build
-	- read -p "Enter revision message: " revision_message && \
-	$(DOCKER_COMPOSE_RUN) alembic revision --autogenerate -m "$$revision_message"
-
-upgrade_head: build
-	- $(DOCKER_COMPOSE_RUN) alembic upgrade head

@@ -87,6 +87,7 @@ class ActivityAbstractRepository(ABC):
         activity_type: str,
         theme: str,
         image_id: str,
+        content_type: str,
         description: str | None = None,
     ) -> Activity | None:
         raise NotImplementedError

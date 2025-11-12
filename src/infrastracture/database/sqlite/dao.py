@@ -23,6 +23,7 @@ async def add_activity(
     activity_type: str,
     theme: str,
     image_id: str,
+    content_type: str,
     description: str | None = None,
 ) -> Activity | None:
     try:
@@ -33,6 +34,7 @@ async def add_activity(
             activity_type=act_type,
             theme=theme,
             file_id=image_id,
+            content_type=content_type,
             description=description,
         )
         session.add(activity)

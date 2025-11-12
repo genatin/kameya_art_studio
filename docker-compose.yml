@@ -3,7 +3,7 @@ version: '3.3'
 
 services:
   bot:
-    build: .
+    build: ./
     restart: always
     container_name: bot
     env_file: .env
@@ -11,6 +11,7 @@ services:
       - keydb
     volumes:
       - ./sqlite_data:/sqlite_data
+      - ./alembic/versions:/alembic/versions
     networks:
       - app_network
   keydb:

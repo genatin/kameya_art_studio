@@ -23,9 +23,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     (uv sync --locked --no-editable || \
      echo "Retrying..." && sleep 30 && uv sync --locked --no-editable)
 
+COPY bot.py alembic.ini ./
 COPY ./src ./src
-COPY ./bot.py ./bot.py
 COPY ./static_data ./static_data
+COPY ./alembic ./alembic
+
 
 ENTRYPOINT ["tini", "--"]
-CMD ["uv", "run", "./bot.py"]
+CMD ["/bin/bash", "-c", "uv run alembic upgrade head && uv run ./bot.py"]

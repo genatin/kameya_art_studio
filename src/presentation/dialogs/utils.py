@@ -26,6 +26,7 @@ from src.presentation.dialogs.states import BaseMenu
 logger = logging.getLogger(__name__)
 
 FILE_ID = 'file_id'
+CONTENT_TYPE = 'content_type'
 
 _MINUTE = 60
 _HOUR = _MINUTE * 60
@@ -219,7 +220,7 @@ async def get_activity_page(dialog_manager: DialogManager, **_kwargs) -> dict[st
     if activity[FILE_ID]:
         image = MediaAttachment(
             file_id=MediaId(activity[FILE_ID]),
-            type=ContentType.PHOTO,
+            type=ContentType(activity[CONTENT_TYPE]),
         )
     return {
         'media_number': media_number,

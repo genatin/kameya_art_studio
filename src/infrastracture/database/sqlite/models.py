@@ -1,5 +1,6 @@
 from enum import StrEnum
 
+from aiogram.types import ContentType
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -35,6 +36,9 @@ class Activity(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     theme: Mapped[str] = mapped_column(String)
     file_id: Mapped[str] = mapped_column(String, nullable=True)
+    content_type: Mapped[str] = mapped_column(
+        String, nullable=True, server_default=ContentType.PHOTO
+    )
     description: Mapped[str] = mapped_column(String)
 
     type_id: Mapped[int] = mapped_column(ForeignKey('activity_types.id'), nullable=False)

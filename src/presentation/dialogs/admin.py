@@ -50,6 +50,7 @@ from src.presentation.dialogs.states import (
     BaseMenu,
 )
 from src.presentation.dialogs.utils import (
+    CONTENT_TYPE,
     FILE_ID,
     approve_form_for_other_admins,
     close_app_form_for_other_admins,
@@ -153,8 +154,13 @@ async def message_admin_handler(
         )
         if message.photo:
             dialog_manager.dialog_data[FILE_ID] = message.photo[0].file_id
+            dialog_manager.dialog_data[CONTENT_TYPE] = ContentType.PHOTO
+        if message.video:
+            dialog_manager.dialog_data[FILE_ID] = message.video.file_id
+            dialog_manager.dialog_data[CONTENT_TYPE] = ContentType.VIDEO
         if message.document:
-            dialog_manager.dialog_data['document'] = message.document.file_id
+            dialog_manager.dialog_data[FILE_ID] = message.document.file_id
+            dialog_manager.dialog_data[CONTENT_TYPE] = ContentType.DOCUMENT
 
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     await redis_repository.hset(dialog_manager.start_data['message_id'], 'cost', cost)
@@ -231,9 +237,9 @@ async def get_image(
 ) -> dict[str, MediaAttachment | str]:
     image = None
     if image_id := dialog_manager.dialog_data.get(FILE_ID):
-        image = MediaAttachment(ContentType.PHOTO, file_id=MediaId(image_id))
-    elif document_id := dialog_manager.dialog_data.get('document'):
-        image = MediaAttachment(ContentType.DOCUMENT, file_id=MediaId(document_id))
+        image = MediaAttachment(
+            dialog_manager.dialog_data.get(CONTENT_TYPE), file_id=MediaId(image_id)
+        )
     return {
         FILE_ID: image,
         'description': dialog_manager.dialog_data.get('description', ''),
@@ -389,7 +395,10 @@ async def name_activity_handler(
 
 
 async def change_photo(
-    message: Message, dialog_manager: DialogManager, file_id: str = ''
+    message: Message,
+    dialog_manager: DialogManager,
+    file_id: str | None = None,
+    content_type: str | None = None,
 ) -> None:
     mclass_name = dialog_manager.dialog_data['activity']['theme']
     activ_repository = _get_activity_repo(dialog_manager)
@@ -404,6 +413,7 @@ async def change_photo(
         media_number = await scroll.get_page() if scroll else 0
         dialog_manager.dialog_data['activities'][media_number][FILE_ID] = file_id
         dialog_manager.dialog_data[FILE_ID] = file_id
+        dialog_manager.dialog_data[CONTENT_TYPE] = content_type
         await message.answer(
             f'Картинка мастер-класса успешно {"изменена" if file_id else "удалена"}'
         )
@@ -416,7 +426,17 @@ async def photo_handler(
     message_input: MessageInput,
     dialog_manager: DialogManager,
 ) -> None:
-    file_id = message.photo[0].file_id if message.photo else ''
+    file_id = None
+    if message.photo:
+        file_id = message.photo[0].file_id
+        content_type = ContentType.PHOTO
+    elif message.video:
+        if message.video.file_size > 1e7:
+            await message.answer('Видео слишком тяжелое, нужно что-то поменьше')
+            return
+
+        file_id = message.video.file_id
+        content_type = ContentType.VIDEO
     if not file_id:
         await message.answer(
             'Нужно приложить картинку, НЕ ДОКУМЕНТ или нажмите кнопку ниже'
@@ -424,11 +444,12 @@ async def photo_handler(
         return
     if dialog_manager.dialog_data.get(_IS_EDIT):
         dialog_manager.dialog_data[_IS_EDIT] = False
-        await change_photo(message, dialog_manager, file_id)
+        await change_photo(message, dialog_manager, file_id, content_type)
         await dialog_manager.switch_to(AdminActivity.PAGE)
 
     else:
         dialog_manager.dialog_data[FILE_ID] = file_id
+        dialog_manager.dialog_data[CONTENT_TYPE] = content_type
         await dialog_manager.next()
 
 
@@ -437,7 +458,7 @@ async def menu_image_handler(
     message_input: MessageInput,
     dialog_manager: DialogManager,
 ) -> None:
-    file_id = message.photo[0].file_id if message.photo else ''
+    file_id = message.photo[0].file_id if message.photo else None
     if not file_id:
         await message.answer(
             'Нужно приложить картинку, НЕ ДОКУМЕНТ или нажмите кнопку ниже'
@@ -459,12 +480,14 @@ async def add_activities_to_db(
     activities = dialog_manager.dialog_data['activities']
     theme_activity = dialog_manager.dialog_data['theme_activity']
     file_id = dialog_manager.dialog_data.get(FILE_ID, '')
+    content_type = dialog_manager.dialog_data.get(CONTENT_TYPE, ContentType.PHOTO)
     description = dialog_manager.dialog_data.get('description', '')
     activ_repository: ActivityAbstractRepository = _get_activity_repo(dialog_manager)
     act = await activ_repository.add_activity(
         activity_type=act_type,
         theme=theme_activity,
         image_id=file_id,
+        content_type=content_type,
         description=description,
     )
     if not act:
@@ -478,6 +501,7 @@ async def add_activities_to_db(
             'theme': theme_activity,
             'description': description,
             FILE_ID: file_id,
+            CONTENT_TYPE: content_type,
         }
     )
 
@@ -485,7 +509,7 @@ async def add_activities_to_db(
     if scroll:
         await scroll.set_page(len(activities) - 1)
         return await dialog_manager.switch_to(AdminActivity.PAGE)
-    await dialog_manager.start(Administration.REDACTOR)
+    await dialog_manager.start(Administration.EDIT_ACTS)
 
 
 async def remove_activity_from_db(
@@ -506,7 +530,7 @@ async def remove_activity_from_db(
         await scroll.set_page(max(0, media_number - 1))
         await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
-        await dialog_manager.start(Administration.REDACTOR)
+        await dialog_manager.start(Administration.EDIT_ACTS)
 
 
 async def no_photo(
@@ -516,10 +540,10 @@ async def no_photo(
     *_,
 ) -> None:
     if dialog_manager.dialog_data.get(_IS_EDIT):
-        await change_photo(callback.message, dialog_manager, '')
+        await change_photo(callback.message, dialog_manager)
         await dialog_manager.switch_to(AdminActivity.PAGE, show_mode=ShowMode.SEND)
     else:
-        dialog_manager.dialog_data[FILE_ID] = ''
+        dialog_manager.dialog_data[FILE_ID] = None
         await dialog_manager.next()
 
 
@@ -668,11 +692,15 @@ admin_dialog = Dialog(
             on_click=get_users,
         ),
         SwitchTo(
+            Const('🎰 Редактор активностей'),
+            id='edit_acts',
+            state=Administration.EDIT_ACTS,
+        ),
+        SwitchTo(
             Const('🖼 Изменить картинку в меню'),
             id='change_image',
             state=Administration.IMAGE,
         ),
-        Next(Const('🎰 Редактор активностей')),
         _CANCEL,
         state=Administration.START,
     ),
@@ -703,7 +731,7 @@ admin_dialog = Dialog(
             data={'act_type': evening_sketch_act},
         ),
         Row(Back(Const('Назад')), Button(Const(' '), id='ss')),
-        state=Administration.REDACTOR,
+        state=Administration.EDIT_ACTS,
     ),
     Window(
         Format('{dialog_data[all_users_mess]}'),
@@ -802,10 +830,10 @@ change_activity_dialog = Dialog(
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(
-        Format('Приложите фото и отправьте сообщением'),
+        Format('Приложите медиа файл и отправьте сообщением'),
         Row(
             _BACK_TO_PAGE_ACTIVITY,
-            Button(Const('Без фото'), id='next_or_edit', on_click=no_photo),
+            Button(Const('Без медиафайла'), id='next_or_edit', on_click=no_photo),
         ),
         MessageInput(photo_handler),
         state=AdminActivity.PHOTO,

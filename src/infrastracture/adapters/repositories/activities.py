@@ -25,6 +25,7 @@ class Activity(BaseModel):
     id: int
     theme: str
     file_id: str
+    content_type: str
     description: str
 
 
@@ -48,6 +49,7 @@ class ActivityRepository(ActivityAbstractRepository):
         activity_type: str,
         theme: str,
         image_id: str,
+        content_type: str,
         description: str | None = None,
     ) -> Activity | None:
         async with self.__session_maker() as session:
@@ -56,6 +58,7 @@ class ActivityRepository(ActivityAbstractRepository):
                 activity_type=activity_type,
                 theme=theme,
                 image_id=image_id,
+                content_type=content_type,
                 description=description,
             )
         if activity:
