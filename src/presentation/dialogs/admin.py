@@ -413,6 +413,7 @@ async def change_photo(
         scroll: ManagedScroll | None = dialog_manager.find('scroll')
         media_number = await scroll.get_page() if scroll else 0
         dialog_manager.dialog_data['activities'][media_number][FILE_ID] = file_id
+        dialog_manager.dialog_data['activities'][media_number][CONTENT_TYPE] = content_type
         dialog_manager.dialog_data[FILE_ID] = file_id
         dialog_manager.dialog_data[CONTENT_TYPE] = content_type
         await message.answer(
