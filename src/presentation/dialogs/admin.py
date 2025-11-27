@@ -509,7 +509,9 @@ async def photo_handler(
         content_type = ContentType.PHOTO
     elif message.video:
         if message.video.file_size > 1e7:
-            await message.answer('Видео слишком тяжелое, нужно что-то поменьше')
+            await message.answer(
+                'Видео слишком тяжелое, нужно что-то поменьше. До 10 Мбай.'
+            )
             return
 
         file_id = message.video.file_id
@@ -535,14 +537,25 @@ async def menu_image_handler(
     message_input: MessageInput,
     dialog_manager: DialogManager,
 ) -> None:
-    file_id = message.photo[0].file_id if message.photo else None
+    file_id = None
+    if message.photo:
+        file_id = message.photo[0].file_id
+        content_type = ContentType.PHOTO
+    elif message.video:
+        if message.video.file_size > 1e7:
+            await message.answer(
+                'Видео слишком тяжелое, нужно что-то поменьше. До 10 Мбай.'
+            )
+            return
+        file_id = message.video.file_id
+        content_type = ContentType.VIDEO
     if not file_id:
         await message.answer(
             'Нужно приложить картинку, НЕ ДОКУМЕНТ или нажмите кнопку ниже'
         )
         return
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
-    await redis_repository.set(BaseMenuImage(key='menu_image'), file_id, ex=None)
+    await redis_repository.hset('menu_image', file_id, content_type, ex=None)
     await message.answer('Картинка главного меню успешно изменена.')
     await dialog_manager.start(BaseMenu.START)
 
@@ -990,25 +1003,29 @@ change_activity_dialog = Dialog(
         Const('\n\nЧто поменять?'),
         DynamicMedia(FILE_ID, when=FILE_ID),
         SwitchTo(Const('Тема'), id='edit_name_mc', state=AdminActivity.NAME),
-        SwitchTo(
-            Const('Описание'),
-            id='edit_des_mc',
-            state=AdminActivity.DESCRIPTION,
+        Row(
+            SwitchTo(
+                Const('Описание'),
+                id='edit_des_mc',
+                state=AdminActivity.DESCRIPTION,
+            ),
+            SwitchTo(
+                Const('Изображение'),
+                id='edit_image_mc',
+                state=AdminActivity.PHOTO,
+            ),
         ),
-        SwitchTo(
-            Const('Изображение'),
-            id='edit_image_mc',
-            state=AdminActivity.PHOTO,
-        ),
-        SwitchTo(
-            Const('Дату'),
-            id='edit_date_mc',
-            state=AdminActivity.DATE,
-        ),
-        SwitchTo(
-            Const('Время'),
-            id='edit_time_mc',
-            state=AdminActivity.TIME,
+        Row(
+            SwitchTo(
+                Const('Дату'),
+                id='edit_date_mc',
+                state=AdminActivity.DATE,
+            ),
+            SwitchTo(
+                Const('Время'),
+                id='edit_time_mc',
+                state=AdminActivity.TIME,
+            ),
         ),
         SwitchTo(Const('Назад'), id='back', state=AdminActivity.PAGE),
         state=AdminActivity.CHANGE,

@@ -93,11 +93,12 @@ async def get_base_menu_image(
     dialog_manager: DialogManager, repository: UsersRepository, **kwargs
 ) -> MediaAttachment | None:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
-    base_menu_image = await redis_repository.get(BaseMenuImage(key='menu_image'), str)
+    base_menu_image = await redis_repository.hgetall('menu_image')
+    file_id, content_type = next(iter(base_menu_image.items()))
     if base_menu_image:
         base_menu_image = MediaAttachment(
-            file_id=MediaId(base_menu_image),
-            type=ContentType.PHOTO,
+            file_id=MediaId(file_id),
+            type=ContentType(content_type),
         )
     return base_menu_image
 
@@ -216,7 +217,6 @@ async def get_activity_page(dialog_manager: DialogManager, **_kwargs) -> dict[st
         return {FILE_ID: None, 'activity': None, 'media_number': 0, 'len_activities': 0}
     activity = activities[media_number]
     dialog_manager.dialog_data['activity'] = activity
-    logger.info(f'----> {activity=}')
     image = None
     if activity[FILE_ID]:
         image = MediaAttachment(
