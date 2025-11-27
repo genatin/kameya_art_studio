@@ -44,7 +44,6 @@ from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
 from src.infrastracture.adapters.repositories.repo import UsersRepository
-from src.infrastracture.database.redis.keys import BaseMenuImage
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import PaymentCallback, SignUpCallback
 from src.presentation.dialogs.states import (
