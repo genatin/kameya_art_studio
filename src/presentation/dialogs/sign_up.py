@@ -269,11 +269,11 @@ activity_pages_dialog = Dialog(
         Format('{dialog_data[act_type]} скоро будут доступны', when=~_ACTIVITY_EXISTS),
         _THEME_AND_DESCRIPTION_HTML,
         Format(
-            'Дата: {activity[date]}',
+            '<i>Дата: {activity[date]} </i>',
             when=F['activity']['date'],
         ),
         Format(
-            'Время: {activity[time]}',
+            '<i>Время: {activity[time]}<>/i',
             when=F['activity']['time'],
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
