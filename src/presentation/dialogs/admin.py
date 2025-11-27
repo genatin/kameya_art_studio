@@ -410,10 +410,12 @@ async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_
 
     if not new_time:
         return await event.answer('Некорректный формат. Должно быть ЧЧ:ММ')
-    # if not dialog_manager.dialog_data['activities'][media_number]['date']:
-    #     return await event.answer('Сначал нужно установить дату')
 
     if dialog_manager.dialog_data.get(_IS_EDIT):
+        scroll: ManagedScroll = dialog_manager.find('scroll')
+        media_number = await scroll.get_page()
+        if not dialog_manager.dialog_data['activities'][media_number]['date']:
+            return await event.answer('Сначал нужно установить дату')
         activ_repository = _get_activity_repo(dialog_manager)
         activity = await activ_repository.update_activity_datetime_by_name(
             activity_type=dialog_manager.dialog_data['act_type'],
@@ -422,8 +424,6 @@ async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_
         )
         dialog_manager.dialog_data[_IS_EDIT] = False
         if activity:
-            scroll: ManagedScroll = dialog_manager.find('scroll')
-            media_number = await scroll.get_page()
             dialog_manager.dialog_data['activities'][media_number]['time'] = (
                 new_time.strftime('%H:%M')
             )
