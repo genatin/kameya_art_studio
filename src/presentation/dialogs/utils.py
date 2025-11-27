@@ -94,7 +94,10 @@ async def get_base_menu_image(
 ) -> MediaAttachment | None:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     base_menu_image = await redis_repository.hgetall('menu_image')
-    file_id, content_type = next(iter(base_menu_image.items()))
+    try:
+        file_id, content_type = next(iter(base_menu_image.items()))
+    except StopIteration:
+        return None
     if base_menu_image:
         base_menu_image = MediaAttachment(
             file_id=MediaId(file_id),
