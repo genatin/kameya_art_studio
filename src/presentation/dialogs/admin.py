@@ -108,6 +108,14 @@ async def send_signup_message(
         await asyncio.sleep(2)
 
 
+async def back_step_or_back_to_menu(
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager
+) -> None:
+    if dialog_manager.dialog_data.get(_IS_EDIT):
+        return await dialog_manager.switch_to(AdminActivity.PAGE)
+    return await dialog_manager.back()
+
+
 async def message_admin_handler(
     message: Message,
     message_input: MessageInput,
@@ -911,7 +919,10 @@ change_activity_dialog = Dialog(
             on_click=on_date_selected,
             config=CalendarConfig(min_date=datetime.now(get_config().zone_info).date()),
         ),
-        Row(Back(Const('Назад')), Next(Const('Без даты'))),
+        Row(
+            Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
+            Next(Const('Без даты')),
+        ),
         state=AdminActivity.DATE,
         parse_mode=ParseMode.MARKDOWN,
     ),
@@ -919,7 +930,10 @@ change_activity_dialog = Dialog(
         Format(
             'Укажите время проведения ЧЧ:ММ в формате 24 часов. \n\n_Например: 17:30_'
         ),
-        Row(Back(Const('Назад')), Next(Const('Без времени'))),
+        Row(
+            Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
+            Next(Const('Без времени')),
+        ),
         TextInput(id=_TIME_MC, on_success=time_handler),
         state=AdminActivity.TIME,
         parse_mode=ParseMode.MARKDOWN,
@@ -940,7 +954,10 @@ change_activity_dialog = Dialog(
             'кто хочет расширить свои художественные '
             'горизонты и создать нечто уникальное!</i>'
         ),
-        Row(Back(Const('Назад')), Next(Const('Без описания'))),
+        Row(
+            Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
+            Next(Const('Без описания')),
+        ),
         TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
         state=AdminActivity.DESCRIPTION,
         parse_mode=_PARSE_MODE_TO_USER,
@@ -948,7 +965,7 @@ change_activity_dialog = Dialog(
     Window(
         Format('Приложите медиа файл и отправьте сообщением'),
         Row(
-            Back(Const('Назад')),
+            Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
             Button(Const('Без медиафайла'), id='next_or_edit', on_click=no_photo),
         ),
         MessageInput(photo_handler),
@@ -973,7 +990,7 @@ change_activity_dialog = Dialog(
             when=F['dialog_data']['time'],
         ),
         Row(
-            _BACK_TO_PAGE_ACTIVITY,
+            Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
             Button(Const('Добавить'), id='add_mc', on_click=add_activities_to_db),
         ),
         state=AdminActivity.SEND,
