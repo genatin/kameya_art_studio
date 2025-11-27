@@ -51,10 +51,10 @@ class Notifier:
             f'Занятие: {lesson_activity.activity_type.human_name}\n'
             f'Тема: {lesson_activity.topic}\n'
             '\n'
-            f'Дата: {lesson_activity.date}\n'
-            f'Время: {lesson_activity.time}\n'
+            f'Дата: {lesson_activity.date.strftime("%d-%m-%Y")}\n'
+            f'Время: {lesson_activity.time.strftime("%H:%M")}\n'
             f'<b><u>{lesson_activity.lesson_option.human_name}</u></b>'
-            f'\n\n<a href="https://t.me/{user.phone}">Связаться с пользователем</a>'
+            f'\n<a href="https://t.me/{user.phone}">Связаться с пользователем</a>'
         )
         builder = InlineKeyboardBuilder()
         message_id = str(uuid4())

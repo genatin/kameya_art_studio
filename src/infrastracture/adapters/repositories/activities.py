@@ -32,7 +32,7 @@ class Activity(BaseModel):
 
     def model_dump(self, **kwargs) -> dict[str, Any]:
         d = super().model_dump(**kwargs)
-        d['date'] = self.date_time.date() if self.date_time else None
+        d['date'] = self.date_time.date().strftime('%d-%m-%Y') if self.date_time else None
         d['time'] = self.date_time.time().strftime('%H:%M') if self.date_time else None
         return d
 

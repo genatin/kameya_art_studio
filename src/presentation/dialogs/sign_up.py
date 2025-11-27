@@ -166,7 +166,7 @@ async def _form_presentation(
         'lesson_option': lesson_activity.lesson_option.human_name,
         'num_tickets': lesson_activity.num_tickets,
         'topic': lesson_activity.topic,
-        'date': lesson_activity.date,
+        'date': lesson_activity.date.strftime('%d-%m-%Y'),
         'time': lesson_activity.time.strftime('%H:%M'),
     }
 
