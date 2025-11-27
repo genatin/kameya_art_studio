@@ -99,9 +99,15 @@ async def update_activity_date_by_name(
         activity = await get_activity_by_theme_and_type(session, activity_type, theme)
         old_datetime = activity.date_time
         if not old_datetime:
-            activity.date_time = datetime(
-                new_date.year, new_date.month, new_date.day, tzinfo=get_config().zone_info
-            )
+            if new_date:
+                activity.date_time = datetime(
+                    new_date.year,
+                    new_date.month,
+                    new_date.day,
+                    tzinfo=get_config().zone_info,
+                )
+            else:
+                activity.date_time = datetime.now(get_config().zone_info)
         elif new_date:
             activity.date_time = datetime.combine(new_date, old_datetime.time())
         elif new_time:

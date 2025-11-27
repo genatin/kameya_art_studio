@@ -400,20 +400,19 @@ async def on_date_selected(
             await callback.message.answer(RU.sth_error)
         await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
-        dialog_manager.dialog_data['date'] = datetime(
-            selected_date.year,
-            selected_date.month,
-            selected_date.day,
-            tzinfo=get_config().zone_info,
-        )
+        dialog_manager.dialog_data['date'] = selected_date
         await dialog_manager.next()
 
 
 async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_) -> None:
     new_time = d.get_value() if (d := dialog_manager.find(_TIME_MC)) else None
     new_time = parse_time_regex(new_time)
+
     if not new_time:
         return await event.answer('Некорректный формат. Должно быть ЧЧ:ММ')
+    # if not dialog_manager.dialog_data['activities'][media_number]['date']:
+    #     return await event.answer('Сначал нужно установить дату')
+
     if dialog_manager.dialog_data.get(_IS_EDIT):
         activ_repository = _get_activity_repo(dialog_manager)
         activity = await activ_repository.update_activity_datetime_by_name(
@@ -433,11 +432,7 @@ async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_
             await event.answer(RU.sth_error)
         await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
-        dialog_manager.dialog_data['time'] = datetime.combine(
-            datetime.fromisoformat(dialog_manager.dialog_data['time']).date(),
-            new_time,
-            tzinfo=get_config().zone_info,
-        )
+        dialog_manager.dialog_data['time'] = new_time
         await dialog_manager.next()
 
 
@@ -571,8 +566,8 @@ async def add_activities_to_db(
     file_id = dialog_manager.dialog_data.get(FILE_ID, '')
     content_type = dialog_manager.dialog_data.get(CONTENT_TYPE, ContentType.PHOTO)
     description = dialog_manager.dialog_data.get('description', '')
-    _date = datetime.fromisoformat(dialog_manager.dialog_data.get('date', ''))
-    _time = datetime.fromisoformat(dialog_manager.dialog_data.get('time', ''))
+    _date = date.fromisoformat(dialog_manager.dialog_data.get('date', ''))
+    _time = time.fromisoformat(dialog_manager.dialog_data.get('time', ''))
     activ_repository: ActivityAbstractRepository = _get_activity_repo(dialog_manager)
     act = await activ_repository.add_activity(
         activity_type=act_type,
@@ -916,7 +911,7 @@ change_activity_dialog = Dialog(
             on_click=on_date_selected,
             config=CalendarConfig(min_date=datetime.now(get_config().zone_info).date()),
         ),
-        Row(_BACK_TO_PAGE_ACTIVITY, Next(Const('Без даты'))),
+        Row(Back(Const('Назад')), Next(Const('Без даты'))),
         state=AdminActivity.DATE,
         parse_mode=ParseMode.MARKDOWN,
     ),
@@ -924,7 +919,7 @@ change_activity_dialog = Dialog(
         Format(
             'Укажите время проведения ЧЧ:ММ в формате 24 часов. \n\n_Например: 17:30_'
         ),
-        Row(_BACK_TO_PAGE_ACTIVITY, Next(Const('Без времени'))),
+        Row(Back(Const('Назад')), Next(Const('Без времени'))),
         TextInput(id=_TIME_MC, on_success=time_handler),
         state=AdminActivity.TIME,
         parse_mode=ParseMode.MARKDOWN,
@@ -945,7 +940,7 @@ change_activity_dialog = Dialog(
             'кто хочет расширить свои художественные '
             'горизонты и создать нечто уникальное!</i>'
         ),
-        Row(_BACK_TO_PAGE_ACTIVITY, Next(Const('Без описания'))),
+        Row(Back(Const('Назад')), Next(Const('Без описания'))),
         TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
         state=AdminActivity.DESCRIPTION,
         parse_mode=_PARSE_MODE_TO_USER,
@@ -953,7 +948,7 @@ change_activity_dialog = Dialog(
     Window(
         Format('Приложите медиа файл и отправьте сообщением'),
         Row(
-            _BACK_TO_PAGE_ACTIVITY,
+            Back(Const('Назад')),
             Button(Const('Без медиафайла'), id='next_or_edit', on_click=no_photo),
         ),
         MessageInput(photo_handler),
@@ -970,12 +965,12 @@ change_activity_dialog = Dialog(
         ),
         Format('\n<b>Описание:</b> {description}', when='description'),
         Format(
-            'Дата: {activity[date]}',
-            when=F['activity']['date'],
+            'Дата: {dialog_data[date]}',
+            when=F['dialog_data']['date'],
         ),
         Format(
-            'Время: {activity[time]}',
-            when=F['activity']['time'],
+            'Время: {dialog_data[time]}',
+            when=F['dialog_data']['time'],
         ),
         Row(
             _BACK_TO_PAGE_ACTIVITY,
