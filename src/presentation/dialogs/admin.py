@@ -1006,13 +1006,13 @@ change_activity_dialog = Dialog(
         ),
         Format(
             'Дата: {dialog_data[activity][date]}',
-            when=F['activity']['date'],
+            when=F['dialog_data']['activity']['date'],
         ),
         Format(
             'Время: {dialog_data[activity][time]}',
-            when=F['activity']['time'],
+            when=F['dialog_data']['activity']['time'],
         ),
-        Const('\n\nЧто поменять?'),
+        Const('\nЧто поменять?'),
         DynamicMedia(FILE_ID, when=FILE_ID),
         SwitchTo(Const('Тема'), id='edit_name_mc', state=AdminActivity.NAME),
         Row(
