@@ -50,7 +50,7 @@ _LESSON_ACTIVITY = 'lesson_activity'
 _IS_FILE_ID = F[FILE_ID] | F['dialog_data'][FILE_ID]
 _ACTIVITY_EXISTS = F['dialog_data']['activities']
 _THEME_AND_DESCRIPTION_HTML = Format(
-    '<b>{activity[theme]}</b>\n\n<i>{activity[description]}</i>',
+    ('<b>{activity[theme]}</b>' '\n\n<i>{activity[description]}</i>'),
     when='activity',
 )
 
@@ -258,6 +258,14 @@ activity_pages_dialog = Dialog(
     Window(
         Format('{dialog_data[act_type]} скоро будут доступны', when=~_ACTIVITY_EXISTS),
         _THEME_AND_DESCRIPTION_HTML,
+        Format(
+            'Дата: {activity[date]}',
+            when=F['activity']['date'],
+        ),
+        Format(
+            'Время: {activity[time]}',
+            when=F['activity']['time'],
+        ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id='scroll', pages='len_activities'),
         Row(

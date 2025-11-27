@@ -1,11 +1,13 @@
 import logging
 from collections.abc import Sequence
+from datetime import date, datetime, time
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.domen.models.activity_type import ActivityType as ActType
+from src.config import get_config
 from src.infrastracture.database.sqlite.base import de_emojify
 from src.infrastracture.database.sqlite.models import Activity, ActivityType, User
 
@@ -25,6 +27,7 @@ async def add_activity(
     image_id: str,
     content_type: str,
     description: str | None = None,
+    date_time: datetime | None = None,
 ) -> Activity | None:
     try:
         act_type = await get_act_type_by_name(session, activity_type)
@@ -36,6 +39,7 @@ async def add_activity(
             file_id=image_id,
             content_type=content_type,
             description=description,
+            date_time=date_time,
         )
         session.add(activity)
         logger.info('Added activity: %s', activity)
@@ -77,6 +81,33 @@ async def update_activity_description_by_name(
     try:
         activity = await get_activity_by_theme_and_type(session, activity_type, theme)
         activity.description = new_description
+        await session.commit()
+        return activity
+    except SQLAlchemyError:
+        logger.error('Update description activity failed', theme)
+        await session.rollback()
+
+
+async def update_activity_date_by_name(
+    session: AsyncSession,
+    activity_type: str,
+    theme: str,
+    new_date: date | None = None,
+    new_time: time | None = None,
+) -> Activity | None:
+    try:
+        activity = await get_activity_by_theme_and_type(session, activity_type, theme)
+        old_datetime = activity.date_time
+        if not old_datetime:
+            activity.date_time = datetime(
+                new_date.year, new_date.month, new_date.day, tzinfo=get_config().zone_info
+            )
+        elif new_date:
+            activity.date_time = datetime.combine(new_date, old_datetime.time())
+        elif new_time:
+            activity.date_time = datetime.combine(old_datetime.date(), new_time)
+        else:
+            return None
         await session.commit()
         return activity
     except SQLAlchemyError:

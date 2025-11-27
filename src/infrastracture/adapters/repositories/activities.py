@@ -1,5 +1,6 @@
 import logging
-from collections.abc import Sequence
+from datetime import date, datetime, time
+from typing import Any
 
 import emoji
 from pydantic import BaseModel, ConfigDict, RootModel
@@ -24,9 +25,16 @@ class Activity(BaseModel):
 
     id: int
     theme: str
-    file_id: str
     content_type: str
-    description: str
+    file_id: str | None = None
+    description: str | None = None
+    date_time: datetime | None = None
+
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        d = super().model_dump(**kwargs)
+        d['date'] = self.date_time.date() if self.date_time else None
+        d['time'] = self.date_time.time().strftime('%H:%M') if self.date_time else None
+        return d
 
 
 class Acitivities(RootModel):
@@ -51,6 +59,7 @@ class ActivityRepository(ActivityAbstractRepository):
         image_id: str,
         content_type: str,
         description: str | None = None,
+        date_time: datetime | None = None,
     ) -> Activity | None:
         async with self.__session_maker() as session:
             activity = await dao.add_activity(
@@ -60,13 +69,14 @@ class ActivityRepository(ActivityAbstractRepository):
                 image_id=image_id,
                 content_type=content_type,
                 description=description,
+                date_time=date_time,
             )
         if activity:
             activity_key = self.get_activity_key(activity_type)
             await self.__redis.delete(activity_key)
             return activity
 
-    async def get_all_activity_by_type(self, activity_type: str) -> Sequence[Activity]:
+    async def get_all_activity_by_type(self, activity_type: str) -> list[dict]:
         activity_key = self.get_activity_key(activity_type)
         if redis_activities := await self.__redis.get(activity_key, list):
             return redis_activities
@@ -105,6 +115,26 @@ class ActivityRepository(ActivityAbstractRepository):
                 activity_type=activity_type,
                 theme=theme,
                 new_description=new_description,
+            )
+            if activity:
+                activity_key = self.get_activity_key(activity_type)
+                await self.__redis.delete(activity_key)
+                return activity
+
+    async def update_activity_datetime_by_name(
+        self,
+        activity_type: str,
+        theme: str,
+        new_date: date | None = None,
+        new_time: time | None = None,
+    ) -> Activity | None:
+        async with self.__session_maker() as session:
+            activity = await dao.update_activity_date_by_name(
+                session,
+                activity_type=activity_type,
+                theme=theme,
+                new_date=new_date,
+                new_time=new_time,
             )
             if activity:
                 activity_key = self.get_activity_key(activity_type)

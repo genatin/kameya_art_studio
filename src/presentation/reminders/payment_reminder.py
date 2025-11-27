@@ -10,6 +10,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 
 from src.application.domen.text import RU
+from src.config import get_config
 from src.infrastracture.database.redis.repository import RedisRepository
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ _DAYS_14 = _DAY * 14
 class PaymentReminder:
     REMINDER_KEY_PREFIX: str = 'payment:pending:'
     MAX_REMINDER_COUNT: int = 3
-    zone_info: zoneinfo.ZoneInfo = zoneinfo.ZoneInfo('Europe/Moscow')
+    zone_info: zoneinfo.ZoneInfo = get_config().zone_info
 
     def __init__(self, bot: Bot, redis_repository: RedisRepository) -> None:
         self.redis_repository = redis_repository

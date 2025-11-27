@@ -1,7 +1,8 @@
+from datetime import datetime
 from enum import StrEnum
 
 from aiogram.types import ContentType
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.application.domen.text import RU
@@ -40,6 +41,9 @@ class Activity(Base):
         String, nullable=True, server_default=ContentType.PHOTO
     )
     description: Mapped[str] = mapped_column(String)
+    date_time: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
 
     type_id: Mapped[int] = mapped_column(ForeignKey('activity_types.id'), nullable=False)
     activity_type: Mapped['ActivityType'] = relationship(

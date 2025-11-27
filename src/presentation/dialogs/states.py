@@ -55,6 +55,8 @@ class AdminActivity(StatesGroup):
     REMOVE = State()
 
     NAME = State()
+    DATE = State()
+    TIME = State()
     DESCRIPTION = State()
     PHOTO = State()
     SEND = State()

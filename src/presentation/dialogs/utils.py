@@ -216,6 +216,7 @@ async def get_activity_page(dialog_manager: DialogManager, **_kwargs) -> dict[st
         return {FILE_ID: None, 'activity': None, 'media_number': 0, 'len_activities': 0}
     activity = activities[media_number]
     dialog_manager.dialog_data['activity'] = activity
+    logger.info(f'----> {activity=}')
     image = None
     if activity[FILE_ID]:
         image = MediaAttachment(

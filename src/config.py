@@ -1,4 +1,5 @@
 import base64
+import zoneinfo
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,7 @@ class Config(BaseSettings):
     CHILD_PAGE: str = Field(default='детская студия')
     MASTER_CL_PAGE: str = Field(default='мастер-классы')
     EVENING_PAGE: str = Field(default='вечерние наброски')
+    zone_info: zoneinfo.ZoneInfo = zoneinfo.ZoneInfo('Europe/Moscow')
 
     REDIS_PASSWORD: SecretStr
     REDIS_HOST: str = Field(default='keydb')

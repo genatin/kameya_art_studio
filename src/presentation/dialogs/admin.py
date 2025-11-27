@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import re
+from datetime import date, datetime, time
 
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
@@ -12,6 +14,8 @@ from aiogram_dialog.widgets.input import MessageInput, TextInput
 from aiogram_dialog.widgets.kbd import (
     Back,
     Button,
+    Calendar,
+    CalendarConfig,
     Cancel,
     CurrentPage,
     FirstPage,
@@ -35,6 +39,7 @@ from src.application.domen.models.activity_type import (
     mclass_act,
 )
 from src.application.domen.text import RU
+from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
@@ -66,7 +71,24 @@ _PARSE_MODE_TO_USER = ParseMode.HTML
 _CANCEL = Row(Start(Const('Назад'), 'empty', BaseMenu.START), Button(Const(' '), id='ss'))
 _IS_EDIT = 'is_edit'
 _DESCRIPTION_MC = 'description_mc'
+_TIME_MC = 'time_mc'
 _BACK_TO_PAGE_ACTIVITY = SwitchTo(Const('Назад'), id='back', state=AdminActivity.PAGE)
+
+
+def parse_time_regex(time_str: str | None) -> time | None:
+    if not time_str:
+        return None
+    time_str = time_str.strip()
+    pattern = r'^(\d{1,2})(?::(\d{2}))?$'
+    match = re.match(pattern, time_str)
+
+    if match:
+        hours = int(match.group(1))
+        minutes = int(match.group(2)) if match.group(2) else 0
+        if 0 <= hours <= 23 and 0 <= minutes <= 59:
+            return time(hours, minutes)
+
+    return None
 
 
 def _get_activity_repo(dialog_manager: DialogManager) -> ActivityAbstractRepository:
@@ -85,15 +107,6 @@ async def send_signup_message(
         )
         await manager.event.bot.send_chat_action(user_id, 'typing')
         await asyncio.sleep(2)
-    # if manager.dialog_data.get(FILE_ID):
-    #     await manager.event.bot.send_photo(
-    #         chat_id=user_id, photo=manager.dialog_data[FILE_ID]
-    #     )
-    # if manager.dialog_data.get('document'):
-    #     await manager.event.bot.send_document(
-    #         chat_id=user_id,
-    #         document=manager.dialog_data['document'],
-    #     )
 
 
 async def message_admin_handler(
@@ -369,6 +382,66 @@ async def description_handler(
         await dialog_manager.next()
 
 
+async def on_date_selected(
+    callback: CallbackQuery, widget, dialog_manager: DialogManager, selected_date: date
+) -> None:
+    if dialog_manager.dialog_data.get(_IS_EDIT):
+        activ_repository = _get_activity_repo(dialog_manager)
+        activity = await activ_repository.update_activity_datetime_by_name(
+            activity_type=dialog_manager.dialog_data['act_type'],
+            theme=dialog_manager.dialog_data['activity']['theme'],
+            new_date=selected_date,
+        )
+        if activity:
+            scroll: ManagedScroll = dialog_manager.find('scroll')
+            media_number = await scroll.get_page()
+            dialog_manager.dialog_data['activities'][media_number]['date'] = selected_date
+            await callback.message.answer('Дата активности успешно изменена')
+        else:
+            await callback.message.answer(RU.sth_error)
+        await dialog_manager.switch_to(AdminActivity.PAGE)
+    else:
+        dialog_manager.dialog_data['date'] = datetime(
+            selected_date.year,
+            selected_date.month,
+            selected_date.day,
+            tzinfo=get_config().zone_info,
+        )
+        await dialog_manager.next()
+
+
+async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_) -> None:
+    new_time = d.get_value() if (d := dialog_manager.find(_TIME_MC)) else None
+    new_time = parse_time_regex(new_time)
+    if not new_time:
+        return await event.answer('Некорректный формат. Должно быть ЧЧ:ММ')
+    if dialog_manager.dialog_data.get(_IS_EDIT):
+        activ_repository = _get_activity_repo(dialog_manager)
+        activity = await activ_repository.update_activity_datetime_by_name(
+            activity_type=dialog_manager.dialog_data['act_type'],
+            theme=dialog_manager.dialog_data['activity']['theme'],
+            new_time=new_time,
+        )
+        dialog_manager.dialog_data[_IS_EDIT] = False
+        if activity:
+            scroll: ManagedScroll = dialog_manager.find('scroll')
+            media_number = await scroll.get_page()
+            dialog_manager.dialog_data['activities'][media_number]['time'] = (
+                new_time.strftime('%H:%M')
+            )
+            await event.answer('Описание мастер-класса успешно изменено')
+        else:
+            await event.answer(RU.sth_error)
+        await dialog_manager.switch_to(AdminActivity.PAGE)
+    else:
+        dialog_manager.dialog_data['time'] = datetime.combine(
+            datetime.fromisoformat(dialog_manager.dialog_data['time']).date(),
+            new_time,
+            tzinfo=get_config().zone_info,
+        )
+        await dialog_manager.next()
+
+
 async def name_activity_handler(
     message: Message,
     message_input: MessageInput,
@@ -400,12 +473,12 @@ async def change_photo(
     file_id: str | None = None,
     content_type: str | None = None,
 ) -> None:
-    mclass_name = dialog_manager.dialog_data['activity']['theme']
+    mclass_theme = dialog_manager.dialog_data['activity']['theme']
     activ_repository = _get_activity_repo(dialog_manager)
 
     activity = await activ_repository.update_activity_fileid_by_name(
         activity_type=dialog_manager.dialog_data['act_type'],
-        theme=mclass_name,
+        theme=mclass_theme,
         file_id=file_id,
         content_type=content_type,
     )
@@ -486,6 +559,8 @@ async def add_activities_to_db(
     file_id = dialog_manager.dialog_data.get(FILE_ID, '')
     content_type = dialog_manager.dialog_data.get(CONTENT_TYPE, ContentType.PHOTO)
     description = dialog_manager.dialog_data.get('description', '')
+    _date = datetime.fromisoformat(dialog_manager.dialog_data.get('date', ''))
+    _time = datetime.fromisoformat(dialog_manager.dialog_data.get('time', ''))
     activ_repository: ActivityAbstractRepository = _get_activity_repo(dialog_manager)
     act = await activ_repository.add_activity(
         activity_type=act_type,
@@ -493,6 +568,7 @@ async def add_activities_to_db(
         image_id=file_id,
         content_type=content_type,
         description=description,
+        date_time=datetime.combine(_date, _time, get_config().zone_info),
     )
     if not act:
         await callback.message.answer(f'Не удалось добавить {act_type}, попробуйте позже')
@@ -504,6 +580,8 @@ async def add_activities_to_db(
             'id': len(activities),
             'theme': theme_activity,
             'description': description,
+            'date': _date,
+            'time': _time,
             FILE_ID: file_id,
             CONTENT_TYPE: content_type,
         }
@@ -754,13 +832,20 @@ admin_dialog = Dialog(
     ),
     launch_mode=LaunchMode.ROOT,
 )
-
 change_activity_dialog = Dialog(
     Window(
         Format('Меню настройки {dialog_data[act_type]}\n\n'),
         Format(
-            '<b>{activity[theme]}</b>\n\n{activity[description]}',
+            '<b>Тема: {activity[theme]}</b>\n\nОписание: {activity[description]}',
             when='activity',
+        ),
+        Format(
+            'Дата: {activity[date]}',
+            when=F['activity']['date'],
+        ),
+        Format(
+            'Время: {activity[time]}',
+            when=F['activity']['time'],
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id='scroll', pages='len_activities'),
@@ -813,6 +898,26 @@ change_activity_dialog = Dialog(
         parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
+        Format('Укажите дату проведения'),
+        Calendar(
+            id='calendar',
+            on_click=on_date_selected,
+            config=CalendarConfig(min_date=datetime.now(get_config().zone_info).date()),
+        ),
+        Row(_BACK_TO_PAGE_ACTIVITY, Next(Const('Без даты'))),
+        state=AdminActivity.DATE,
+        parse_mode=ParseMode.MARKDOWN,
+    ),
+    Window(
+        Format(
+            'Укажите время проведения ЧЧ:ММ в формате 24 часов. \n\n_Например: 17:30_'
+        ),
+        Row(_BACK_TO_PAGE_ACTIVITY, Next(Const('Без времени'))),
+        TextInput(id=_TIME_MC, on_success=time_handler),
+        state=AdminActivity.TIME,
+        parse_mode=ParseMode.MARKDOWN,
+    ),
+    Window(
         Format(
             '<b>Введите описание для {dialog_data[act_type]} и '
             'отправьте сообщением</b> \n\n'
@@ -852,6 +957,14 @@ change_activity_dialog = Dialog(
             when=F['dialog_data']['theme_activity'],
         ),
         Format('\n<b>Описание:</b> {description}', when='description'),
+        Format(
+            'Дата: {activity[date]}',
+            when=F['activity']['date'],
+        ),
+        Format(
+            'Время: {activity[time]}',
+            when=F['activity']['time'],
+        ),
         Row(
             _BACK_TO_PAGE_ACTIVITY,
             Button(Const('Добавить'), id='add_mc', on_click=add_activities_to_db),
@@ -865,8 +978,16 @@ change_activity_dialog = Dialog(
             '<b>{dialog_data[act_type]}:'
             '\n\nТема: {dialog_data[activity][theme]}'
             '\nОписание: {dialog_data[activity][description]}</b>'
-            '\n\nЧто поменять?'
         ),
+        Format(
+            'Дата: {activity[date]}',
+            when=F['activity']['date'],
+        ),
+        Format(
+            'Время: {activity[time]}',
+            when=F['activity']['time'],
+        ),
+        Const('\n\nЧто поменять?'),
         DynamicMedia(FILE_ID, when=FILE_ID),
         SwitchTo(Const('Тема'), id='edit_name_mc', state=AdminActivity.NAME),
         SwitchTo(
@@ -878,6 +999,16 @@ change_activity_dialog = Dialog(
             Const('Изображение'),
             id='edit_image_mc',
             state=AdminActivity.PHOTO,
+        ),
+        SwitchTo(
+            Const('Дату'),
+            id='edit_date_mc',
+            state=AdminActivity.DATE,
+        ),
+        SwitchTo(
+            Const('Время'),
+            id='edit_time_mc',
+            state=AdminActivity.TIME,
         ),
         SwitchTo(Const('Назад'), id='back', state=AdminActivity.PAGE),
         state=AdminActivity.CHANGE,

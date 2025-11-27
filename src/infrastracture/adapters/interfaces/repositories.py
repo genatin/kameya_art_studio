@@ -3,6 +3,7 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from contextlib import suppress
+from datetime import date, datetime
 from typing import Any
 
 from gspread.cell import Cell
@@ -89,6 +90,7 @@ class ActivityAbstractRepository(ABC):
         image_id: str,
         content_type: str,
         description: str | None = None,
+        date_time: datetime | None = None,
     ) -> Activity | None:
         raise NotImplementedError
 
@@ -99,6 +101,16 @@ class ActivityAbstractRepository(ABC):
     @abstractmethod
     async def update_activity_name_by_name(
         self, activity_type: str, old_theme: str, new_theme: str
+    ) -> Activity | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def update_activity_datetime_by_name(
+        self,
+        activity_type: str,
+        theme: str,
+        new_date: date | None = None,
+        new_time: datetime | None = None,
     ) -> Activity | None:
         raise NotImplementedError
 
