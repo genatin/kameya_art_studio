@@ -423,7 +423,8 @@ async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_
         scroll: ManagedScroll = dialog_manager.find('scroll')
         media_number = await scroll.get_page()
         if not dialog_manager.dialog_data['activities'][media_number]['date']:
-            return await event.answer('Сначал нужно установить дату')
+            await event.answer('Сначал нужно установить дату')
+            return dialog_manager.switch_to(AdminActivity.DATE)
         activ_repository = _get_activity_repo(dialog_manager)
         activity = await activ_repository.update_activity_datetime_by_name(
             activity_type=dialog_manager.dialog_data['act_type'],
