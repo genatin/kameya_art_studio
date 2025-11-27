@@ -1005,11 +1005,11 @@ change_activity_dialog = Dialog(
             '\nОписание: {dialog_data[activity][description]}</b>'
         ),
         Format(
-            'Дата: {activity[date]}',
+            'Дата: {dialog_data[activity][date]}',
             when=F['activity']['date'],
         ),
         Format(
-            'Время: {activity[time]}',
+            'Время: {dialog_data[activity][time]}',
             when=F['activity']['time'],
         ),
         Const('\n\nЧто поменять?'),
