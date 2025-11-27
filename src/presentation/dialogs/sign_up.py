@@ -166,6 +166,8 @@ async def _form_presentation(
         'lesson_option': lesson_activity.lesson_option.human_name,
         'num_tickets': lesson_activity.num_tickets,
         'topic': lesson_activity.topic,
+        'date': lesson_activity.date,
+        'time': lesson_activity.time.strftime('%H:%M'),
     }
 
 
@@ -183,6 +185,8 @@ async def on_page_change(dialog_manager: DialogManager, *args) -> None:
     dialog_manager.dialog_data[_LESSON_ACTIVITY]['topic'] = activity[media_number][
         'theme'
     ]
+    dialog_manager.dialog_data[_LESSON_ACTIVITY]['date'] = activity[media_number]['date']
+    dialog_manager.dialog_data[_LESSON_ACTIVITY]['time'] = activity[media_number]['time']
 
 
 async def get_random_message(dialog_manager: DialogManager, **kwargs) -> dict[str, str]:
@@ -236,6 +240,12 @@ signup_dialog = Dialog(
             '{% endif %}'
             '{% if num_tickets is not none %}'
             '<b>Количество билетов:</b> {{num_tickets}}\n'
+            '{% endif %}'
+            '{% if date is not none %}'
+            '<b>Дата занятия:</b> {{date}}\n'
+            '{% endif %}'
+            '{% if time is not none %}'
+            '<b>Время:</b> {{time}}\n'
             '{% endif %}'
             '<i>\nУбедитесь, что заявка корректно сформирована. \n\n'
             'Если всё правильно, оставьте заявку.</i>'

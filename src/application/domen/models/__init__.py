@@ -1,3 +1,4 @@
+import datetime as dt
 import zoneinfo
 from datetime import datetime
 
@@ -18,6 +19,8 @@ class LessonActivity(BaseModel):
     num_tickets: int = Field(default=1)
     status: str = Field(default='не обработано')
     datetime: str = Field(default_factory=_moscow_time_factory)
+    date: dt.date | None = None
+    time: dt.time | None = None
 
     def model_dump_for_store(self) -> dict:
         return {
