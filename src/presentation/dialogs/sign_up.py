@@ -273,7 +273,7 @@ activity_pages_dialog = Dialog(
             when=F['activity']['date'],
         ),
         Format(
-            '<i>Время: {activity[time]}<>/i',
+            '<i>Время: {activity[time]}</i>',
             when=F['activity']['time'],
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
