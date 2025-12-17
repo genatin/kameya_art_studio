@@ -161,13 +161,15 @@ async def _form_presentation(
     lesson_activity: LessonActivity = LessonActivity(
         **dialog_manager.start_data.get(_LESSON_ACTIVITY)
     )
+    date_ = lesson_activity.date.strftime('%d-%m-%Y') if lesson_activity.date else None
+    time_ = lesson_activity.time.strftime('%H:%M') if lesson_activity.time else None
     return {
         'activity_type': lesson_activity.activity_type.human_name,
         'lesson_option': lesson_activity.lesson_option.human_name,
         'num_tickets': lesson_activity.num_tickets,
         'topic': lesson_activity.topic,
-        'date': lesson_activity.date.strftime('%d-%m-%Y'),
-        'time': lesson_activity.time.strftime('%H:%M'),
+        'date': date_,
+        'time': time_,
     }
 
 

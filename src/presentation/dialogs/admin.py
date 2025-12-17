@@ -575,8 +575,17 @@ async def add_activities_to_db(
     file_id = dialog_manager.dialog_data.get(FILE_ID, '')
     content_type = dialog_manager.dialog_data.get(CONTENT_TYPE, ContentType.PHOTO)
     description = dialog_manager.dialog_data.get('description', '')
-    _date = date.fromisoformat(dialog_manager.dialog_data.get('date', ''))
-    _time = time.fromisoformat(dialog_manager.dialog_data.get('time', ''))
+
+    _date = (
+        date.fromisoformat(d)
+        if (d := dialog_manager.dialog_data.get('date'))
+        else datetime.now(tz=get_config().zone_info).date()
+    )
+    _time = (
+        time.fromisoformat(t)
+        if (t := dialog_manager.dialog_data.get('time'))
+        else time(17)
+    )
     activ_repository: ActivityAbstractRepository = _get_activity_repo(dialog_manager)
     act = await activ_repository.add_activity(
         activity_type=act_type,
