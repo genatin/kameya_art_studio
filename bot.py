@@ -74,6 +74,7 @@ async def main() -> None:
         db=0,
         password=config.REDIS_PASSWORD.get_secret_value(),
         decode_responses=True,
+        max_connections=20
     )
     # if get_config().LOCAL:
     #     await redis.flushdb()
