@@ -105,12 +105,20 @@ class ActivityAbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def update_activity_datetime_by_name(
+    async def update_activity_date_by_name(
         self,
         activity_type: str,
         theme: str,
         new_date: date | None = None,
-        new_time: datetime | None = None,
+    ) -> Activity | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def update_activity_time_by_name(
+        self,
+        activity_type: str,
+        theme: str,
+        new_time: date | None = None,
     ) -> Activity | None:
         raise NotImplementedError
 

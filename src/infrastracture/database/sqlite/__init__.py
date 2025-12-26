@@ -6,6 +6,7 @@ from .dao import (
     update_activity_description_by_name,
     update_activity_fileid_by_name,
     update_activity_name_by_name,
+    update_activity_time_by_name,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     'update_activity_fileid_by_name',
     'update_activity_name_by_name',
     'update_activity_date_by_name',
+    'update_activity_time_by_name',
 ]

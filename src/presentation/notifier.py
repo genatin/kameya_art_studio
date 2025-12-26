@@ -42,6 +42,16 @@ class Notifier:
         num_row: int,
         manager: DialogManager,
     ) -> None:
+        time = (
+            f'Время: {lesson_activity.time.strftime("%H:%M")}\n'
+            if lesson_activity.time
+            else ''
+        )
+        date = (
+            f'Дата: {lesson_activity.date.strftime("%d-%m-%Y")}\n'
+            if lesson_activity.date
+            else ''
+        )
         message_to_admin = (
             '<u>Пользователь создал заявку:</u>\n\n'
             f'Имя: <b>{user.name}</b>\n'
@@ -51,8 +61,8 @@ class Notifier:
             f'Занятие: {lesson_activity.activity_type.human_name}\n'
             f'Тема: {lesson_activity.topic}\n'
             '\n'
-            f'Дата: {lesson_activity.date.strftime("%d-%m-%Y")}\n'
-            f'Время: {lesson_activity.time.strftime("%H:%M")}\n'
+            f'{date}'
+            f'{time}'
             f'<b><u>{lesson_activity.lesson_option.human_name}</u></b>'
             f'\n<a href="https://t.me/{user.phone}">Связаться с пользователем</a>'
         )

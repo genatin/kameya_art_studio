@@ -89,33 +89,53 @@ async def update_activity_description_by_name(
 
 
 async def update_activity_date_by_name(
-    session: AsyncSession,
-    activity_type: str,
-    theme: str,
-    new_date: date | None = None,
-    new_time: time | None = None,
+    session: AsyncSession, activity_type: str, theme: str, new_date: date | None
 ) -> Activity | None:
     try:
         activity = await get_activity_by_theme_and_type(session, activity_type, theme)
         old_datetime = activity.date_time
-        if not old_datetime:
-            if new_date:
-                activity.date_time = datetime(
-                    new_date.year,
-                    new_date.month,
-                    new_date.day,
-                    tzinfo=get_config().zone_info,
-                )
-            else:
-                activity.date_time = datetime.now(get_config().zone_info)
-        elif new_date:
-            activity.date_time = datetime.combine(new_date, old_datetime.time())
-        elif new_time:
-            activity.date_time = datetime.combine(old_datetime.date(), new_time)
+        if not new_date:
+            activity.date_time = None
+        elif old_datetime:
+            activity.date_time = datetime.combine(
+                new_date, old_datetime.time(), tzinfo=get_config().zone_info
+            )
         else:
-            return None
+            activity.date_time = datetime(
+                new_date.year,
+                new_date.month,
+                new_date.day,
+                tzinfo=get_config().zone_info,
+            )
         await session.commit()
         return activity
+    except SQLAlchemyError:
+        logger.error('Update description activity failed', theme)
+        await session.rollback()
+
+
+async def update_activity_time_by_name(
+    session: AsyncSession,
+    activity_type: str,
+    theme: str,
+    new_time: time | None = None,
+) -> Activity | None:
+    z_i = get_config().zone_info
+    try:
+        activity = await get_activity_by_theme_and_type(session, activity_type, theme)
+        old_datetime = activity.date_time
+        if old_datetime:
+            if new_time:
+                activity.date_time = datetime.combine(
+                    old_datetime.date(), new_time, tzinfo=z_i
+                )
+            else:
+                activity.date_time = datetime(
+                    old_datetime.year, old_datetime.month, old_datetime.day, tzinfo=z_i
+                )
+            await session.commit()
+            return activity
+        return None
     except SQLAlchemyError:
         logger.error('Update description activity failed', theme)
         await session.rollback()

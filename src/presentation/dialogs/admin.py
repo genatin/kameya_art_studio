@@ -394,7 +394,34 @@ async def on_date_selected(
 ) -> None:
     if dialog_manager.dialog_data.get(_IS_EDIT):
         activ_repository = _get_activity_repo(dialog_manager)
-        activity = await activ_repository.update_activity_datetime_by_name(
+        activity = await activ_repository.update_activity_date_by_name(
+            activity_type=dialog_manager.dialog_data['act_type'],
+            theme=dialog_manager.dialog_data['activity']['theme'],
+            new_date=selected_date,
+        )
+        if activity:
+            scroll: ManagedScroll = dialog_manager.find('scroll')
+            media_number = await scroll.get_page()
+            dialog_manager.dialog_data['activities'][media_number]['date'] = selected_date
+            await callback.message.answer('Дата активности успешно изменена')
+        else:
+            await callback.message.answer(RU.sth_error)
+        await dialog_manager.switch_to(AdminActivity.PAGE)
+    else:
+        dialog_manager.dialog_data['date'] = selected_date
+        await dialog_manager.next()
+
+
+async def no_date(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+    *_,
+) -> None:
+    selected_date = None
+    if dialog_manager.dialog_data.get(_IS_EDIT):
+        activ_repository = _get_activity_repo(dialog_manager)
+        activity = await activ_repository.update_activity_date_by_name(
             activity_type=dialog_manager.dialog_data['act_type'],
             theme=dialog_manager.dialog_data['activity']['theme'],
             new_date=selected_date,
@@ -414,10 +441,10 @@ async def on_date_selected(
 
 async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_) -> None:
     new_time = d.get_value() if (d := dialog_manager.find(_TIME_MC)) else None
-    new_time = parse_time_regex(new_time)
-
-    if not new_time:
-        return await event.answer('Некорректный формат. Должно быть ЧЧ:ММ')
+    if new_time:
+        new_time = parse_time_regex(new_time)
+        if not new_time:
+            return await event.answer('Некорректный формат. Должно быть ЧЧ:ММ')
 
     if dialog_manager.dialog_data.get(_IS_EDIT):
         scroll: ManagedScroll = dialog_manager.find('scroll')
@@ -426,7 +453,7 @@ async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_
             await event.answer('Сначал нужно установить дату')
             return dialog_manager.switch_to(AdminActivity.DATE)
         activ_repository = _get_activity_repo(dialog_manager)
-        activity = await activ_repository.update_activity_datetime_by_name(
+        activity = await activ_repository.update_activity_time_by_name(
             activity_type=dialog_manager.dialog_data['act_type'],
             theme=dialog_manager.dialog_data['activity']['theme'],
             new_time=new_time,
@@ -434,7 +461,35 @@ async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_
         dialog_manager.dialog_data[_IS_EDIT] = False
         if activity:
             dialog_manager.dialog_data['activities'][media_number]['time'] = (
-                new_time.strftime('%H:%M')
+                new_time.strftime('%H:%M') if new_time else None
+            )
+            await event.answer('Описание мастер-класса успешно изменено')
+        else:
+            await event.answer(RU.sth_error)
+        await dialog_manager.switch_to(AdminActivity.PAGE)
+    else:
+        dialog_manager.dialog_data['time'] = new_time
+        await dialog_manager.next()
+
+
+async def no_time(
+    event: Message, button: Button, dialog_manager: DialogManager, *_
+) -> None:
+    new_time = None
+
+    if dialog_manager.dialog_data.get(_IS_EDIT):
+        activ_repository = _get_activity_repo(dialog_manager)
+        activity = await activ_repository.update_activity_time_by_name(
+            activity_type=dialog_manager.dialog_data['act_type'],
+            theme=dialog_manager.dialog_data['activity']['theme'],
+            new_time=new_time,
+        )
+        dialog_manager.dialog_data[_IS_EDIT] = False
+        if activity:
+            scroll: ManagedScroll = dialog_manager.find('scroll')
+            media_number = await scroll.get_page()
+            dialog_manager.dialog_data['activities'][media_number]['time'] = (
+                new_time.strftime('%H:%M') if new_time else None
             )
             await event.answer('Описание мастер-класса успешно изменено')
         else:
@@ -577,15 +632,19 @@ async def add_activities_to_db(
     description = dialog_manager.dialog_data.get('description', '')
 
     _date = (
-        date.fromisoformat(d)
-        if (d := dialog_manager.dialog_data.get('date'))
-        else datetime.now(tz=get_config().zone_info).date()
+        date.fromisoformat(d) if (d := dialog_manager.dialog_data.get('date')) else None
     )
     _time = (
-        time.fromisoformat(t)
-        if (t := dialog_manager.dialog_data.get('time'))
-        else time(17)
+        time.fromisoformat(t) if (t := dialog_manager.dialog_data.get('time')) else None
     )
+    if _date and not _time:
+        date_time = datetime(
+            _date.year, _date.month, _date.day, tzinfo=get_config().zone_info
+        )
+    elif _date and _time:
+        date_time = datetime.combine(_date, _time, get_config().zone_info)
+    else:
+        date_time = None
     activ_repository: ActivityAbstractRepository = _get_activity_repo(dialog_manager)
     act = await activ_repository.add_activity(
         activity_type=act_type,
@@ -593,7 +652,7 @@ async def add_activities_to_db(
         image_id=file_id,
         content_type=content_type,
         description=description,
-        date_time=datetime.combine(_date, _time, get_config().zone_info),
+        date_time=date_time,
     )
     if not act:
         await callback.message.answer(f'Не удалось добавить {act_type}, попробуйте позже')
@@ -931,7 +990,7 @@ change_activity_dialog = Dialog(
         ),
         Row(
             Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
-            Next(Const('Без даты')),
+            Button(Const('Без даты'), id='without_date', on_click=no_date),
         ),
         state=AdminActivity.DATE,
         parse_mode=ParseMode.MARKDOWN,
@@ -942,7 +1001,7 @@ change_activity_dialog = Dialog(
         ),
         Row(
             Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
-            Next(Const('Без времени')),
+            Button(Const('Без времени'), id='without_time', on_click=no_time),
         ),
         TextInput(id=_TIME_MC, on_success=time_handler),
         state=AdminActivity.TIME,
@@ -966,7 +1025,9 @@ change_activity_dialog = Dialog(
         ),
         Row(
             Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
-            Next(Const('Без описания')),
+            Button(
+                Const('Без описания'), id='without_desc', on_click=description_handler
+            ),
         ),
         TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
         state=AdminActivity.DESCRIPTION,

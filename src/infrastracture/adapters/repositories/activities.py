@@ -36,11 +36,12 @@ class Activity(BaseModel):
         d['date_repr'] = (
             format_date_russian(self.date_time.date()) if self.date_time else None
         )
-        d['time_repr'] = (
-            self.date_time.time().strftime('%H:%M') if self.date_time else None
-        )
         d['date'] = self.date_time.date()
-        d['time'] = self.date_time.time()
+        if self.date_time.time() != time(0, 0, 0):
+            d['time'] = self.date_time.time()
+            d['time_repr'] = (
+                self.date_time.time().strftime('%H:%M') if self.date_time else None
+            )
         return d
 
 
@@ -128,12 +129,11 @@ class ActivityRepository(ActivityAbstractRepository):
                 await self.__redis.delete(activity_key)
                 return activity
 
-    async def update_activity_datetime_by_name(
+    async def update_activity_date_by_name(
         self,
         activity_type: str,
         theme: str,
-        new_date: date | None = None,
-        new_time: time | None = None,
+        new_date: date | None,
     ) -> Activity | None:
         async with self.__session_maker() as session:
             activity = await dao.update_activity_date_by_name(
@@ -141,6 +141,23 @@ class ActivityRepository(ActivityAbstractRepository):
                 activity_type=activity_type,
                 theme=theme,
                 new_date=new_date,
+            )
+            if activity:
+                activity_key = self.get_activity_key(activity_type)
+                await self.__redis.delete(activity_key)
+                return activity
+
+    async def update_activity_time_by_name(
+        self,
+        activity_type: str,
+        theme: str,
+        new_time: date | None,
+    ) -> Activity | None:
+        async with self.__session_maker() as session:
+            activity = await dao.update_activity_time_by_name(
+                session,
+                activity_type=activity_type,
+                theme=theme,
                 new_time=new_time,
             )
             if activity:

@@ -37,10 +37,10 @@ class Activity(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     theme: Mapped[str] = mapped_column(String)
     file_id: Mapped[str] = mapped_column(String, nullable=True)
-    content_type: Mapped[str] = mapped_column(
+    content_type: Mapped[str | None] = mapped_column(
         String, nullable=True, server_default=ContentType.PHOTO
     )
-    description: Mapped[str] = mapped_column(String)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
     date_time: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )

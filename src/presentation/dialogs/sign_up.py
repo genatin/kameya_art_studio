@@ -191,7 +191,8 @@ async def on_page_change(dialog_manager: DialogManager, *args) -> None:
         'theme'
     ]
     dialog_manager.dialog_data[_LESSON_ACTIVITY]['date'] = activity[media_number]['date']
-    dialog_manager.dialog_data[_LESSON_ACTIVITY]['time'] = activity[media_number]['time']
+    if t := activity[media_number].get('time'):
+        dialog_manager.dialog_data[_LESSON_ACTIVITY]['time'] = t
 
 
 async def get_random_message(dialog_manager: DialogManager, **kwargs) -> dict[str, str]:
