@@ -114,7 +114,7 @@ async def send_signup_message(
         await asyncio.sleep(2)
     builder = InlineKeyboardBuilder()
     builder.button(
-        text='Прикрепить',
+        text='Прикрепить чек',
         callback_data=PaymentScreenCallback(
             action='send_payment',
             message_id=d['message_id'],
@@ -126,6 +126,7 @@ async def send_signup_message(
         text=(
             'Здесь можно прикрепить чек об оплате\n'
             'псс-с, говорят что это ускоряет обработку оплаты 🤭'
+            '\n\n<i>можете оставить комментарий по желанию</i>'
         ),
         reply_markup=builder.as_markup(),
         parse_mode=ParseMode.HTML,

@@ -142,7 +142,10 @@ async def sign_up_payment_handler(
     user_data['message_id'] = callback_data.message_id
     user_data['admin_id'] = callback_data.admin_id
     try:
-        await dialog_manager.start(PaymentsApprove.START, data=user_data)
+        await dialog_manager.start(
+            PaymentsApprove.START,
+            data=user_data,
+        )
     except ValueError:
         await _show_current_context_send_warning(cq.message, dialog_manager)
 

@@ -1,17 +1,14 @@
 import asyncio
 import logging
-import re
 
-from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.api.entities import LaunchMode, MediaAttachment, MediaId, ShowMode
-from aiogram_dialog.widgets.common import ManagedScroll
-from aiogram_dialog.widgets.input import MessageInput, TextInput
+from aiogram_dialog.api.entities import ShowMode
+from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
-from aiogram_dialog.widgets.text import Const, Format, List
+from aiogram_dialog.widgets.text import Const
 
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
@@ -25,16 +22,16 @@ async def send_user_payment(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
     builder = InlineKeyboardBuilder()
-    admin_id = str(manager.start_data["admin_id"])
+    admin_id = str(manager.start_data['admin_id'])
 
     builder.button(
-        text="Прикрепить",
+        text='Прикрепить',
         callback_data=PaymentScreenCallback(
-            message_id=manager.start_data["message_id"], admin_id=admin_id
+            message_id=manager.start_data['message_id'], admin_id=admin_id
         ),
     )
     await callback.message.answer(
-        "Здесь можно прикрепить чек об оплате",
+        'Здесь можно прикрепить чек об оплате',
         parse_mode=ParseMode.HTML,
         reply_markup=builder.as_markup(),
     )
@@ -52,19 +49,27 @@ async def photo_handler(
     if message.photo:
         file_id = message.photo[0].file_id
         content_type = ContentType.PHOTO
+        caption_from_user = message.caption or ''
     if message.document:
         file_id = message.document.file_id
         content_type = ContentType.DOCUMENT
+        caption_from_user = message.caption or ''
     if not file_id:
         await message.answer(
-            "Нужно приложить картинку или документ или нажмите кнопку ниже"
+            'Нужно приложить картинку или документ или нажмите кнопку ниже'
         )
-    admin_id = str(dialog_manager.start_data["admin_id"])
-    redis_repository: RedisRepository = dialog_manager.middleware_data[
-        "redis_repository"
-    ]
+        return
+    admin_id = str(dialog_manager.start_data['admin_id'])
+    redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     reply_to_mess = await redis_repository.get(AdminKey(key=admin_id), dict)
-    caption = "Поступил чек об оплате"
+    caption = 'Поступил чек об оплате'
+    if caption_from_user:
+        caption += (
+            '\n\n<b>Сообщение пользователя:</b>\n'
+            + '<blockquote>'
+            + caption_from_user
+            + '</blockquote>'
+        )
     if content_type is ContentType.PHOTO:
         await dialog_manager.event.bot.send_photo(
             admin_id,
@@ -85,27 +90,26 @@ async def photo_handler(
         )
     builder = InlineKeyboardBuilder()
     builder.button(
-        text="Отменить запись",
+        text='Отменить запись',
         callback_data=PaymentCallback(
-            action="no", message_id=dialog_manager.start_data["message_id"]
+            action='no', message_id=dialog_manager.start_data['message_id']
         ),
     )
     builder.button(
-        text="Да",
+        text='Да',
         callback_data=PaymentCallback(
-            action="yes", message_id=dialog_manager.start_data["message_id"]
+            action='yes', message_id=dialog_manager.start_data['message_id']
         ),
     )
-    await message.answer("Чек об оплате отправлен, благодарим!")
+    await message.answer('Чек об оплате отправлен, благодарим!')
     await dialog_manager.done()
 
 
 payments_approve_dialog = Dialog(
     Window(
-        Const("Прикрепите документ или фото и отправьте"),
+        Const('Прикрепите документ или фото и отправьте'),
         MessageInput(photo_handler),
-        Button(Const("Назад"), id="back_or_menu", on_click=send_user_payment),
+        Button(Const('Назад'), id='back_or_menu', on_click=send_user_payment),
         state=PaymentsApprove.START,
     ),
-    launch_mode=LaunchMode.EXCLUSIVE,
 )
