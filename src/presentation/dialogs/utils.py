@@ -1,5 +1,6 @@
 import contextlib
 import logging
+from datetime import date
 from html import escape
 from typing import Any
 
@@ -253,3 +254,30 @@ async def store_activities_by_type(start_data: Any, manager: DialogManager) -> N
     manager.dialog_data[
         'activities'
     ] = await activity_repository.get_all_activity_by_type(act_type.human_name)
+
+
+def format_date_russian(dt: date) -> str:
+    weekdays = [
+        'Понедельник',
+        'Вторник',
+        'Среда',
+        'Четверг',
+        'Пятница',
+        'Суббота',
+        'Воскресенье',
+    ]
+    months = [
+        'Января',
+        'Февраля',
+        'Марта',
+        'Апреля',
+        'Мая',
+        'Июня',
+        'Июля',
+        'Фвгуста',
+        'Сентября',
+        'Октября',
+        'Ноября',
+        'Декабря',
+    ]
+    return f'{weekdays[dt.weekday()]}, {dt.day} {months[dt.month-1]} {dt.year}'

@@ -1,11 +1,10 @@
 import asyncio
 import logging
 import zoneinfo
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from aiogram import Bot
-from aiogram.enums.parse_mode import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 

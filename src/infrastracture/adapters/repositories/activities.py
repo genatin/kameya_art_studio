@@ -12,6 +12,7 @@ from src.infrastracture.database.redis.keys import ActivityKey
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.infrastracture.database.sqlite import dao
 from src.infrastracture.database.sqlite.db import async_session_maker
+from src.presentation.dialogs.utils import format_date_russian
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,14 @@ class Activity(BaseModel):
 
     def model_dump(self, **kwargs) -> dict[str, Any]:
         d = super().model_dump(**kwargs)
-        d['date'] = self.date_time.date().strftime('%d-%m-%Y') if self.date_time else None
-        d['time'] = self.date_time.time().strftime('%H:%M') if self.date_time else None
+        d['date_repr'] = (
+            format_date_russian(self.date_time.date()) if self.date_time else None
+        )
+        d['time_repr'] = (
+            self.date_time.time().strftime('%H:%M') if self.date_time else None
+        )
+        d['date'] = self.date_time.date()
+        d['time'] = self.date_time.time()
         return d
 
 

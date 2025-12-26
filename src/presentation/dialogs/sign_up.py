@@ -38,6 +38,7 @@ from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.presentation.dialogs.states import AcitivityPages, BaseMenu, SignUp
 from src.presentation.dialogs.utils import (
     FILE_ID,
+    format_date_russian,
     get_activity_page,
     store_activities_by_type,
 )
@@ -161,15 +162,17 @@ async def _form_presentation(
     lesson_activity: LessonActivity = LessonActivity(
         **dialog_manager.start_data.get(_LESSON_ACTIVITY)
     )
-    date_ = lesson_activity.date.strftime('%d-%m-%Y') if lesson_activity.date else None
+    date_ = format_date_russian(lesson_activity.date) if lesson_activity.date else None
     time_ = lesson_activity.time.strftime('%H:%M') if lesson_activity.time else None
     return {
         'activity_type': lesson_activity.activity_type.human_name,
         'lesson_option': lesson_activity.lesson_option.human_name,
         'num_tickets': lesson_activity.num_tickets,
         'topic': lesson_activity.topic,
-        'date': date_,
-        'time': time_,
+        'date': lesson_activity.date,
+        'time': lesson_activity.time,
+        'date_repr': date_,
+        'time_repr': time_,
     }
 
 
@@ -243,11 +246,11 @@ signup_dialog = Dialog(
             '{% if num_tickets is not none %}'
             '<b>Количество билетов:</b> {{num_tickets}}\n'
             '{% endif %}'
-            '{% if date is not none %}'
-            '<b>Дата занятия:</b> {{date}}\n'
+            '{% if date_repr is not none %}'
+            '<b>Дата занятия:</b> {{date_repr}}\n'
             '{% endif %}'
-            '{% if time is not none %}'
-            '<b>Время:</b> {{time}}\n'
+            '{% if time_repr is not none %}'
+            '<b>Время:</b> {{time_repr}}\n'
             '{% endif %}'
             '<i>\nУбедитесь, что заявка корректно сформирована. \n\n'
             'Если всё правильно, оставьте заявку.</i>'
@@ -271,12 +274,12 @@ activity_pages_dialog = Dialog(
         Format('{dialog_data[act_type]} скоро будут доступны', when=~_ACTIVITY_EXISTS),
         _THEME_AND_DESCRIPTION_HTML,
         Format(
-            '<i>Дата: {activity[date]} </i>',
-            when=F['activity']['date'],
+            '<i><b>Дата: {activity[date_repr]} </b></i>',
+            when=F['activity']['date_repr'],
         ),
         Format(
-            '<i>Время: {activity[time]}</i>',
-            when=F['activity']['time'],
+            '<i><b>Время: {activity[time_repr]} </b></i>',
+            when=F['activity']['time_repr'],
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id='scroll', pages='len_activities'),
