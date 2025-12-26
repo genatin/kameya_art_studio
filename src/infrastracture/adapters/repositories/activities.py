@@ -33,15 +33,16 @@ class Activity(BaseModel):
 
     def model_dump(self, **kwargs) -> dict[str, Any]:
         d = super().model_dump(**kwargs)
-        d['date_repr'] = (
-            format_date_russian(self.date_time.date()) if self.date_time else None
-        )
-        d['date'] = self.date_time.date()
-        if self.date_time.time() != time(0, 0, 0):
-            d['time'] = self.date_time.time()
-            d['time_repr'] = (
-                self.date_time.time().strftime('%H:%M') if self.date_time else None
+        if self.date_time:
+            d['date'] = self.date_time.date()
+            d['date_repr'] = (
+                format_date_russian(self.date_time.date()) if self.date_time else None
             )
+            if self.date_time.time() != time(0, 0, 0):
+                d['time'] = self.date_time.time()
+                d['time_repr'] = (
+                    self.date_time.time().strftime('%H:%M') if self.date_time else None
+                )
         return d
 
 
