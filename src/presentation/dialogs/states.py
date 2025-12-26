@@ -65,3 +65,8 @@ class AdminActivity(StatesGroup):
 class Developer(StatesGroup):
     START = State()
     TO_ADMIN = State()
+
+
+class PaymentsApprove(StatesGroup):
+    START = State()
+    CONFIRM_PAYMENT = State()

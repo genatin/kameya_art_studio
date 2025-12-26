@@ -9,8 +9,18 @@ from aiogram_dialog.api.entities import StartMode
 from src.application.domen.text import RU
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.repository import RedisRepository
-from src.presentation.callbacks import PaymentCallback, SignUpCallback
-from src.presentation.dialogs.states import AdminPayments, AdminReply, BaseMenu, SignUp
+from src.presentation.callbacks import (
+    PaymentCallback,
+    PaymentScreenCallback,
+    SignUpCallback,
+)
+from src.presentation.dialogs.states import (
+    AdminPayments,
+    AdminReply,
+    BaseMenu,
+    PaymentsApprove,
+    SignUp,
+)
 from src.presentation.middlewares.middleware import RegistrationMiddleware
 
 logger = logging.getLogger(__name__)
@@ -117,6 +127,22 @@ async def sign_up_payment_handler(
             await dialog_manager.start(AdminPayments.CONFIRM_PAYMENT, data=user_data)
         else:
             await dialog_manager.start(AdminPayments.CANCEL_PAYMENT, data=user_data)
+    except ValueError:
+        await _show_current_context_send_warning(cq.message, dialog_manager)
+
+
+@main_router.callback_query(PaymentScreenCallback.filter())
+async def sign_up_payment_handler(
+    cq: CallbackQuery,
+    callback_data: PaymentScreenCallback,
+    dialog_manager: DialogManager,
+    redis_repository: RedisRepository,
+) -> None:
+    user_data = await redis_repository.hgetall(callback_data.message_id)
+    user_data['message_id'] = callback_data.message_id
+    user_data['admin_id'] = callback_data.admin_id
+    try:
+        await dialog_manager.start(PaymentsApprove.START, data=user_data)
     except ValueError:
         await _show_current_context_send_warning(cq.message, dialog_manager)
 

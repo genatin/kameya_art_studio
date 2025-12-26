@@ -33,6 +33,7 @@ from src.presentation.dialogs.admin import (
 from src.presentation.dialogs.base_menu import menu_dialog
 from src.presentation.dialogs.developer import developer_dialog
 from src.presentation.dialogs.first_seen import first_seen_dialog
+from src.presentation.dialogs.payments_approve import payments_approve_dialog
 from src.presentation.dialogs.registration import registration_dialog
 from src.presentation.dialogs.sign_up import activity_pages_dialog, signup_dialog
 from src.presentation.dialogs.utils import (
@@ -137,6 +138,7 @@ async def main() -> None:
         admin_reply_dialog,
         admin_dialog,
         admin_payments_dialog,
+        payments_approve_dialog,
         change_activity_dialog,
         developer_dialog,
         not_handled_router,

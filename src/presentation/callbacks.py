@@ -9,3 +9,8 @@ class SignUpCallback(CallbackData, prefix='signup'):
 class PaymentCallback(CallbackData, prefix='payment'):
     message_id: str
     action: str
+
+
+class PaymentScreenCallback(CallbackData, prefix='payment_screen'):
+    message_id: str
+    admin_id: int

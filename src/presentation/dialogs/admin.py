@@ -44,8 +44,13 @@ from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
 from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
-from src.presentation.callbacks import PaymentCallback, SignUpCallback
+from src.presentation.callbacks import (
+    PaymentCallback,
+    PaymentScreenCallback,
+    SignUpCallback,
+)
 from src.presentation.dialogs.states import (
     AdminActivity,
     Administration,
@@ -98,6 +103,7 @@ async def send_signup_message(
     manager: DialogManager, messages: list[str], callback: CallbackQuery
 ) -> None:
     user_id = manager.start_data['user_id']
+    d = manager.start_data
     for m in messages:
         await manager.event.bot.send_message(
             chat_id=user_id,
@@ -106,6 +112,24 @@ async def send_signup_message(
         )
         await manager.event.bot.send_chat_action(user_id, 'typing')
         await asyncio.sleep(2)
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text='Прикрепить',
+        callback_data=PaymentScreenCallback(
+            action='send_payment',
+            message_id=d['message_id'],
+            admin_id=callback.from_user.id,
+        ),
+    )
+    await manager.event.bot.send_message(
+        chat_id=user_id,
+        text=(
+            'Здесь можно прикрепить чек об оплате\n'
+            'псс-с, говорят что это ускоряет обработку оплаты 🤭'
+        ),
+        reply_markup=builder.as_markup(),
+        parse_mode=ParseMode.HTML,
+    )
 
 
 async def back_step_or_back_to_menu(
@@ -136,6 +160,7 @@ async def message_admin_handler(
     user = await repository.user.get_user(dialog_manager.start_data['user_id'])
     admin_message_1 = [
         (
+            '<b>💌 Вам письмо от Камея | Арт-Студия</b>\n\n'
             f'{user.name}, здравствуйте! Благодарим Вас за заявку, '
             'мы зарезервировали для Вас место'
         )
@@ -203,10 +228,16 @@ async def send_user_payment(
             action='yes', message_id=manager.start_data['message_id']
         ),
     )
-    await callback.message.answer(
+    mess = await callback.message.answer(
         f'<b>Подтвердить оплату для заявки?</b>\n\n{manager.start_data["message"]}',
         parse_mode=_PARSE_MODE_TO_USER,
         reply_markup=builder.as_markup(),
+    )
+    redis_repository: RedisRepository = manager.middleware_data['redis_repository']
+    reply_to_mess = await redis_repository.get(AdminKey(key=callback.from_user.id), dict)
+    reply_to_mess[callback.from_user.id] = mess.message_id
+    reply_to_mess = await redis_repository.set(
+        AdminKey(key=callback.from_user.id), reply_to_mess
     )
     await manager.done()
     await manager.reset_stack()
@@ -729,7 +760,7 @@ async def get_admin_message(dialog_manager: DialogManager, **kwargs) -> dict:
 async def act_is_free(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
-    manager.dialog_data['admin_messages'] = None
+    manager.dialog_data['admin_messages'] = []
     manager.dialog_data['cost'] = 0
     redis_repository: RedisRepository = manager.middleware_data['redis_repository']
     await redis_repository.client.hset(manager.start_data['message_id'], 'cost', 0)
