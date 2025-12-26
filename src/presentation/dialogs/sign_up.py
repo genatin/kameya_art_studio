@@ -51,7 +51,7 @@ _LESSON_ACTIVITY = 'lesson_activity'
 _IS_FILE_ID = F[FILE_ID] | F['dialog_data'][FILE_ID]
 _ACTIVITY_EXISTS = F['dialog_data']['activities']
 _THEME_AND_DESCRIPTION_HTML = Format(
-    ('<b>{activity[theme]}</b>' '\n\n<i>{activity[description]}</i>'),
+    ('<b>{activity[theme]}</b>\n\n<i>{activity[description]}</i>'),
     when='activity',
 )
 
@@ -92,8 +92,7 @@ async def result_after_ticket(
 _TICKET_WIDGETS = (
     DynamicMedia(selector=FILE_ID, when=_IS_FILE_ID),
     Const(
-        'Выберите необходимое количество билетов\n\n'
-        '<i>Количество билетов ограничено</i>'
+        'Выберите необходимое количество билетов\n\n<i>Количество билетов ограничено</i>'
     ),
     _COUNTER,
     Row(

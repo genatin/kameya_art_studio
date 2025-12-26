@@ -75,7 +75,8 @@ class BaseRepository:
     def _sign_up_user(self, user: UserDTO, lesson_activity: LessonActivity) -> str:
         values = user.to_dict(sign_up=True)
         values.update(lesson_activity.model_dump_for_store())
-        response = self._wsheet.append_row(list(values.values()), table_range='A1')
+        last_row = len(self._wsheet.get_all_values())
+        response = self._wsheet.insert_row(list(values.values()), index=last_row + 1)
         range_str = response['updates']['updatedRange']
         m_obj = re.search(r'\d+', range_str)
         return range_str[m_obj.start() : m_obj.end()]
