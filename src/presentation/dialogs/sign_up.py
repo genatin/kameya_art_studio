@@ -189,7 +189,9 @@ async def on_page_change(dialog_manager: DialogManager, *args) -> None:
     dialog_manager.dialog_data[_LESSON_ACTIVITY]['topic'] = activity[media_number][
         'theme'
     ]
-    dialog_manager.dialog_data[_LESSON_ACTIVITY]['date'] = activity[media_number]['date']
+    dialog_manager.dialog_data[_LESSON_ACTIVITY]['date'] = activity[media_number].get(
+        'date'
+    )
     if t := activity[media_number].get('time'):
         dialog_manager.dialog_data[_LESSON_ACTIVITY]['time'] = t
 
