@@ -235,7 +235,9 @@ async def send_user_payment(
         reply_markup=builder.as_markup(),
     )
     redis_repository: RedisRepository = manager.middleware_data['redis_repository']
-    reply_to_mess = await redis_repository.get(AdminKey(key=callback.from_user.id), dict)
+    reply_to_mess = await redis_repository.get(
+        AdminKey(key=str(callback.from_user.id)), dict
+    )
     reply_to_mess[callback.from_user.id] = mess.message_id
     reply_to_mess = await redis_repository.set(
         AdminKey(key=callback.from_user.id), reply_to_mess
