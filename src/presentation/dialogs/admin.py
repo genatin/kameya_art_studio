@@ -214,7 +214,7 @@ async def message_admin_handler(
 
 
 async def send_user_payment(
-    callback: CallbackQuery, button: Button, manager: DialogManager
+    callback: CallbackQuery, user_id: str, button: Button, manager: DialogManager
 ) -> None:
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -235,9 +235,15 @@ async def send_user_payment(
         reply_markup=builder.as_markup(),
     )
     redis_repository: RedisRepository = manager.middleware_data['redis_repository']
-    reply_to_mess = await redis_repository.get(
-        AdminKey(key=str(callback.from_user.id)), dict
-    )
+    reply_to_mess = await redis_repository.get(AdminKey(key=user_id), dict)
+    logger.info(f'--->> by user {reply_to_mess=}')
+    if not reply_to_mess:
+        reply_to_mess = await redis_repository.get(
+            AdminKey(key=callback.from_user.id), dict
+        )
+        logger.info(f'--->>by admin {reply_to_mess=}')
+    if not reply_to_mess:
+        reply_to_mess = {}
     reply_to_mess[callback.from_user.id] = mess.message_id
     reply_to_mess = await redis_repository.set(
         AdminKey(key=callback.from_user.id), reply_to_mess
@@ -277,7 +283,9 @@ async def send_to_user(
                 'payment_notifier'
             ]
             task_remind = tg.create_task(payment_notifier.add_reminder(user_id))
-            task_payment = tg.create_task(send_user_payment(callback, button, manager))
+            task_payment = tg.create_task(
+                send_user_payment(callback, user_id, button, manager)
+            )
             repository: UsersRepository = manager.middleware_data['repository']
             repository.change_values_in_signup_user(
                 manager.start_data['activity_type'],
