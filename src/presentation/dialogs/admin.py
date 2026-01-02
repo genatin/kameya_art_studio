@@ -236,14 +236,6 @@ async def send_user_payment(
     )
     redis_repository: RedisRepository = manager.middleware_data['redis_repository']
     reply_to_mess = await redis_repository.get(AdminKey(key=user_id), dict)
-    logger.info(f'--->> by user {reply_to_mess=}')
-    if not reply_to_mess:
-        reply_to_mess = await redis_repository.get(
-            AdminKey(key=callback.from_user.id), dict
-        )
-        logger.info(f'--->>by admin {reply_to_mess=}')
-    if not reply_to_mess:
-        reply_to_mess = {}
     reply_to_mess[callback.from_user.id] = mess.message_id
     reply_to_mess = await redis_repository.set(
         AdminKey(key=callback.from_user.id), reply_to_mess
