@@ -21,7 +21,7 @@ def de_emojify(text) -> str:
     return emoji.replace_emoji(text, replace='')
 
 
-class Activity(BaseModel):
+class ActivityModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -49,7 +49,7 @@ class Activity(BaseModel):
 class Activities(RootModel):
     model_config = ConfigDict(from_attributes=True)
 
-    root: list[Activity]
+    root: list[ActivityModel]
 
 
 class ActivityRepository(ActivityAbstractRepository):
@@ -69,7 +69,7 @@ class ActivityRepository(ActivityAbstractRepository):
         content_type: str,
         description: str | None = None,
         date_time: datetime | None = None,
-    ) -> Activity | None:
+    ) -> ActivityModel | None:
         async with self.__session_maker() as session:
             activity = await dao.add_activity(
                 session,
@@ -102,7 +102,7 @@ class ActivityRepository(ActivityAbstractRepository):
 
     async def update_activity_name_by_name(
         self, activity_type: str, old_theme: str, new_theme: str
-    ) -> Activity | None:
+    ) -> ActivityModel | None:
         async with self.__session_maker() as session:
             activity = await dao.update_activity_name_by_name(
                 session,
@@ -117,7 +117,7 @@ class ActivityRepository(ActivityAbstractRepository):
 
     async def update_activity_description_by_name(
         self, activity_type: str, theme: str, new_description: str
-    ) -> Activity | None:
+    ) -> ActivityModel | None:
         async with self.__session_maker() as session:
             activity = await dao.update_activity_description_by_name(
                 session,
@@ -135,7 +135,7 @@ class ActivityRepository(ActivityAbstractRepository):
         activity_type: str,
         theme: str,
         new_date: date | None,
-    ) -> Activity | None:
+    ) -> ActivityModel | None:
         async with self.__session_maker() as session:
             activity = await dao.update_activity_date_by_name(
                 session,
@@ -153,7 +153,7 @@ class ActivityRepository(ActivityAbstractRepository):
         activity_type: str,
         theme: str,
         new_time: date | None,
-    ) -> Activity | None:
+    ) -> ActivityModel | None:
         async with self.__session_maker() as session:
             activity = await dao.update_activity_time_by_name(
                 session,
@@ -170,7 +170,7 @@ class ActivityRepository(ActivityAbstractRepository):
         self,
         activity_type: str,
         theme: str,
-    ) -> Activity:
+    ) -> ActivityModel:
         async with self.__session_maker() as session:
             return await dao.get_activity_by_theme_and_type(
                 session, activity_type=activity_type, theme=theme
@@ -178,7 +178,7 @@ class ActivityRepository(ActivityAbstractRepository):
 
     async def update_activity_fileid_by_name(
         self, activity_type: str, theme: str, file_id: str, content_type: str
-    ) -> Activity | None:
+    ) -> ActivityModel | None:
         async with self.__session_maker() as session:
             activity = await dao.update_activity_fileid_by_name(
                 session,

@@ -44,6 +44,7 @@ from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
+from src.infrastracture.adapters.repositories.activities import ActivityModel
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
@@ -575,11 +576,13 @@ async def change_photo(
     mclass_theme = dialog_manager.dialog_data['activity']['theme']
     activ_repository = _get_activity_repo(dialog_manager)
 
-    activity = await activ_repository.update_activity_fileid_by_name(
-        activity_type=dialog_manager.dialog_data['act_type'],
-        theme=mclass_theme,
-        file_id=file_id,
-        content_type=content_type,
+    activity = ActivityModel.model_validate(
+        await activ_repository.update_activity_fileid_by_name(
+            activity_type=dialog_manager.dialog_data['act_type'],
+            theme=mclass_theme,
+            file_id=file_id,
+            content_type=content_type,
+        )
     )
     if activity:
         scroll: ManagedScroll | None = dialog_manager.find('scroll')
@@ -588,7 +591,7 @@ async def change_photo(
         current_activity[FILE_ID] = file_id
         current_activity[CONTENT_TYPE] = content_type
         current_activity[DESCRIPTION] = __validate_description(
-            file_id, current_activity[DESCRIPTION]
+            file_id, activity.description
         )
         await message.answer(
             f'Картинка мастер-класса успешно {"изменена" if file_id else "удалена"}'
