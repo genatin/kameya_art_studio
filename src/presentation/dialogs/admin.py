@@ -576,22 +576,21 @@ async def change_photo(
     mclass_theme = dialog_manager.dialog_data['activity']['theme']
     activ_repository = _get_activity_repo(dialog_manager)
 
-    activity = ActivityModel.model_validate(
-        await activ_repository.update_activity_fileid_by_name(
-            activity_type=dialog_manager.dialog_data['act_type'],
-            theme=mclass_theme,
-            file_id=file_id,
-            content_type=content_type,
-        )
+    activity = await activ_repository.update_activity_fileid_by_name(
+        activity_type=dialog_manager.dialog_data['act_type'],
+        theme=mclass_theme,
+        file_id=file_id,
+        content_type=content_type,
     )
     if activity:
+        activity_model = ActivityModel.model_validate(activity)
         scroll: ManagedScroll | None = dialog_manager.find('scroll')
         media_number = await scroll.get_page() if scroll else 0
         current_activity = dialog_manager.dialog_data['activities'][media_number]
         current_activity[FILE_ID] = file_id
         current_activity[CONTENT_TYPE] = content_type
         current_activity[DESCRIPTION] = __validate_description(
-            file_id, activity.description
+            file_id, activity_model.description
         )
         await message.answer(
             f'Картинка мастер-класса успешно {"изменена" if file_id else "удалена"}'
