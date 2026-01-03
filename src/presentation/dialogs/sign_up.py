@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from typing import Any
 
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
@@ -41,7 +42,7 @@ from src.presentation.dialogs.utils import (
     format_date_russian,
     get_activity_page,
     store_activities_by_type,
-    validate_sign_ups,
+    validate_activities_inplace,
 )
 from src.presentation.notifier import Notifier
 
@@ -199,6 +200,14 @@ async def on_page_change(dialog_manager: DialogManager, *args) -> None:
 
 async def get_random_message(dialog_manager: DialogManager, **kwargs) -> dict[str, str]:
     return {'random_signup_message': RU.random_signup}
+
+
+async def store_activities_by_type_sign_up(
+    start_data: Any, manager: DialogManager
+) -> None:
+    activities = await store_activities_by_type(start_data, manager)
+    validate_activities_inplace(activities)
+    manager.dialog_data['activities'] = activities
 
 
 signup_dialog = Dialog(

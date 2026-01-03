@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 from datetime import date, datetime, time
+from typing import Any
 
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
@@ -815,6 +816,22 @@ async def get_users(
     )
 
 
+def validate_activities_inplace(activities: list[Any]) -> None:
+    for i in range(len(activities)):
+        if len(activities[i]['description']) > 1024:
+            activities[i]['description'] = (
+                'ВНИМАНИЕ!!!\n\n СЛИШКОМ ДЛИННОЕ ОПИСАНИЕ\n\n'
+                + activities[i]['description'][:-200]
+            )
+            continue
+
+
+async def store_activities_by_type_admin(start_data: Any, manager: DialogManager) -> None:
+    activities = await store_activities_by_type(start_data, manager)
+    validate_activities_inplace(activities)
+    manager.dialog_data['activities'] = activities
+
+
 admin_reply_dialog = Dialog(
     Window(
         Const('Вы уверены, что хотите отменить запись?'),
@@ -1157,5 +1174,5 @@ change_activity_dialog = Dialog(
         _BACK_TO_PAGE_ACTIVITY,
         state=AdminActivity.REMOVE,
     ),
-    on_start=store_activities_by_type,
+    on_start=store_activities_by_type_admin,
 )

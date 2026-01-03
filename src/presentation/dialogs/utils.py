@@ -259,7 +259,7 @@ def validate_activities_inplace(activities: list[Any]) -> None:
         del activities[index]
 
 
-async def store_activities_by_type(start_data: Any, manager: DialogManager) -> None:
+async def store_activities_by_type(start_data: Any, manager: DialogManager) -> dict[str]:
     act_type: ActivityType | None = None
     if start_data:
         if isinstance(start_data, dict):
@@ -274,9 +274,7 @@ async def store_activities_by_type(start_data: Any, manager: DialogManager) -> N
     ]
 
     manager.dialog_data['act_type'] = act_type.human_name
-    activities = await activity_repository.get_all_activity_by_type(act_type.human_name)
-    validate_activities_inplace(activities)
-    manager.dialog_data['activities'] = activities
+    return await activity_repository.get_all_activity_by_type(act_type.human_name)
 
 
 def format_date_russian(dt: date) -> str:
