@@ -816,19 +816,21 @@ async def get_users(
     )
 
 
-def validate_activities_inplace(activities: list[Any]) -> None:
-    for i in range(len(activities)):
-        if len(activities[i]['description']) > 1024:
-            activities[i]['description'] = (
-                'ВНИМАНИЕ!!!\n\n СЛИШКОМ ДЛИННОЕ ОПИСАНИЕ\n\n'
-                + activities[i]['description'][:-200]
+def _validate_activities_inplace(activities: list[Any]) -> None:
+    for i in activities:
+        if len(i['description']) > 1024:
+            logger.info(f'---> {i["description"][:100]}')
+            i['description'] = (
+                'ВНИМАНИЕ!!!\n\n СЛИШКОМ ДЛИННОЕ ОПИСАНИЕ\n\n' + i['description'][:-200]
             )
             continue
 
 
-async def store_activities_by_type_admin(start_data: Any, manager: DialogManager) -> None:
+async def _store_activities_by_type_admin(
+    start_data: Any, manager: DialogManager
+) -> None:
     activities = await store_activities_by_type(start_data, manager)
-    validate_activities_inplace(activities)
+    _validate_activities_inplace(activities)
     manager.dialog_data['activities'] = activities
 
 
@@ -1174,5 +1176,5 @@ change_activity_dialog = Dialog(
         _BACK_TO_PAGE_ACTIVITY,
         state=AdminActivity.REMOVE,
     ),
-    on_start=store_activities_by_type_admin,
+    on_start=_store_activities_by_type_admin,
 )

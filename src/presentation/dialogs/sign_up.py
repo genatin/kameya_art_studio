@@ -202,7 +202,7 @@ async def get_random_message(dialog_manager: DialogManager, **kwargs) -> dict[st
     return {'random_signup_message': RU.random_signup}
 
 
-async def store_activities_by_type_sign_up(
+async def _store_activities_by_type_sign_up(
     start_data: Any, manager: DialogManager
 ) -> None:
     activities = await store_activities_by_type(start_data, manager)
@@ -328,5 +328,5 @@ activity_pages_dialog = Dialog(
         parse_mode=ParseMode.HTML,
     ),
     Window(*_TICKET_WIDGETS, state=AcitivityPages.TICKETS, parse_mode=ParseMode.HTML),
-    on_start=store_activities_by_type,
+    on_start=_store_activities_by_type_sign_up,
 )
