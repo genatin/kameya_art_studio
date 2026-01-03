@@ -819,9 +819,11 @@ async def get_users(
 def _validate_activities_inplace(activities: list[Any]) -> None:
     for i in activities:
         if len(i['description']) > 1024:
-            logger.info(f'---> {i["description"][:100]}')
             i['description'] = (
-                'ВНИМАНИЕ!!!\n\n СЛИШКОМ ДЛИННОЕ ОПИСАНИЕ\n\n' + i['description'][:-200]
+                '<b>ВНИМАНИЕ!!!\n\n СЛИШКОМ ДЛИННОЕ ОПИСАНИЕ '
+                + 'Оно будет скрыто из активностей</b>\n\n'
+                + i['description'][:700]
+                + '...'
             )
             continue
 
