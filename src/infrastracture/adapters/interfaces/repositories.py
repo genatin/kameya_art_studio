@@ -96,7 +96,7 @@ class ActivityAbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_all_activity_by_type(self, activity_type: str) -> Sequence[Activity]:
+    async def get_all_activity_by_type(self, activity_type: str) -> Sequence[dict]:
         raise NotImplementedError
 
     @abstractmethod
