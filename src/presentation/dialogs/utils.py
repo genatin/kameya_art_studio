@@ -248,6 +248,17 @@ async def validate_sign_ups(dialog_manager: DialogManager, **_kwargs) -> dict[st
         del activities[index]
 
 
+def validate_activities_inplace(activities: list[Any]) -> None:
+    not_valid = []
+    for i in range(len(activities)):
+        if activities[i]['description'] > 1024:
+            not_valid.append(i)
+            continue
+    not_valid.sort(reverse=True)
+    for index in not_valid:
+        del activities[index]
+
+
 async def store_activities_by_type(start_data: Any, manager: DialogManager) -> None:
     act_type: ActivityType | None = None
     if start_data:
@@ -263,9 +274,9 @@ async def store_activities_by_type(start_data: Any, manager: DialogManager) -> N
     ]
 
     manager.dialog_data['act_type'] = act_type.human_name
-    manager.dialog_data[
-        'activities'
-    ] = await activity_repository.get_all_activity_by_type(act_type.human_name)
+    activities = await activity_repository.get_all_activity_by_type(act_type.human_name)
+    validate_activities_inplace(activities)
+    manager.dialog_data['activities'] = activities
 
 
 def format_date_russian(dt: date) -> str:
