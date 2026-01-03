@@ -567,8 +567,8 @@ async def name_activity_handler(
 async def change_photo(
     message: Message,
     dialog_manager: DialogManager,
-    file_id: str | None = None,
-    content_type: str | None = None,
+    file_id: str | None,
+    content_type: str | None,
 ) -> None:
     mclass_theme = dialog_manager.dialog_data['activity']['theme']
     activ_repository = _get_activity_repo(dialog_manager)
@@ -745,7 +745,9 @@ async def no_photo(
     *_,
 ) -> None:
     if dialog_manager.dialog_data.get(_IS_EDIT):
-        await change_photo(callback.message, dialog_manager)
+        await change_photo(
+            callback.message, dialog_manager, file_id=None, content_type=None
+        )
         await dialog_manager.switch_to(AdminActivity.PAGE, show_mode=ShowMode.SEND)
     else:
         dialog_manager.dialog_data[FILE_ID] = None

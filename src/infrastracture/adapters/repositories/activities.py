@@ -26,7 +26,7 @@ class Activity(BaseModel):
 
     id: int
     theme: str
-    content_type: str
+    content_type: str | None = None
     file_id: str | None = None
     description: str | None = None
     date_time: datetime | None = None
@@ -46,7 +46,7 @@ class Activity(BaseModel):
         return d
 
 
-class Acitivities(RootModel):
+class Activities(RootModel):
     model_config = ConfigDict(from_attributes=True)
 
     root: list[Activity]
@@ -94,7 +94,7 @@ class ActivityRepository(ActivityAbstractRepository):
             activities = await dao.get_all_activity_by_type(
                 session, activity_type=activity_type
             )
-            activities = Acitivities.model_validate(activities)
+            activities = Activities.model_validate(activities)
             activities = [act.model_dump() for act in activities.root]
             if activities:
                 await self.__redis.set(activity_key, activities, 60 * 2)
