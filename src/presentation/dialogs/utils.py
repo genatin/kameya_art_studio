@@ -251,7 +251,7 @@ async def validate_sign_ups(dialog_manager: DialogManager, **_kwargs) -> dict[st
 def validate_activities_inplace(activities: list[Any]) -> None:
     not_valid = []
     for i in range(len(activities)):
-        if len(activities[i]['description']) > 1024:
+        if activities[i]['file_id'] and len(activities[i]['description']) > 1024:
             not_valid.append(i)
             continue
     not_valid.sort(reverse=True)

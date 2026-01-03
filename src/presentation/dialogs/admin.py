@@ -818,7 +818,7 @@ async def get_users(
 
 def _validate_activities_inplace(activities: list[Any]) -> None:
     for i in activities:
-        if (diff := len(i['description']) - 1024) > 0:
+        if i['file_id'] and (diff := len(i['description']) - 1024) > 0:
             i['description'] = (
                 '<b>'
                 + '\n======================'
