@@ -61,6 +61,7 @@ from src.presentation.dialogs.states import (
 )
 from src.presentation.dialogs.utils import (
     CONTENT_TYPE,
+    DESCRIPTION,
     FILE_ID,
     approve_form_for_other_admins,
     close_app_form_for_other_admins,
@@ -400,9 +401,10 @@ async def description_handler(
     event: Message, widget, dialog_manager: DialogManager, *_
 ) -> None:
     new_description = d.get_value() if (d := dialog_manager.find(_DESCRIPTION_MC)) else ''
-    if len(new_description) > 1024:
+    if dialog_manager.dialog_data['activity'][FILE_ID] and len(new_description) > 1024:
         return await event.answer(
-            'Описание слишком длинное, должно быть до 1024 символов включительно'
+            'Так как в активности имеется медифайл, '
+            'то описание не должно быть выше 1024 символов'
         )
     if dialog_manager.dialog_data.get(_IS_EDIT):
         activity_theme = dialog_manager.dialog_data['activity']['theme']
@@ -582,12 +584,12 @@ async def change_photo(
     if activity:
         scroll: ManagedScroll | None = dialog_manager.find('scroll')
         media_number = await scroll.get_page() if scroll else 0
-        dialog_manager.dialog_data['activities'][media_number][FILE_ID] = file_id
-        dialog_manager.dialog_data['activities'][media_number][CONTENT_TYPE] = (
-            content_type
+        current_activity = dialog_manager.dialog_data['activities'][media_number]
+        current_activity[FILE_ID] = file_id
+        current_activity[CONTENT_TYPE] = content_type
+        current_activity[DESCRIPTION] = __validate_description(
+            file_id, current_activity[DESCRIPTION]
         )
-        dialog_manager.dialog_data[FILE_ID] = file_id
-        dialog_manager.dialog_data[CONTENT_TYPE] = content_type
         await message.answer(
             f'Картинка мастер-класса успешно {"изменена" if file_id else "удалена"}'
         )
@@ -622,7 +624,6 @@ async def photo_handler(
         dialog_manager.dialog_data[_IS_EDIT] = False
         await change_photo(message, dialog_manager, file_id, content_type)
         await dialog_manager.switch_to(AdminActivity.PAGE)
-
     else:
         dialog_manager.dialog_data[FILE_ID] = file_id
         dialog_manager.dialog_data[CONTENT_TYPE] = content_type
@@ -818,22 +819,26 @@ async def get_users(
     )
 
 
+def __validate_description(file_id: str | None, description: str | None) -> str:
+    if file_id and (diff := len(description) - 1024) > 0:
+        return (
+            '<b>'
+            + '\n======================'
+            + '\n⚠️⚠️⚠️ ВНИМАНИЕ ⚠️⚠️⚠️'
+            + '\nСЛИШКОМ ДЛИННОЕ ОПИСАНИЕ'
+            + '\nДолжно быть меньше 1025 симоволов'
+            + f'\nУменьшите на {diff} символов'
+            + '\n<i>(а пока оно будет скрыто от пользователей)</i>\n'
+            + '======================</b>\n'
+            + description[:500]
+            + '...'
+        )
+    return description
+
+
 def _validate_activities_inplace(activities: list[Any]) -> None:
     for i in activities:
-        if i['file_id'] and (diff := len(i['description']) - 1024) > 0:
-            i['description'] = (
-                '<b>'
-                + '\n======================'
-                + '\n⚠️⚠️⚠️ ВНИМАНИЕ ⚠️⚠️⚠️'
-                + '\nСЛИШКОМ ДЛИННОЕ ОПИСАНИЕ'
-                + '\nДолжно быть меньше 1025 симоволов'
-                + f'\nУменьшите на {diff} символов'
-                + '\n<i>(а пока оно будет скрыто от пользователей)</i>\n'
-                + '======================</b>\n'
-                + i['description'][:500]
-                + '...'
-            )
-            continue
+        i['desciption'] = __validate_description(i['file_id'], i['description'])
 
 
 async def _store_activities_by_type_admin(
@@ -1075,6 +1080,16 @@ change_activity_dialog = Dialog(
         parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
+        Format('Приложите медиа файл и отправьте сообщением'),
+        Row(
+            Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
+            Button(Const('Без медиафайла'), id='next_or_edit', on_click=no_photo),
+        ),
+        MessageInput(photo_handler),
+        state=AdminActivity.PHOTO,
+        parse_mode=_PARSE_MODE_TO_USER,
+    ),
+    Window(
         Format(
             '<b>Введите описание для {dialog_data[act_type]} и '
             'отправьте сообщением</b> \n\n'
@@ -1098,16 +1113,6 @@ change_activity_dialog = Dialog(
         ),
         TextInput(id=_DESCRIPTION_MC, on_success=description_handler),
         state=AdminActivity.DESCRIPTION,
-        parse_mode=_PARSE_MODE_TO_USER,
-    ),
-    Window(
-        Format('Приложите медиа файл и отправьте сообщением'),
-        Row(
-            Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
-            Button(Const('Без медиафайла'), id='next_or_edit', on_click=no_photo),
-        ),
-        MessageInput(photo_handler),
-        state=AdminActivity.PHOTO,
         parse_mode=_PARSE_MODE_TO_USER,
     ),
     Window(

@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 FILE_ID = 'file_id'
 CONTENT_TYPE = 'content_type'
+DESCRIPTION = 'description'
 
 _MINUTE = 60
 _HOUR = _MINUTE * 60
@@ -74,10 +75,22 @@ async def on_unknown_state(event, dialog_manager: DialogManager) -> None:
 async def error_handler(error_event: ErrorEvent) -> None:
     message = error_event.update.message or error_event.update.callback_query.message
 
+    update = error_event.update
+    user_id = None
+    # Пытаемся извлечь ID пользователя из различных типов update
+    if update.message:
+        user_id = update.message.from_user.id
+    elif update.callback_query:
+        user_id = update.callback_query.from_user.id
+    elif update.inline_query:
+        user_id = update.inline_query.from_user.id
+    elif update.chosen_inline_result:
+        user_id = update.chosen_inline_result.from_user.id
+
     await error_event.update.bot.send_message(
         get_config().DEVELOPER_ID,
-        f'User_id: {message.from_user.id}\n'
-        f'Username: <a href="tg://user?id={message.from_user.id}">{message.from_user.username}\n</a>'
+        '🚨 <b>Произошла ошибка!</b>\n'
+        f'User_id: {user_id}\n'
         f'Message: {message.text} \n\\Error:\n{error_event.exception!r}',
         disable_notification=True,
         parse_mode=ParseMode.HTML,
