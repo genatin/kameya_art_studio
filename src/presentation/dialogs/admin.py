@@ -819,7 +819,9 @@ async def get_users(
     )
 
 
-def __validate_description(file_id: str | None, description: str | None) -> str:
+def __validate_description(file_id: str | None, description: str | None) -> str | None:
+    if not description:
+        return None
     if file_id and (diff := len(description) - 1024) > 0:
         return (
             '<b>'
@@ -830,7 +832,7 @@ def __validate_description(file_id: str | None, description: str | None) -> str:
             + f'\nУменьшите описание на {diff} символов, либо удалите медифайл'
             + '\n<i>(а пока оно будет скрыто от пользователей)</i>\n'
             + '======================</b>\n'
-            + description[:500]
+            + description[:600]
             + '...'
         )
     return description
