@@ -820,9 +820,13 @@ def _validate_activities_inplace(activities: list[Any]) -> None:
     for i in activities:
         if len(i['description']) > 1024:
             i['description'] = (
-                '<b>ВНИМАНИЕ!!!\n\n СЛИШКОМ ДЛИННОЕ ОПИСАНИЕ '
-                + 'Оно будет скрыто из активностей</b>\n\n'
-                + i['description'][:700]
+                '<b>'
+                + '======================'
+                + 'ВНИМАНИЕ!!!'
+                + '\n\nСЛИШКОМ ДЛИННОЕ ОПИСАНИЕ'
+                + '\n\nОНО БУДЕТ СКРЫТО ИЗ АКТИВНОСТЕЙ\n\n'
+                + '======================</b>'
+                + i['description'][:500]
                 + '...'
             )
             continue
