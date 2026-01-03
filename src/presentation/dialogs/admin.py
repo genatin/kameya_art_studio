@@ -399,6 +399,10 @@ async def description_handler(
     event: Message, widget, dialog_manager: DialogManager, *_
 ) -> None:
     new_description = d.get_value() if (d := dialog_manager.find(_DESCRIPTION_MC)) else ''
+    if len(new_description) > 1024:
+        return await event.answer(
+            'Описание слишком длинное, должно быть до 1024 символов включительно'
+        )
     if dialog_manager.dialog_data.get(_IS_EDIT):
         activity_theme = dialog_manager.dialog_data['activity']['theme']
         activ_repository = _get_activity_repo(dialog_manager)

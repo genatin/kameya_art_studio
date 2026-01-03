@@ -236,6 +236,18 @@ async def get_activity_page(dialog_manager: DialogManager, **_kwargs) -> dict[st
     }
 
 
+async def validate_sign_ups(dialog_manager: DialogManager, **_kwargs) -> dict[str, Any]:
+    activities = dialog_manager.dialog_data.get('activities', [])
+    not_valid = []
+    for i in range(len(activities)):
+        if activities[i]['description'] > 1024:
+            not_valid.append(i)
+            continue
+    not_valid.sort(reverse=True)
+    for index in not_valid:
+        del activities[index]
+
+
 async def store_activities_by_type(start_data: Any, manager: DialogManager) -> None:
     act_type: ActivityType | None = None
     if start_data:
@@ -280,4 +292,4 @@ def format_date_russian(dt: date) -> str:
         'Ноября',
         'Декабря',
     ]
-    return f'{weekdays[dt.weekday()]}, {dt.day} {months[dt.month-1]} {dt.year}'
+    return f'{weekdays[dt.weekday()]}, {dt.day} {months[dt.month - 1]} {dt.year}'

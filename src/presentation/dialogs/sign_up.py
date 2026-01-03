@@ -41,6 +41,7 @@ from src.presentation.dialogs.utils import (
     format_date_russian,
     get_activity_page,
     store_activities_by_type,
+    validate_sign_ups,
 )
 from src.presentation.notifier import Notifier
 
@@ -319,4 +320,5 @@ activity_pages_dialog = Dialog(
     ),
     Window(*_TICKET_WIDGETS, state=AcitivityPages.TICKETS, parse_mode=ParseMode.HTML),
     on_start=store_activities_by_type,
+    preview_data=validate_sign_ups,
 )
