@@ -818,12 +818,14 @@ async def get_users(
 
 def _validate_activities_inplace(activities: list[Any]) -> None:
     for i in activities:
-        if len(i['description']) > 1024:
+        if (diff := len(i['description']) - 1024) > 0:
             i['description'] = (
                 '<b>'
                 + '\n======================'
-                + '\nВНИМАНИЕ!!!'
-                + '\nСЛИШКОМ ДЛИННОЕ ОПИСАНИЕ (> 1024 симоволов)'
+                + '\n⚠️⚠️⚠️ВНИМАНИЕ⚠️⚠️⚠️'
+                + '\nСЛИШКОМ ДЛИННОЕ ОПИСАНИЕ'
+                + '\nДолжно быть меньше 1025 симоволов'
+                + f'\nУменьшите на {diff} символов'
                 + '\nОНО БУДЕТ СКРЫТО ИЗ АКТИВНОСТЕЙ\n'
                 + '======================</b>\n'
                 + i['description'][:500]
