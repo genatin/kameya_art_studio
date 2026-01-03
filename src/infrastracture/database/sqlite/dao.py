@@ -5,6 +5,7 @@ from datetime import date, datetime, time
 from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.application.domen.models.activity_type import ActivityType as ActType
 from src.config import get_config
@@ -149,14 +150,29 @@ async def update_activity_fileid_by_name(
     content_type: str,
 ) -> Activity | None:
     try:
-        activity = await get_activity_by_theme_and_type(session, activity_type, theme)
-        activity.file_id = file_id
-        activity.content_type = content_type
-        await session.commit()
-        return activity
-    except SQLAlchemyError:
-        logger.error('Update description activity %s failed', theme)
-        await session.rollback()
+        # Начинаем транзакцию
+        async with session.begin():
+            # Получаем активность
+            activity = await get_activity_by_theme_and_type(session, activity_type, theme)
+
+            if not activity:
+                logger.warning(f'Activity not found: type={activity_type}, theme={theme}')
+                return None
+
+            # Обновляем поля
+            activity.file_id = file_id
+            activity.content_type = content_type
+
+            # Помечаем объект как измененный
+            session.add(activity)
+
+            # Возвращаем обновленный объект
+            return activity
+
+    except SQLAlchemyError as e:
+        logger.error(f'Failed to update activity {theme}: {e}', exc_info=True)
+        # Откат выполняется автоматически при выходе из блока при исключении
+        return None
 
 
 async def get_activity_by_theme_and_type(
@@ -166,10 +182,12 @@ async def get_activity_by_theme_and_type(
 ) -> Activity:
     stmt = (
         select(Activity)
+        .options(selectinload(Activity.activity_type))  # Явная загрузка отношения
         .join(Activity.activity_type)  # Используем relationship для join
         .where(Activity.theme == theme, ActivityType.name == de_emojify(activity_type))
     )
-    return await session.scalar(stmt)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def remove_activity_by_theme_and_type(

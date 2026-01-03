@@ -189,10 +189,21 @@ class ActivityRepository(ActivityAbstractRepository):
                 file_id=file_id,
                 content_type=content_type,
             )
-            if activity:
-                activity_key = self.get_activity_key(activity_type)
-                await self.__redis.delete(activity_key)
-                return ActivityModel.model_validate(activity)
+            if not activity:
+                return None
+            activity_key = self.get_activity_key(activity_type)
+            await self.__redis.delete(activity_key)
+
+            activity_dict = {
+                'id': activity.id,
+                'theme': activity.theme,
+                'file_id': activity.file_id,
+                'content_type': activity.content_type,
+                'description': activity.description,
+                'date_time': activity.date_time,
+                # Добавьте другие поля вашей модели
+            }
+            return ActivityModel.model_validate(activity_dict)
 
     async def remove_activity_by_theme_and_type(
         self, activity_type: str, theme: str
