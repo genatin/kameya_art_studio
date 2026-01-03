@@ -44,7 +44,6 @@ from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
-from src.infrastracture.adapters.repositories.activities import ActivityModel
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
@@ -583,14 +582,13 @@ async def change_photo(
         content_type=content_type,
     )
     if activity:
-        activity_model = ActivityModel.model_validate(activity)
         scroll: ManagedScroll | None = dialog_manager.find('scroll')
         media_number = await scroll.get_page() if scroll else 0
         current_activity = dialog_manager.dialog_data['activities'][media_number]
         current_activity[FILE_ID] = file_id
         current_activity[CONTENT_TYPE] = content_type
         current_activity[DESCRIPTION] = __validate_description(
-            file_id, activity_model.description
+            file_id, activity.description
         )
         await message.answer(
             f'Картинка мастер-класса успешно {"изменена" if file_id else "удалена"}'

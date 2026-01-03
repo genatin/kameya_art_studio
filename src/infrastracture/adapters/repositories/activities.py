@@ -83,7 +83,7 @@ class ActivityRepository(ActivityAbstractRepository):
         if activity:
             activity_key = self.get_activity_key(activity_type)
             await self.__redis.delete(activity_key)
-            return activity
+            return ActivityModel.model_validate(activity)
 
     async def get_all_activity_by_type(self, activity_type: str) -> list[dict]:
         activity_key = self.get_activity_key(activity_type)
@@ -113,7 +113,7 @@ class ActivityRepository(ActivityAbstractRepository):
             if activity:
                 activity_key = self.get_activity_key(activity_type)
                 await self.__redis.delete(activity_key)
-                return activity
+                return ActivityModel.model_validate(activity)
 
     async def update_activity_description_by_name(
         self, activity_type: str, theme: str, new_description: str
@@ -128,7 +128,7 @@ class ActivityRepository(ActivityAbstractRepository):
             if activity:
                 activity_key = self.get_activity_key(activity_type)
                 await self.__redis.delete(activity_key)
-                return activity
+                return ActivityModel.model_validate(activity)
 
     async def update_activity_date_by_name(
         self,
@@ -146,7 +146,7 @@ class ActivityRepository(ActivityAbstractRepository):
             if activity:
                 activity_key = self.get_activity_key(activity_type)
                 await self.__redis.delete(activity_key)
-                return activity
+                return ActivityModel.model_validate(activity)
 
     async def update_activity_time_by_name(
         self,
@@ -164,7 +164,7 @@ class ActivityRepository(ActivityAbstractRepository):
             if activity:
                 activity_key = self.get_activity_key(activity_type)
                 await self.__redis.delete(activity_key)
-                return activity
+                return ActivityModel.model_validate(activity)
 
     async def get_activity_by_theme_and_type(
         self,
@@ -172,8 +172,10 @@ class ActivityRepository(ActivityAbstractRepository):
         theme: str,
     ) -> ActivityModel:
         async with self.__session_maker() as session:
-            return await dao.get_activity_by_theme_and_type(
-                session, activity_type=activity_type, theme=theme
+            return ActivityModel.model_validate(
+                await dao.get_activity_by_theme_and_type(
+                    session, activity_type=activity_type, theme=theme
+                )
             )
 
     async def update_activity_fileid_by_name(
@@ -190,7 +192,7 @@ class ActivityRepository(ActivityAbstractRepository):
             if activity:
                 activity_key = self.get_activity_key(activity_type)
                 await self.__redis.delete(activity_key)
-                return activity
+                return ActivityModel.model_validate(activity)
 
     async def remove_activity_by_theme_and_type(
         self, activity_type: str, theme: str
