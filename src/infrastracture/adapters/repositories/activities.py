@@ -80,7 +80,8 @@ class ActivityRepository(ActivityAbstractRepository):
                 description=description,
                 date_time=date_time,
             )
-        if activity:
+            if not activity:
+                return None
             activity_key = self.get_activity_key(activity_type)
             await self.__redis.delete(activity_key)
             return ActivityModel.model_validate(activity)
