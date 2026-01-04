@@ -401,12 +401,15 @@ async def description_handler(
     event: Message, widget, dialog_manager: DialogManager, *_
 ) -> None:
     new_description = d.get_value() if (d := dialog_manager.find(_DESCRIPTION_MC)) else ''
-    if dialog_manager.dialog_data['activity'][FILE_ID] and len(new_description) > 1024:
-        return await event.answer(
-            'Так как в активности имеется медифайл, '
-            'то описание не должно быть выше 1024 символов'
-        )
     if dialog_manager.dialog_data.get(_IS_EDIT):
+        scroll: ManagedScroll = dialog_manager.find('scroll')
+        media_number = await scroll.get_page()
+        current_act = dialog_manager.dialog_data['activities'][media_number]
+        if current_act[FILE_ID] and len(new_description) > 1024:
+            return await event.answer(
+                'Так как в активности имеется медифайл, '
+                'то описание не должно быть выше 1024 символов'
+            )
         activity_theme = dialog_manager.dialog_data['activity']['theme']
         activ_repository = _get_activity_repo(dialog_manager)
         activity = await activ_repository.update_activity_description_by_name(
@@ -416,16 +419,17 @@ async def description_handler(
         )
         dialog_manager.dialog_data[_IS_EDIT] = False
         if activity:
-            scroll: ManagedScroll = dialog_manager.find('scroll')
-            media_number = await scroll.get_page()
-            dialog_manager.dialog_data['activities'][media_number][DESCRIPTION] = (
-                new_description
-            )
+            current_act[DESCRIPTION] = new_description
             await event.answer('Описание мастер-класса успешно изменено')
         else:
             await event.answer(RU.sth_error)
         await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
+        if dialog_manager.dialog_data[FILE_ID] and len(new_description) > 1024:
+            return await event.answer(
+                'Так как в активности имеется медифайл, '
+                'то описание не должно быть выше 1024 символов'
+            )
         dialog_manager.dialog_data[DESCRIPTION] = new_description
         await dialog_manager.next()
 
