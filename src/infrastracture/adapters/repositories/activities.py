@@ -191,9 +191,8 @@ class ActivityRepository(ActivityAbstractRepository):
             )
             if not activity:
                 return None
-            activity_key = self.get_activity_key(activity_type)
-            await self.__redis.delete(activity_key)
 
+            # Извлекаем все данные из активности ДО выхода из контекста сессии
             activity_dict = {
                 'id': activity.id,
                 'theme': activity.theme,
@@ -203,6 +202,10 @@ class ActivityRepository(ActivityAbstractRepository):
                 'date_time': activity.date_time,
                 # Добавьте другие поля вашей модели
             }
+
+            activity_key = self.get_activity_key(activity_type)
+            await self.__redis.delete(activity_key)
+
             return ActivityModel.model_validate(activity_dict)
 
     async def remove_activity_by_theme_and_type(

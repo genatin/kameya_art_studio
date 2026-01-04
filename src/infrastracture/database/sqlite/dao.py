@@ -85,7 +85,7 @@ async def update_activity_description_by_name(
         await session.commit()
         return activity
     except SQLAlchemyError:
-        logger.error('Update description activity failed', theme)
+        logger.error('Update description activity %s failed', theme)
         await session.rollback()
 
 
@@ -138,7 +138,7 @@ async def update_activity_time_by_name(
             return activity
         return None
     except SQLAlchemyError:
-        logger.error('Update description activity failed', theme)
+        logger.error('Update description activity %s failed', theme)
         await session.rollback()
 
 
@@ -150,28 +150,21 @@ async def update_activity_fileid_by_name(
     content_type: str,
 ) -> Activity | None:
     try:
-        # Начинаем транзакцию
-        async with session.begin():
-            # Получаем активность
-            activity = await get_activity_by_theme_and_type(session, activity_type, theme)
+        activity = await get_activity_by_theme_and_type(session, activity_type, theme)
+        if not activity:
+            return None
 
-            if not activity:
-                logger.warning(f'Activity not found: type={activity_type}, theme={theme}')
-                return None
+        activity.file_id = file_id
+        activity.content_type = content_type
+        await session.commit()
 
-            # Обновляем поля
-            activity.file_id = file_id
-            activity.content_type = content_type
+        # Явно обновляем объект из БД
+        await session.refresh(activity)
 
-            # Помечаем объект как измененный
-            session.add(activity)
-
-            # Возвращаем обновленный объект
-            return activity
-
+        return activity
     except SQLAlchemyError as e:
-        logger.error(f'Failed to update activity {theme}: {e}', exc_info=True)
-        # Откат выполняется автоматически при выходе из блока при исключении
+        logger.error('Update fileid activity %s failed:', e)
+        await session.rollback()
         return None
 
 
