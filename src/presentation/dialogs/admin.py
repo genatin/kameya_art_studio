@@ -298,7 +298,7 @@ async def get_image(
         )
     return {
         FILE_ID: image,
-        'description': dialog_manager.dialog_data.get('description', ''),
+        DESCRIPTION: dialog_manager.dialog_data.get(DESCRIPTION, ''),
     }
 
 
@@ -418,7 +418,7 @@ async def description_handler(
         if activity:
             scroll: ManagedScroll = dialog_manager.find('scroll')
             media_number = await scroll.get_page()
-            dialog_manager.dialog_data['activities'][media_number]['description'] = (
+            dialog_manager.dialog_data['activities'][media_number][DESCRIPTION] = (
                 new_description
             )
             await event.answer('Описание мастер-класса успешно изменено')
@@ -426,7 +426,7 @@ async def description_handler(
             await event.answer(RU.sth_error)
         await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
-        dialog_manager.dialog_data['description'] = new_description
+        dialog_manager.dialog_data[DESCRIPTION] = new_description
         await dialog_manager.next()
 
 
@@ -669,7 +669,7 @@ async def add_activities_to_db(
     theme_activity = dialog_manager.dialog_data['theme_activity']
     file_id = dialog_manager.dialog_data.get(FILE_ID, '')
     content_type = dialog_manager.dialog_data.get(CONTENT_TYPE, ContentType.PHOTO)
-    description = dialog_manager.dialog_data.get('description', '')
+    description = dialog_manager.dialog_data.get(DESCRIPTION, '')
 
     _date = (
         date.fromisoformat(d) if (d := dialog_manager.dialog_data.get('date')) else None
@@ -703,7 +703,7 @@ async def add_activities_to_db(
         {
             'id': len(activities),
             'theme': theme_activity,
-            'description': description,
+            DESCRIPTION: description,
             'date': _date,
             'time': _time,
             FILE_ID: file_id,
@@ -838,7 +838,7 @@ def __validate_description(file_id: str | None, description: str | None) -> str:
 
 def _validate_activities_inplace(activities: list[Any]) -> None:
     for i in activities:
-        i['desciption'] = __validate_description(i['file_id'], i['description'])
+        i[DESCRIPTION] = __validate_description(i['file_id'], i[DESCRIPTION])
 
 
 async def _store_activities_by_type_admin(
@@ -1117,13 +1117,13 @@ change_activity_dialog = Dialog(
     ),
     Window(
         DynamicMedia(FILE_ID, when=FILE_ID),
-        Format('<b><i>ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ</i></b>', when=~F['description']),
+        Format('<b><i>ВНИМАНИЕ! ОПИСАНИЕ ОТСУТСТВУЕТ</i></b>', when=~F[DESCRIPTION]),
         Format(
             '{dialog_data[act_type]} будет выглядеть так: \n\n'
             '<b>Тема: {dialog_data[theme_activity]}</b>',
             when=F['dialog_data']['theme_activity'],
         ),
-        Format('\n<b>Описание:</b> {description}', when='description'),
+        Format('\n<b>Описание:</b> {description}', when=DESCRIPTION),
         Format(
             'Дата: {dialog_data[date]}',
             when=F['dialog_data']['date'],
