@@ -7,7 +7,7 @@ from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import StartMode
 
 from src.application.domen.text import RU
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import (
     PaymentCallback,
@@ -41,7 +41,7 @@ async def _show_current_context_send_warning(
 async def cmd_hello(
     message: Message,
     dialog_manager: DialogManager,
-    repository: UsersRepository,
+    repository: Repository,
 ) -> None:
     try:
         await dialog_manager.start(BaseMenu.START)
@@ -54,7 +54,7 @@ async def cmd_hello(
 async def sign_up_handler(
     message: Message,
     dialog_manager: DialogManager,
-    repository: UsersRepository,
+    repository: Repository,
 ) -> None:
     try:
         await dialog_manager.start(SignUp.START)
@@ -66,7 +66,7 @@ async def sign_up_handler(
 async def registration_handler(
     message: Message,
     dialog_manager: DialogManager,
-    repository: UsersRepository,
+    repository: Repository,
 ) -> None:
     await repository.user.remove_user(message.from_user.id, only_cache=True)
     try:
@@ -154,7 +154,7 @@ async def sign_up_payment_handler(
 async def delete_me_handler(
     message: Message,
     dialog_manager: DialogManager,
-    repository: UsersRepository,
+    repository: Repository,
 ) -> None:
     success = await repository.user.remove_user(message.from_user.id)
     await message.answer(f'delete is {success}')
@@ -178,7 +178,7 @@ async def message_handler(
 async def cmd_hello(
     message: Message,
     dialog_manager: DialogManager,
-    repository: UsersRepository,
+    repository: Repository,
 ) -> None:
     await dialog_manager.start(BaseMenu.START, mode=StartMode.RESET_STACK)
 

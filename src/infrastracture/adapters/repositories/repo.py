@@ -17,7 +17,7 @@ from src.infrastracture.repository.users import UsersService
 logger = logging.getLogger(__name__)
 
 
-class UsersRepository:
+class Repository:
     def __init__(
         self,
         user_repo,

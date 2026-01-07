@@ -35,11 +35,11 @@ from src.application.domen.models.activity_type import (
 from src.application.domen.models.lesson_option import LessonOption, LessonOptionFactory
 from src.application.domen.text import RU
 from src.application.models import UserDTO
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.application.utils import format_date_russian
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.presentation.dialogs.states import AcitivityPages, BaseMenu, SignUp
 from src.presentation.dialogs.utils import (
     FILE_ID,
-    format_date_russian,
     get_activity_page,
     store_activities_by_type,
     validate_activities_inplace,
@@ -137,7 +137,7 @@ async def stay_form(
     button: Button,
     manager: DialogManager,
 ) -> None:
-    repository: UsersRepository = manager.middleware_data['repository']
+    repository: Repository = manager.middleware_data['repository']
     notifier: Notifier = manager.middleware_data['notifier']
     lesson_activity: LessonActivity = LessonActivity(
         **manager.start_data[_LESSON_ACTIVITY]

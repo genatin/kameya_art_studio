@@ -6,7 +6,7 @@ from aiogram.types import Message
 from aiogram_dialog import DialogManager
 
 from src.config import get_config
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.presentation.dialogs.states import Developer
 from src.presentation.notifier import Notifier
 
@@ -18,7 +18,7 @@ developer_router = Router()
 async def cmd_report(
     message: Message,
     dialog_manager: DialogManager,
-    repository: UsersRepository,
+    repository: Repository,
 ) -> None:
     try:
         await dialog_manager.start(Developer.START)

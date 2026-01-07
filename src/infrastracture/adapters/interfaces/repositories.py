@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class UsersAbstractRepository(ABC):
     @abstractmethod
-    async def add_user(self, user: UserDTO) -> None:
+    async def add_user(self, user: UserDTO) -> UserDTO:
         raise NotImplementedError
 
     @abstractmethod

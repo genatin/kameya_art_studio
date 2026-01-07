@@ -13,7 +13,7 @@ from aiogram_dialog.widgets.text import Const, Format, Jinja
 from src.application.domen.text import RU
 from src.application.models import UserDTO
 from src.config import get_config
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.presentation.dialogs.states import Registration
 from src.presentation.keyboards.keyboard import keyboard_phone
 from src.presentation.notifier import Notifier
@@ -60,7 +60,7 @@ async def get_contact(msg: Message, _, manager: DialogManager) -> None:
     new_user = UserDTO(id=msg.from_user.id, nickname=username, phone=phone)
     manager.dialog_data['user'] = new_user
     manager.current_context().widget_data['phone'] = phone
-    repository: UsersRepository = manager.middleware_data[_REPOSITORY]
+    repository: Repository = manager.middleware_data[_REPOSITORY]
     await repository.user.update_user(new_user)
     await manager.switch_to(Registration.NAME)
 
@@ -78,7 +78,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, An
 async def registration_complete(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ) -> None:
-    repository: UsersRepository = manager.middleware_data[_REPOSITORY]
+    repository: Repository = manager.middleware_data[_REPOSITORY]
     notifier: Notifier = manager.middleware_data['notifier']
 
     user = UserDTO(**manager.dialog_data['user'])

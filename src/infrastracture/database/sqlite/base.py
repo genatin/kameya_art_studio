@@ -1,11 +1,9 @@
-from collections.abc import Callable
 
 import emoji
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastracture.database.sqlite.db import Base, async_session_maker, engine
+from src.infrastracture.database.sqlite.db import Base, engine
 from src.infrastracture.database.sqlite.models import ActivityType, ActivityTypeEnum
 
 
@@ -18,19 +16,9 @@ async def _create_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
-def connection(func) -> Callable:
-    async def wrapper(*args, **kwargs) -> Callable:
-        if (args and isinstance(args[0], AsyncSession)) or kwargs.get('session'):
-            return await func(*args, **kwargs)
-        async with async_session_maker() as session:
-            return await func(session, *args, **kwargs)
-
-    return wrapper
-
-
-async def init_db() -> None:
+async def init_db(session_maker) -> None:
     await _create_db()
-    async with async_session_maker() as session:
+    async with session_maker() as session:
         existing_types = (await session.execute(select(ActivityType.name))).all()
         try:
             # Создаем предопределенные типы, если их нет

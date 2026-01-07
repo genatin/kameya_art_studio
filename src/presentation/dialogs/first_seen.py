@@ -6,13 +6,13 @@ from aiogram_dialog.widgets.kbd import Start
 from aiogram_dialog.widgets.media import DynamicMedia
 from aiogram_dialog.widgets.text import Const
 
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.presentation.dialogs.states import BaseMenu, FirstSeen
 from src.presentation.dialogs.utils import FILE_ID, get_base_menu_image
 
 
 async def get_base_menu_data(
-    dialog_manager: DialogManager, repository: UsersRepository, **kwargs
+    dialog_manager: DialogManager, repository: Repository, **kwargs
 ) -> dict[str, Any]:
     return {FILE_ID: await get_base_menu_image(dialog_manager, repository)}
 

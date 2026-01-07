@@ -19,10 +19,11 @@ from src.infrastracture.adapters.repositories.lessons import (
     LessonsRepository,
     MCLassesRepository,
 )
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.infrastracture.adapters.repositories.users import RepositoryUser
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.infrastracture.database.sqlite.base import init_db
+from src.infrastracture.database.sqlite.db import async_session_maker
 from src.infrastracture.repository.users import UsersService
 from src.presentation.dialogs.admin import (
     admin_dialog,
@@ -67,7 +68,7 @@ async def main() -> None:
     spreadsheet = gspread.service_account_from_dict(
         config.google_settings.model_dump()
     ).open(config.GSHEET_NAME)
-    await init_db()
+    await init_db(async_session_maker)
     user_repository = RepositoryUser()
     redis = Redis(
         host=config.REDIS_HOST,
@@ -84,7 +85,7 @@ async def main() -> None:
     users_service = UsersService(
         cache_time=get_config().users_cache_time,
         redis=redis_repository,
-        repository=user_repository,
+        user_repository=user_repository,
     )
 
     lesssons_repo = LessonsRepository(spreadsheet.worksheet(config.LESSONS_PAGE))
@@ -94,7 +95,7 @@ async def main() -> None:
         spreadsheet.worksheet(config.EVENING_PAGE)
     )
 
-    gspread_repository = UsersRepository(
+    repository = Repository(
         users_service, lesssons_repo, child_repo, mclasses_repo, evening_sketch_repo
     )
     activity_repository = ActivityRepository(redis=redis_repository)
@@ -110,7 +111,7 @@ async def main() -> None:
 
     dp = create_dispatcher(
         storage=storage,
-        repository=gspread_repository,
+        repository=repository,
         redis_repository=redis_repository,
         activity_repository=activity_repository,
         notifier=Notifier(),

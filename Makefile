@@ -29,3 +29,6 @@ flake:
 
 mypy:
 	uv run mypy src bot.py
+
+pytest: 
+	uv run pytest -vv -s --disable-warnings

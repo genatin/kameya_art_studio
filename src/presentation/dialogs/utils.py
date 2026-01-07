@@ -1,6 +1,5 @@
 import contextlib
 import logging
-from datetime import date
 from html import escape
 from typing import Any
 
@@ -19,7 +18,8 @@ from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.activities import ActivityModel
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.dialogs.states import BaseMenu
@@ -104,7 +104,7 @@ async def error_handler(error_event: ErrorEvent) -> None:
 
 
 async def get_base_menu_image(
-    dialog_manager: DialogManager, repository: UsersRepository, **kwargs
+    dialog_manager: DialogManager, repository: Repository, **kwargs
 ) -> MediaAttachment | None:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     base_menu_image = await redis_repository.hgetall('menu_image')
@@ -121,7 +121,7 @@ async def get_base_menu_image(
 
 
 async def get_base_menu_data(
-    dialog_manager: DialogManager, repository: UsersRepository, **kwargs
+    dialog_manager: DialogManager, repository: Repository, **kwargs
 ) -> dict[str, Any]:
     update_reg = dialog_manager.start_data == 'update_reg'
     event = dialog_manager.event
@@ -261,7 +261,7 @@ async def validate_sign_ups(dialog_manager: DialogManager, **_kwargs) -> dict[st
         del activities[index]
 
 
-def validate_activities_inplace(activities: list[Any]) -> None:
+def validate_activities_inplace(activities: list[ActivityModel]) -> None:
     not_valid = []
     for i in range(len(activities)):
         if activities[i]['file_id'] and len(activities[i]['description']) > 1024:
@@ -288,30 +288,3 @@ async def store_activities_by_type(start_data: Any, manager: DialogManager) -> d
 
     manager.dialog_data['act_type'] = act_type.human_name
     return await activity_repository.get_all_activity_by_type(act_type.human_name)
-
-
-def format_date_russian(dt: date) -> str:
-    weekdays = [
-        'Понедельник',
-        'Вторник',
-        'Среда',
-        'Четверг',
-        'Пятница',
-        'Суббота',
-        'Воскресенье',
-    ]
-    months = [
-        'Января',
-        'Февраля',
-        'Марта',
-        'Апреля',
-        'Мая',
-        'Июня',
-        'Июля',
-        'Фвгуста',
-        'Сентября',
-        'Октября',
-        'Ноября',
-        'Декабря',
-    ]
-    return f'{weekdays[dt.weekday()]}, {dt.day} {months[dt.month - 1]} {dt.year}'

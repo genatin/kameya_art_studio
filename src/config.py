@@ -76,6 +76,10 @@ class Config(BaseSettings):
     def db_url(self) -> str:
         return f'sqlite+aiosqlite://{self.DB_PATH}'
 
+    @property
+    def test_db_url(self) -> str:
+        return 'sqlite+aiosqlite://tests/sqlite_data/kamey_art_test.db'
+
     GOOGLE_SETTINGS: str  # Base64 encoded GoogleSettings json string
 
     @property

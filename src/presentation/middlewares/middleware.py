@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -5,8 +6,10 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 from aiogram_dialog import DialogManager
 
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.presentation.dialogs.states import FirstSeen
+
+logger = logging.getLogger(__name__)
 
 
 class RegistrationMiddleware(BaseMiddleware):
@@ -18,8 +21,9 @@ class RegistrationMiddleware(BaseMiddleware):
     ) -> Any:
         # Проверяем, зарегистрирован ли пользователь
         dialog_manager: DialogManager = data['dialog_manager']
-        repository: UsersRepository = data['repository']
+        repository: Repository = data['repository']
         user = await repository.user.get_user(event.from_user.id)
+        print(f'User from registration middleware: {user=}')
         if not user:
             await event.answer(
                 'Звёзды ждут, чтобы их нарисовали… Но сначала — возьмите кисть в руки.'

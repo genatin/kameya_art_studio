@@ -44,7 +44,7 @@ from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
-from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.adapters.repositories.repo import Repository
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import (
@@ -159,7 +159,7 @@ async def message_admin_handler(
         phone = '+79095266566'
         repecepient_name = 'Азаматов Назар Бахтиерович'
 
-    repository: UsersRepository = dialog_manager.middleware_data['repository']
+    repository: Repository = dialog_manager.middleware_data['repository']
     user = await repository.user.get_user(dialog_manager.start_data['user_id'])
     admin_message_1 = [
         (
@@ -280,7 +280,7 @@ async def send_to_user(
             task_payment = tg.create_task(
                 send_user_payment(callback, user_id, button, manager)
             )
-            repository: UsersRepository = manager.middleware_data['repository']
+            repository: Repository = manager.middleware_data['repository']
             repository.change_values_in_signup_user(
                 manager.start_data['activity_type'],
                 int(manager.start_data['num_row']),
@@ -305,7 +305,7 @@ async def get_image(
 async def cancel_payment(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ) -> None:
-    repository: UsersRepository = manager.middleware_data['repository']
+    repository: Repository = manager.middleware_data['repository']
     repository.change_value_in_signup_user(
         manager.start_data['activity_type'],
         int(manager.start_data['num_row']),
@@ -347,7 +347,7 @@ async def cancel_payment(
 async def approve_payment(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ) -> None:
-    repository: UsersRepository = manager.middleware_data['repository']
+    repository: Repository = manager.middleware_data['repository']
     repository.change_value_in_signup_user(
         manager.start_data['activity_type'],
         int(manager.start_data['num_row']),
@@ -808,7 +808,7 @@ async def redo_user_message(
 async def get_users(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
-    repository: UsersRepository = manager.middleware_data['repository']
+    repository: Repository = manager.middleware_data['repository']
     users = await repository.user.get_users()
     column_name = 'tg_id | last_name.name | phone\n–––––––––––––––––––––––––––––––––\n'
     users_str = '\n'.join(
