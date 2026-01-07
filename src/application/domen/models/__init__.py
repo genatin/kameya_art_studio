@@ -30,6 +30,7 @@ DateField = Annotated[dt.date, BeforeValidator(auto_parse_date)]
 
 class LessonActivity(BaseModel):
     activity_type: ActivityType
+    id: int | None = None
     lesson_option: LessonOption | None = None
     topic: str = Field(default='undefined')
     num_tickets: int = Field(default=1)

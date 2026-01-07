@@ -96,10 +96,10 @@ class Notifier:
         await redis_repository.set(AdminKey(key=user.id), send_mes_ids, ex=_MONTH)
         # admin message id
         signup_data = SignUpCallbackFactory(
+            act_id=lesson_activity.id,
             message_id=message_id,
             user_id=user.id,
             user_phone=user.phone,
-            activity_type=lesson_activity.activity_type.name,
             num_row=num_row,
             message=message_to_admin,
         )

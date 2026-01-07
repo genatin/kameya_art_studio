@@ -1,5 +1,6 @@
 from .dao import (
     add_activity,
+    get_activity_by_id,
     get_all_activity_by_type,
     remove_activity_by_theme_and_type,
     update_activity_date_by_name,
@@ -18,4 +19,5 @@ __all__ = [
     'update_activity_name_by_name',
     'update_activity_date_by_name',
     'update_activity_time_by_name',
+    'get_activity_by_id',
 ]

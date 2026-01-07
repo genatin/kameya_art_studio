@@ -188,6 +188,7 @@ async def on_page_change(dialog_manager: DialogManager, *args) -> None:
         return
     media_number = await scroll.get_page()
     activity = dialog_manager.dialog_data.get('activities', [])
+    dialog_manager.dialog_data[_LESSON_ACTIVITY]['id'] = activity[media_number]['id']
     dialog_manager.dialog_data[_LESSON_ACTIVITY]['topic'] = activity[media_number][
         'theme'
     ]

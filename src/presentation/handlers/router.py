@@ -7,6 +7,7 @@ from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import StartMode
 
 from src.application.domen.text import RU
+from src.infrastracture.adapters.repositories.activities import ActivityRepository
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import (
@@ -100,9 +101,12 @@ async def sign_up_callback_handler(
     callback_data: SignUpCallback,
     dialog_manager: DialogManager,
     redis_repository: RedisRepository,
+    activity_repository: ActivityRepository,
 ) -> None:
     user_data = await redis_repository.hgetall(callback_data.message_id)
     user_data['message_id'] = callback_data.message_id
+    activity = await activity_repository.get_activity_by_id(user_data['act_id'])
+    user_data.update(activity.model_dump())
     try:
         if callback_data.action == 'sign_up':
             state = AdminReply.START

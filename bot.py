@@ -7,6 +7,7 @@ from aiogram.filters import ExceptionTypeFilter
 from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
 from aiogram_dialog import setup_dialogs
 from aiogram_dialog.api.exceptions import OutdatedIntent, UnknownIntent, UnknownState
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from redis.asyncio.client import Redis
 
 from src.application.factory.telegram import create_dispatcher
@@ -45,7 +46,9 @@ from src.presentation.handlers.deleoper_router import developer_router
 from src.presentation.handlers.router import main_router, not_handled_router
 from src.presentation.middlewares.throttling import ThrottlingMiddleware
 from src.presentation.notifier import Notifier
+from src.presentation.reminders.main_reminder import MainReminder
 from src.presentation.reminders.payment_reminder import PaymentReminder
+from src.presentation.reminders.sign_up_reminder import SignUpReminder
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +108,14 @@ async def main() -> None:
         json_dumps=mjson.encode,
         json_loads=mjson.decode,
     )
-    payment_reminder = PaymentReminder(bot, redis_repository)
-    await payment_reminder.start()
+
+    scheduler = AsyncIOScheduler()
+    payment_reminder = PaymentReminder(bot, redis_repository, scheduler, users_service)
+    signup_reminder = SignUpReminder(
+        bot, redis_repository, scheduler, users_service, activity_repository
+    )
+    reminder = MainReminder(scheduler, payment_reminder, signup_reminder)
+    await reminder.start_reminders()
 
     dp = create_dispatcher(
         storage=storage,
@@ -114,7 +123,7 @@ async def main() -> None:
         redis_repository=redis_repository,
         activity_repository=activity_repository,
         notifier=Notifier(),
-        payment_notifier=payment_reminder,
+        reminder=reminder,
     )
     dp.message.middleware.register(ThrottlingMiddleware(storage=storage))
 

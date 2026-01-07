@@ -5,13 +5,14 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from aiogram import Bot
-from aiogram.enums.parse_mode import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 
 from src.application.domen.text import RU
 from src.config import get_config
 from src.infrastracture.database.redis.repository import RedisRepository
+from src.infrastracture.repository.users import UsersService
+from src.presentation.message_sender import send_messages_to_user
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +27,17 @@ class PaymentReminder:
     MAX_REMINDER_COUNT: int = 3
     zone_info: zoneinfo.ZoneInfo = get_config().zone_info
 
-    def __init__(self, bot: Bot, redis_repository: RedisRepository) -> None:
+    def __init__(
+        self,
+        bot: Bot,
+        redis_repository: RedisRepository,
+        scheduler: AsyncIOScheduler,
+        user_service: UsersService,
+    ) -> None:
         self.redis_repository = redis_repository
         self.bot = bot
-        self.scheduler = AsyncIOScheduler()
+        self._user_service = user_service
+        self.__scheduler = scheduler
 
     async def get_keys_by_pattern(self) -> list[str]:
         return [
@@ -38,10 +46,6 @@ class PaymentReminder:
                 match=f'{self.REMINDER_KEY_PREFIX}*'
             )
         ]
-
-    async def start(self) -> None:
-        self.scheduler.start()
-        await self.setup_reminders()
 
     async def setup_reminders(self) -> None:
         keys = await self.get_keys_by_pattern()
@@ -52,9 +56,9 @@ class PaymentReminder:
                 if reminder_count < self.MAX_REMINDER_COUNT:
                     await self._schedule_reminder(reminder_data['user_id'], reminder_data)
                 else:
-                    await self.delete_payment(reminder_data['user_id'])
+                    await self.delete_reminder(reminder_data['user_id'])
 
-    async def add_reminder(self, user_id: int) -> None:
+    async def add_reminder(self, user_id: int, **kwargs) -> None:
         last_reminded = datetime.now(self.zone_info).timestamp()
         reminder_data = {
             'user_id': user_id,
@@ -84,19 +88,21 @@ class PaymentReminder:
             if datetime.now(self.zone_info) > run_date:
                 run_date = self.adjust_to_work_hours(datetime.now(self.zone_info))
         else:
-            run_date = self.calculate_next_notification_time(
+            run_date = self._calculate_next_notification_time(
                 last_reminded_date, current_count
             )
             reminder_data['run_date'] = run_date.timestamp()
         if current_count >= self.MAX_REMINDER_COUNT:
             return None
 
-        job_key = self.get_job_key(user_id)
+        job_key = self._generate_job_key(user_id)
 
-        if self.scheduler.get_job(job_key):
-            logger.info('job for user %s has already exists', user_id)
+        if self.__scheduler.get_job(job_key) or self.__scheduler.get_job(
+            f'reminder_{user_id}'
+        ):
+            logger.info('job for user to payment %s has already exists', user_id)
         else:
-            self.scheduler.add_job(
+            self.__scheduler.add_job(
                 self._process_reminder,
                 trigger=DateTrigger(run_date=run_date),
                 args=(user_id, current_count),
@@ -114,7 +120,7 @@ class PaymentReminder:
         await self._set_reminder_data(reminder_key, reminder_data)
 
     def adjust_to_work_hours(self, time: datetime) -> datetime:
-        if time.hour >= 20:
+        if time.hour >= 19:
             next_day = time.date() + timedelta(days=1)
         elif time.hour < 9:
             next_day = time.date()
@@ -124,7 +130,7 @@ class PaymentReminder:
             next_day, datetime.min.time(), tzinfo=self.zone_info
         ).replace(hour=9)
 
-    def calculate_next_notification_time(
+    def _calculate_next_notification_time(
         self, last_sent_time: datetime, attempt_number: int
     ) -> datetime:
         if (datetime.now(self.zone_info) - last_sent_time).total_seconds() / 60 > 1:
@@ -144,8 +150,8 @@ class PaymentReminder:
 
         return adjusted_time
 
-    def get_job_key(self, user_id: int) -> str:
-        return f'reminder_{user_id}'
+    def _generate_job_key(self, user_id: int) -> str:
+        return f'payment_reminder_{user_id}'
 
     async def _process_reminder(
         self,
@@ -164,19 +170,22 @@ class PaymentReminder:
         if current_count < self.MAX_REMINDER_COUNT:
             # Отправляем напоминание
             try:
+                user = await self._user_service.get_user(user_id)
                 match current_count:
                     case 0:
-                        message = RU.payment_reminder_1
+                        remind_messages = [
+                            f'Приветствуем Вас, {user.name}!',
+                            *RU.payment_reminder_1,
+                        ]
                     case 1:
-                        message = RU.payment_reminder_2
+                        remind_messages = RU.payment_reminder_2
                     case 2:
-                        message = RU.payment_reminder_3
-
+                        remind_messages = RU.payment_reminder_3
                 connect_us = (
                     f'<i>\nВозникли вопросы? Напишите нам {RU.kameya_tg_contact}</i>'
                 )
-                await self.bot.send_message(
-                    user_id, message + connect_us, parse_mode=ParseMode.HTML
+                await send_messages_to_user(
+                    self.bot, [*remind_messages, connect_us], user_id
                 )
                 reminder_data['last_reminded'] = datetime.now(self.zone_info).timestamp()
             except Exception as exc:
@@ -190,7 +199,7 @@ class PaymentReminder:
             await self._schedule_reminder(user_id, reminder_data)
         else:
             # Удаляем после последнего напоминания
-            await self.delete_payment(reminder_key)
+            await self.delete_reminder(reminder_key)
 
     def _get_reminder_key(self, user_id: int) -> str:
         return f'{self.REMINDER_KEY_PREFIX}{user_id}'
@@ -204,11 +213,13 @@ class PaymentReminder:
     async def _set_reminder_data(self, key: str, data: dict[str, Any]) -> None:
         await self.redis_repository.hset(key, mapping=data, ex=_DAY * 3)
 
-    async def delete_payment(self, user_id: int) -> None:
+    async def delete_reminder(self, user_id: int) -> None:
         redis_key_reminder = f'{self.REMINDER_KEY_PREFIX}{user_id}'
         await self.redis_repository.delete(redis_key_reminder)
         logger.info('removed from redis %s', redis_key_reminder)
-        job_key = self.get_job_key(user_id)
-        if self.scheduler.get_job(job_key):
-            self.scheduler.remove_job(job_key)
+        job_key = self._generate_job_key(user_id)
+        if self.__scheduler.get_job(job_key) or self.__scheduler.get_job(
+            f'reminder_{user_id}'
+        ):
+            self.__scheduler.remove_job(job_key)
             logger.info('removed from sheduler %s', job_key)

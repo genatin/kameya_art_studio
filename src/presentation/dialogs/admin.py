@@ -70,6 +70,8 @@ from src.presentation.dialogs.utils import (
     safe_text_with_link,
     store_activities_by_type,
 )
+from src.presentation.message_sender import send_messages_to_user
+from src.presentation.reminders.main_reminder import MainReminder
 from src.presentation.reminders.payment_reminder import PaymentReminder
 
 logger = logging.getLogger(__name__)
@@ -269,7 +271,9 @@ async def send_to_user(
             )
         )
         if a_m := manager.dialog_data['admin_messages']:
-            task_send = tg.create_task(send_signup_message(manager, a_m, callback))
+            task_send = tg.create_task(
+                send_messages_to_user(manager.event.bot, a_m, user_id)
+            )
         if manager.dialog_data.get('cost', manager.start_data['cost']) == 0:
             task_approve = tg.create_task(approve_payment(callback, None, manager))
         else:
@@ -333,8 +337,10 @@ async def cancel_payment(
         ),
         parse_mode=ParseMode.HTML,
     )
-    payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
-    await payment_notifier.delete_payment(manager.start_data['user_id'])
+    reminder: MainReminder = manager.middleware_data['reminder']
+
+    await reminder.delete_reminder(manager.start_data['user_id'])
+
     await approve_form_for_other_admins(
         manager,
         user_id=manager.start_data['user_id'],
@@ -379,14 +385,14 @@ async def approve_payment(
             text=('Чтобы узнать как до нас добраться, используйте команду 👉 /how_to'),
             parse_mode=_PARSE_MODE_TO_USER,
         )
-    payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
+    reminder: MainReminder = manager.middleware_data['reminder']
     await approve_form_for_other_admins(
         manager,
         user_id=manager.start_data['user_id'],
         responding_admin_id=callback.from_user.id,
         message_text='Занятие оплачено ✅',
     )
-    await payment_notifier.delete_payment(manager.start_data['user_id'])
+    await reminder.payment_reminder.delete_reminder(manager.start_data['user_id'])
 
     user_phone = manager.start_data['user_phone']
     await callback.message.answer(
@@ -475,6 +481,9 @@ async def no_date(
             scroll: ManagedScroll = dialog_manager.find('scroll')
             media_number = await scroll.get_page()
             dialog_manager.dialog_data['activities'][media_number]['date'] = selected_date
+            dialog_manager.dialog_data[_IS_EDIT] = False
+            reminder: MainReminder = dialog_manager.middleware_data['reminder']
+            await reminder.refresh_reminders()
             await callback.message.answer('Дата активности успешно изменена')
         else:
             await callback.message.answer(RU.sth_error)
@@ -495,8 +504,8 @@ async def time_handler(event: Message, widget, dialog_manager: DialogManager, *_
         scroll: ManagedScroll = dialog_manager.find('scroll')
         media_number = await scroll.get_page()
         if not dialog_manager.dialog_data['activities'][media_number]['date']:
-            await event.answer('Сначал нужно установить дату')
-            return dialog_manager.switch_to(AdminActivity.DATE)
+            await event.answer('Сначала нужно установить дату')
+            return await dialog_manager.switch_to(AdminActivity.DATE)
         activ_repository = _get_activity_repo(dialog_manager)
         activity = await activ_repository.update_activity_time_by_name(
             activity_type=dialog_manager.dialog_data['act_type'],
@@ -536,6 +545,8 @@ async def no_time(
             dialog_manager.dialog_data['activities'][media_number]['time'] = (
                 new_time.strftime('%H:%M') if new_time else None
             )
+            reminder: MainReminder = dialog_manager.middleware_data['reminder']
+            await reminder.refresh_reminders()
             await event.answer('Описание мастер-класса успешно изменено')
         else:
             await event.answer(RU.sth_error)

@@ -240,6 +240,7 @@ async def get_activity_page(dialog_manager: DialogManager, **_kwargs) -> dict[st
             file_id=MediaId(activity[FILE_ID]),
             type=ContentType(activity[CONTENT_TYPE]),
         )
+    logger.info(f'---> {activity=}')
     return {
         'media_number': media_number,
         'next_p': (len_activities - media_number) > 1,

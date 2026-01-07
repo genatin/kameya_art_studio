@@ -159,6 +159,18 @@ async def update_activity_fileid_by_name(
         await session.rollback()
 
 
+async def get_activity_by_id(
+    session: AsyncSession,
+    activity_id: int,
+) -> Activity:
+    stmt = (
+        select(Activity)
+        .join(Activity.activity_type)  # Используем relationship для join
+        .where(Activity.id == activity_id)
+    )
+    return await session.scalar(stmt)
+
+
 async def get_activity_by_theme_and_type(
     session: AsyncSession,
     activity_type: str,
