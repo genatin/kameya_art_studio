@@ -9,3 +9,4 @@ class SignUpCallbackFactory(BaseModel):
     num_row: str
     message: str
     cost: int | str = ''
+    topic: str = ''

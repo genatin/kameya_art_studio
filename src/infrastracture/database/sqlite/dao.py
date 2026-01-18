@@ -163,7 +163,7 @@ async def get_activity_by_theme_and_type(
     session: AsyncSession,
     activity_type: str,
     theme: str,
-) -> Activity:
+) -> Activity | None:
     stmt = (
         select(Activity)
         .join(Activity.activity_type)  # Используем relationship для join

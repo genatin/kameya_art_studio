@@ -89,7 +89,7 @@ class Config(BaseSettings):
     @model_validator(mode='after')
     def admins_setter(self) -> 'Config':
         if self.LOCAL:
-            self.admins = [self.DEVELOPER_ID]
+            self.admins.append(self.DEVELOPER_ID)
         return self
 
 

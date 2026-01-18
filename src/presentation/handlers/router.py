@@ -34,7 +34,7 @@ async def _show_current_context_send_warning(
     dialog_manager: DialogManager,
 ) -> None:
     await message.answer(RU.cancel)
-    await dialog_manager.show()
+    await dialog_manager.show(ShowMode.NO_UPDATE)
 
 
 @main_router.message(Command('start'))
@@ -110,6 +110,8 @@ async def sign_up_callback_handler(
             state = AdminReply.CANCEL
         await dialog_manager.start(state=state, data=user_data, show_mode=ShowMode.SEND)
     except ValueError:
+        if dialog_manager.has_context():
+            await cq.answer()
         await _show_current_context_send_warning(cq.message, dialog_manager)
 
 
@@ -127,7 +129,9 @@ async def sign_up_payment_handler(
             await dialog_manager.start(AdminPayments.CONFIRM_PAYMENT, data=user_data)
         else:
             await dialog_manager.start(AdminPayments.CANCEL_PAYMENT, data=user_data)
-    except ValueError:
+    except ValueError as e:
+        if dialog_manager.has_context():
+            await cq.answer()
         await _show_current_context_send_warning(cq.message, dialog_manager)
 
 
@@ -147,6 +151,8 @@ async def sign_up_payment_handler(
             data=user_data,
         )
     except ValueError:
+        if dialog_manager.has_context():
+            await cq.answer()
         await _show_current_context_send_warning(cq.message, dialog_manager)
 
 

@@ -93,13 +93,14 @@ class Notifier:
                 logger.error('Failed while notify admins', exc_info=exc)
         # при ответе одним из администраторов у других уведомление (сообщение)
         # о заявке редактируется (удаляется кнопка). актуально месяц
-        await redis_repository.set(AdminKey(key=user.id), send_mes_ids, ex=_MONTH)
+        await redis_repository.set(AdminKey(key=message_id), send_mes_ids, ex=_MONTH)
         # admin message id
         signup_data = SignUpCallbackFactory(
             message_id=message_id,
             user_id=user.id,
             user_phone=user.phone,
             activity_type=lesson_activity.activity_type.name,
+            topic=lesson_activity.topic,
             num_row=num_row,
             message=message_to_admin,
         )

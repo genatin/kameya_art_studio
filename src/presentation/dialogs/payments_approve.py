@@ -58,9 +58,10 @@ async def photo_handler(
             'Нужно приложить картинку или документ или нажмите кнопку ниже'
         )
         return
+    message_id = str(dialog_manager.start_data['message_id'])
     admin_id = str(dialog_manager.start_data['admin_id'])
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
-    reply_to_mess = await redis_repository.get(AdminKey(key=admin_id), dict)
+    reply_to_mess = await redis_repository.get(AdminKey(key=message_id), dict)
     caption = 'Поступил чек об оплате'
     if caption_from_user:
         caption += (

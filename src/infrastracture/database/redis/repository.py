@@ -69,7 +69,8 @@ class RedisRepository:
             value = value.model_dump(exclude_defaults=True)
         if isinstance(value, UserDTO):
             value = value.to_dict()
-        await self.client.set(name=key, value=mjson.encode(value), ex=ex)
+        async with self.client.lock(f'lock:{key}'):
+            await self.client.set(name=key, value=mjson.encode(value), ex=ex)
 
     async def hset(
         self,

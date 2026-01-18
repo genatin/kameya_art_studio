@@ -33,7 +33,7 @@ DESCRIPTION = 'description'
 _MINUTE = 60
 _HOUR = _MINUTE * 60
 _DAY = _HOUR * 24
-_MONTH = _DAY * 30
+MONTH = _DAY * 30
 _SENDED = 'sended'
 
 
@@ -60,6 +60,10 @@ async def on_unknown_intent(event: ErrorEvent, dialog_manager: DialogManager) ->
             show_mode=ShowMode.SEND,
         )
     except ValueError:
+        if dialog_manager.has_context():
+            cq = event.update.callback_query
+            await cq.message.answer(RU.cancel)
+            return await cq.answer()
         await message.answer('Завершите предыдущее действие')
 
 
@@ -151,10 +155,10 @@ async def message_is_sended(dialog_manager: DialogManager, user_id: int) -> bool
 
 
 async def close_app_form_for_other_admins(
-    dialog_manager: DialogManager, user_id: int, responding_admin_id: int
+    dialog_manager: DialogManager, message_id: int, responding_admin_id: int
 ) -> None:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
-    admin_mess_ids = await redis_repository.get(AdminKey(key=user_id), dict)
+    admin_mess_ids = await redis_repository.get(AdminKey(key=message_id), dict)
     builder = InlineKeyboardBuilder()
     builder.button(text='Ждём пользователя 👻', callback_data='ignore_this_callback')
     if not admin_mess_ids:
@@ -171,8 +175,8 @@ async def close_app_form_for_other_admins(
             )
         except Exception as exc:
             logger.error('Failed while edit admin message', exc_info=exc)
+    await redis_repository.set(AdminKey(key=message_id), admin_mess_ids, ex=MONTH)
     admin_mess_ids[_SENDED] = True
-    await redis_repository.set(AdminKey(key=user_id), admin_mess_ids, ex=_MONTH)
 
 
 async def approve_form_for_other_admins(

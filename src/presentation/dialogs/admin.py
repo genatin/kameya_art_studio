@@ -34,6 +34,7 @@ from aiogram_dialog.widgets.text import Const, Format, List
 
 from src.application.domen.models.activity_type import (
     ActivityEnum,
+    ActivityTypeFactory,
     child_studio_act,
     evening_sketch_act,
     lesson_act,
@@ -44,6 +45,7 @@ from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
+from src.infrastracture.adapters.repositories.activities import ActivityRepository
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
@@ -63,6 +65,7 @@ from src.presentation.dialogs.utils import (
     CONTENT_TYPE,
     DESCRIPTION,
     FILE_ID,
+    MONTH,
     approve_form_for_other_admins,
     close_app_form_for_other_admins,
     get_activity_page,
@@ -216,8 +219,9 @@ async def message_admin_handler(
 
 
 async def send_user_payment(
-    callback: CallbackQuery, user_id: str, button: Button, manager: DialogManager
+    callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
+    message_id = manager.start_data['message_id']
     builder = InlineKeyboardBuilder()
     builder.button(
         text='Отменить запись',
@@ -237,23 +241,20 @@ async def send_user_payment(
         reply_markup=builder.as_markup(),
     )
     redis_repository: RedisRepository = manager.middleware_data['redis_repository']
-    reply_to_mess = await redis_repository.get(AdminKey(key=user_id), dict)
-    reply_to_mess[callback.from_user.id] = mess.message_id
-    reply_to_mess = await redis_repository.set(
-        AdminKey(key=callback.from_user.id), reply_to_mess
-    )
+    reply_to_mess = await redis_repository.get(AdminKey(key=message_id), dict)
+    reply_to_mess[str(callback.from_user.id)] = mess.message_id
+    await redis_repository.set(AdminKey(key=message_id), reply_to_mess, ex=MONTH)
     await manager.done()
     await manager.reset_stack()
-    await asyncio.sleep(0.3)
 
 
 async def send_to_user(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
-    user_id = manager.start_data['user_id']
+    message_id = manager.start_data['message_id']
     if await message_is_sended(
         manager,
-        user_id=user_id,
+        user_id=message_id,
     ):
         await callback.message.answer(
             'Сообщение уже было отправлено другим администратором'
@@ -264,10 +265,11 @@ async def send_to_user(
         task_close = tg.create_task(
             close_app_form_for_other_admins(
                 manager,
-                user_id=user_id,
+                message_id=message_id,
                 responding_admin_id=callback.from_user.id,
             )
         )
+        await task_close
         if a_m := manager.dialog_data['admin_messages']:
             task_send = tg.create_task(send_signup_message(manager, a_m, callback))
         if manager.dialog_data.get('cost', manager.start_data['cost']) == 0:
@@ -276,10 +278,8 @@ async def send_to_user(
             payment_notifier: PaymentReminder = manager.middleware_data[
                 'payment_notifier'
             ]
-            task_remind = tg.create_task(payment_notifier.add_reminder(user_id))
-            task_payment = tg.create_task(
-                send_user_payment(callback, user_id, button, manager)
-            )
+            task_remind = tg.create_task(payment_notifier.add_reminder(message_id))
+            task_payment = tg.create_task(send_user_payment(callback, button, manager))
             repository: UsersRepository = manager.middleware_data['repository']
             repository.change_values_in_signup_user(
                 manager.start_data['activity_type'],
@@ -348,23 +348,49 @@ async def approve_payment(
     callback: CallbackQuery, button: Button, manager: DialogManager, *_
 ) -> None:
     repository: UsersRepository = manager.middleware_data['repository']
+    activity_repository: ActivityRepository = manager.middleware_data[
+        'activity_repository'
+    ]
+    activity_type = manager.start_data['activity_type']
     repository.change_value_in_signup_user(
-        manager.start_data['activity_type'],
+        activity_type,
         int(manager.start_data['num_row']),
         column_name='status',
         value='оплачено',
     )
     cost = manager.dialog_data.get('cost', manager.start_data['cost'])
+    topic = manager.dialog_data.get('topic', manager.start_data['topic'])
+
+    activity_type_human = ActivityTypeFactory.activity_human_readable[
+        ActivityEnum(manager.dialog_data.get('activity_type', activity_type))
+    ]
+    activity_model = await activity_repository.get_activity_by_theme_and_type(
+        activity_type_human, topic
+    )
+    if activity_model:
+        date_ = f'\nДата: {activity_model.date_repr}' if activity_model.date_repr else ''
+        time_ = f'\nВремя: {activity_model.time_repr}' if activity_model.time_repr else ''
+    else:
+        date_ = ''
+        time_ = ''
     user_name = (await repository.user.get_user(manager.start_data['user_id'])).name
     if cost != 0:
         manager.dialog_data['approve_message'] = (
-            f'🎉\n{user_name}, оплату получили, благодарим Вас, запись подтверждена!\n\n'
+            f'{activity_type_human}'
+            f'\n{topic}'
+            f'{date_}'
+            f'{time_}'
+            f'\n🥳 {user_name}, оплату получили, благодарим Вас, запись подтверждена!\n\n'
             '<b>В случае отмены необходимо свяжитесь с '
             f'нами \n{RU.kameya_tg_contact}</b>'
         )
     else:
         manager.dialog_data['approve_message'] = (
-            f'🎉\n{user_name}, благодарим Вас за регистрацию, запись подтверждена!\n\n'
+            f'{activity_type_human}'
+            f'\n{topic}'
+            f'{date_}'
+            f'{time_}'
+            f'\n🥳 {user_name}, благодарим Вас за регистрацию, запись подтверждена!\n\n'
             '<b>В случае отмены необходимо свяжитесь с '
             f'нами \n{RU.kameya_tg_contact}</b>'
         )

@@ -102,7 +102,7 @@ class PaymentReminder:
                 args=(user_id, current_count),
                 id=job_key,
             )
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.1)
             logger.info(
                 'add sheduler job for %s with date %s and count=%s',
                 user_id,
