@@ -49,10 +49,10 @@ class PaymentReminder:
             reminder_data = await self._get_reminder_data(key)
             if reminder_data:
                 reminder_count = int(reminder_data['reminder_count'])
-                if reminder_count < self.MAX_REMINDER_COUNT:
-                    await self._schedule_reminder(reminder_data['user_id'], reminder_data)
-                else:
-                    await self.delete_payment(reminder_data['user_id'])
+                # if reminder_count < self.MAX_REMINDER_COUNT:
+                #     await self._schedule_reminder(reminder_data['user_id'], reminder_data)
+                # else:
+                await self.delete_payment(reminder_data['user_id'])
 
     async def add_reminder(self, user_id: int) -> None:
         last_reminded = datetime.now(self.zone_info).timestamp()

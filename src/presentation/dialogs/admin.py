@@ -334,7 +334,7 @@ async def cancel_payment(
         parse_mode=ParseMode.HTML,
     )
     payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
-    await payment_notifier.delete_payment(manager.start_data['user_id'])
+    await payment_notifier.delete_payment(manager.start_data['message_id'])
     await approve_form_for_other_admins(
         manager,
         message_id=manager.start_data['message_id'],
@@ -412,7 +412,7 @@ async def approve_payment(
         responding_admin_id=callback.from_user.id,
         message_text='Занятие оплачено ✅',
     )
-    await payment_notifier.delete_payment(manager.start_data['user_id'])
+    await payment_notifier.delete_payment(manager.start_data['message_id'])
 
     user_phone = manager.start_data['user_phone']
     await callback.message.answer(
