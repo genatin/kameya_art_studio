@@ -49,25 +49,27 @@ class PaymentReminder:
             reminder_data = await self._get_reminder_data(key)
             if reminder_data:
                 reminder_count = int(reminder_data['reminder_count'])
-                # if reminder_count < self.MAX_REMINDER_COUNT:
-                #     await self._schedule_reminder(reminder_data['user_id'], reminder_data)
-                # else:
-                await self.delete_payment(reminder_data['user_id'])
+                if reminder_count < self.MAX_REMINDER_COUNT:
+                    await self._schedule_reminder(
+                        reminder_data['message_id'], reminder_data
+                    )
+                else:
+                    await self.delete_payment(reminder_data['message_id'])
 
-    async def add_reminder(self, user_id: int) -> None:
+    async def add_reminder(self, message_id: int) -> None:
         last_reminded = datetime.now(self.zone_info).timestamp()
         reminder_data = {
-            'user_id': user_id,
+            'message_id': message_id,
             'reminder_count': 0,
             'last_reminded': last_reminded,
             'run_date': None,
         }
         await self._schedule_reminder(
-            user_id,
+            message_id,
             reminder_data,
         )
 
-    async def _schedule_reminder(self, user_id: int, reminder_data: dict) -> None:
+    async def _schedule_reminder(self, message_id: int, reminder_data: dict) -> None:
         last_reminded = reminder_data['last_reminded']
         if last_reminded:
             last_reminded_date = datetime.fromtimestamp(
@@ -91,26 +93,26 @@ class PaymentReminder:
         if current_count >= self.MAX_REMINDER_COUNT:
             return None
 
-        job_key = self.get_job_key(user_id)
+        job_key = self.get_job_key(message_id)
 
         if self.scheduler.get_job(job_key):
-            logger.info('job for user %s has already exists', user_id)
+            logger.info('job for user %s has already exists', message_id)
         else:
             self.scheduler.add_job(
                 self._process_reminder,
                 trigger=DateTrigger(run_date=run_date),
-                args=(user_id, current_count),
+                args=(message_id, current_count),
                 id=job_key,
             )
             await asyncio.sleep(0.1)
             logger.info(
                 'add sheduler job for %s with date %s and count=%s',
-                user_id,
+                message_id,
                 run_date,
                 current_count,
             )
 
-        reminder_key = self._get_reminder_key(user_id)
+        reminder_key = self._get_reminder_key(message_id)
         await self._set_reminder_data(reminder_key, reminder_data)
 
     def adjust_to_work_hours(self, time: datetime) -> datetime:
@@ -144,15 +146,15 @@ class PaymentReminder:
 
         return adjusted_time
 
-    def get_job_key(self, user_id: int) -> str:
-        return f'reminder_{user_id}'
+    def get_job_key(self, message_id: int) -> str:
+        return f'reminder_{message_id}'
 
     async def _process_reminder(
         self,
-        user_id: int,
+        message_id: int,
         current_count: int,
     ) -> None:
-        reminder_key = self._get_reminder_key(user_id)
+        reminder_key = self._get_reminder_key(message_id)
         reminder_data = await self._get_reminder_data(reminder_key)
 
         if not reminder_data:
@@ -176,24 +178,24 @@ class PaymentReminder:
                     f'<i>\nВозникли вопросы? Напишите нам {RU.kameya_tg_contact}</i>'
                 )
                 await self.bot.send_message(
-                    user_id, message + connect_us, parse_mode=ParseMode.HTML
+                    message_id, message + connect_us, parse_mode=ParseMode.HTML
                 )
                 reminder_data['last_reminded'] = datetime.now(self.zone_info).timestamp()
             except Exception as exc:
-                logger.error('Failed to send reminder to %s: %s', user_id, exc)
+                logger.error('Failed to send reminder to %s: %s', message_id, exc)
 
             # Проверяем нужно ли продолжать напоминания
             await self._set_reminder_data(reminder_key, reminder_data)
 
             # Планируем следующее
             reminder_data['run_date'] = None
-            await self._schedule_reminder(user_id, reminder_data)
+            await self._schedule_reminder(message_id, reminder_data)
         else:
             # Удаляем после последнего напоминания
             await self.delete_payment(reminder_key)
 
-    def _get_reminder_key(self, user_id: int) -> str:
-        return f'{self.REMINDER_KEY_PREFIX}{user_id}'
+    def _get_reminder_key(self, message_id: int) -> str:
+        return f'{self.REMINDER_KEY_PREFIX}{message_id}'
 
     async def _get_reminder_data(self, key: str) -> dict[str, Any] | None:
         try:
@@ -204,11 +206,11 @@ class PaymentReminder:
     async def _set_reminder_data(self, key: str, data: dict[str, Any]) -> None:
         await self.redis_repository.hset(key, mapping=data, ex=_DAY * 3)
 
-    async def delete_payment(self, user_id: int) -> None:
-        redis_key_reminder = f'{self.REMINDER_KEY_PREFIX}{user_id}'
+    async def delete_payment(self, message_id: int) -> None:
+        redis_key_reminder = f'{self.REMINDER_KEY_PREFIX}{message_id}'
         await self.redis_repository.delete(redis_key_reminder)
         logger.info('removed from redis %s', redis_key_reminder)
-        job_key = self.get_job_key(user_id)
+        job_key = self.get_job_key(message_id)
         if self.scheduler.get_job(job_key):
             self.scheduler.remove_job(job_key)
             logger.info('removed from sheduler %s', job_key)
