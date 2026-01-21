@@ -337,11 +337,11 @@ async def cancel_payment(
     await payment_notifier.delete_payment(manager.start_data['user_id'])
     await approve_form_for_other_admins(
         manager,
-        user_id=manager.start_data['user_id'],
+        message_id=manager.start_data['message_id'],
         responding_admin_id=callback.from_user.id,
         message_text='Занятие отменено ❌',
     )
-    await manager.done(show_mode=ShowMode.NO_UPDATE)
+    await manager.done(show_mode=ShowMode.AUTO)
 
 
 async def approve_payment(
@@ -408,7 +408,7 @@ async def approve_payment(
     payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
     await approve_form_for_other_admins(
         manager,
-        user_id=manager.start_data['user_id'],
+        message_id=manager.start_data['message_id'],
         responding_admin_id=callback.from_user.id,
         message_text='Занятие оплачено ✅',
     )

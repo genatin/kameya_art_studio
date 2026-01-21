@@ -181,12 +181,12 @@ async def close_app_form_for_other_admins(
 
 async def approve_form_for_other_admins(
     dialog_manager: DialogManager,
-    user_id: int,
+    message_id: int,
     responding_admin_id: int,
     message_text: str,
 ) -> None:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
-    admin_mess_ids = await redis_repository.getdel(AdminKey(key=user_id), dict)
+    admin_mess_ids = await redis_repository.getdel(AdminKey(key=message_id), dict)
     if not admin_mess_ids:
         return None
     builder = InlineKeyboardBuilder()

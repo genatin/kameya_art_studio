@@ -129,7 +129,7 @@ async def sign_up_payment_handler(
             await dialog_manager.start(AdminPayments.CONFIRM_PAYMENT, data=user_data)
         else:
             await dialog_manager.start(AdminPayments.CANCEL_PAYMENT, data=user_data)
-    except ValueError as e:
+    except ValueError:
         if dialog_manager.has_context():
             await cq.answer()
         await _show_current_context_send_warning(cq.message, dialog_manager)
