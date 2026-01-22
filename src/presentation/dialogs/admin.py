@@ -82,6 +82,8 @@ _IS_EDIT = 'is_edit'
 _DESCRIPTION_MC = 'description_mc'
 _TIME_MC = 'time_mc'
 _BACK_TO_PAGE_ACTIVITY = SwitchTo(Const('Назад'), id='back', state=AdminActivity.PAGE)
+_VS = 50
+_MAX_VIDEO_SIZE = _VS * 1024 * 1024  # 50 Мбайт
 
 
 def parse_time_regex(time_str: str | None) -> time | None:
@@ -637,9 +639,9 @@ async def photo_handler(
         file_id = message.photo[0].file_id
         content_type = ContentType.PHOTO
     elif message.video:
-        if message.video.file_size > 1e7:
+        if message.video.file_size > _MAX_VIDEO_SIZE:
             await message.answer(
-                'Видео слишком тяжелое, нужно что-то поменьше. До 10 Мбай.'
+                f'Видео слишком тяжелое, нужно что-то поменьше. До {_VS} Мбайт.'
             )
             return
 
@@ -670,9 +672,9 @@ async def menu_image_handler(
         file_id = message.photo[0].file_id
         content_type = ContentType.PHOTO
     elif message.video:
-        if message.video.file_size > 1e7:
+        if message.video.file_size > _MAX_VIDEO_SIZE:
             await message.answer(
-                'Видео слишком тяжелое, нужно что-то поменьше. До 10 Мбай.'
+                f'Видео слишком тяжелое, нужно что-то поменьше. До {_VS} Мбайт.'
             )
             return
         file_id = message.video.file_id
@@ -849,7 +851,9 @@ async def get_users(
     )
 
 
-def __validate_description(file_id: str | None, description: str | None) -> str:
+def __validate_description(file_id: str | None, description: str | None) -> str | None:
+    if not description:
+        return description
     if file_id and (diff := len(description) - 1024) > 0:
         return (
             '<b>'
@@ -1110,7 +1114,10 @@ change_activity_dialog = Dialog(
         parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
-        Format('Приложите медиа файл и отправьте сообщением'),
+        Format(
+            'Приложите медиа файл (фото/видео) и отправьте сообщением. '
+            f'Видео должно быть до {_VS} Мбайт'
+        ),
         Row(
             Button(Const('Назад'), id='back_or_menu', on_click=back_step_or_back_to_menu),
             Button(Const('Без медиафайла'), id='next_or_edit', on_click=no_photo),
