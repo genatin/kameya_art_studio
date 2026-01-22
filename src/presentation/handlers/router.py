@@ -1,8 +1,9 @@
 import logging
 
 from aiogram import F, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import CallbackQuery, Message
+from aiogram.utils.deep_linking import decode_payload
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import StartMode
 
@@ -14,6 +15,7 @@ from src.presentation.callbacks import (
     PaymentScreenCallback,
     SignUpCallback,
 )
+from src.presentation.dialogs.sign_up import jump_to_activity_pages
 from src.presentation.dialogs.states import (
     AdminPayments,
     AdminReply,
@@ -37,13 +39,20 @@ async def _show_current_context_send_warning(
     await dialog_manager.show(ShowMode.NO_UPDATE)
 
 
+@main_router.message(CommandStart(deep_link=True))
 @main_router.message(Command('start'))
 async def cmd_hello(
     message: Message,
+    command: CommandObject,  # Объект команды, содержит аргументы
     dialog_manager: DialogManager,
     repository: UsersRepository,
 ) -> None:
     try:
+        args = command.args
+        if args:
+            payload = decode_payload(args)
+            activity, act_id = payload.split(':')
+            return await jump_to_activity_pages(dialog_manager, activity, int(act_id))
         await dialog_manager.start(BaseMenu.START)
     except ValueError:
         await _show_current_context_send_warning(message, dialog_manager)

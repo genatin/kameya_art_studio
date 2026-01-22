@@ -5,11 +5,18 @@ from typing import Any
 from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery
-from aiogram_dialog import Dialog, DialogManager, LaunchMode, StartMode, Window
+from aiogram_dialog import (
+    Dialog,
+    DialogManager,
+    LaunchMode,
+    StartMode,
+    Window,
+)
 from aiogram_dialog.widgets.common import ManagedScroll
 from aiogram_dialog.widgets.kbd import (
     Back,
     Button,
+    Cancel,
     Counter,
     CurrentPage,
     FirstPage,
@@ -151,10 +158,19 @@ async def stay_form(
     await manager.done()
 
 
+async def jump_to_activity_pages(
+    manager: DialogManager, data: str | None, act_id: int | None = None
+) -> None:
+    activity_type = ActivityTypeFactory.generate(data)
+    start_data = manager.dialog_data if manager.has_context() else {}
+    if act_id is not None:
+        start_data['act_id'] = act_id
+    start_data[_LESSON_ACTIVITY] = LessonActivity(activity_type=activity_type)
+    await manager.start(AcitivityPages.START, data=start_data)
+
+
 async def _activity_option(cq: CallbackQuery, _, manager: DialogManager) -> None:
-    activity_type = ActivityTypeFactory.generate(cq.data)
-    manager.dialog_data[_LESSON_ACTIVITY] = LessonActivity(activity_type=activity_type)
-    await manager.start(AcitivityPages.START, data=manager.dialog_data)
+    await jump_to_activity_pages(manager, cq.data)
 
 
 async def _form_presentation(
@@ -283,6 +299,7 @@ signup_dialog = Dialog(
 
 activity_pages_dialog = Dialog(
     Window(
+        Format('🙈 Ой, активность не найдена', when=F['not_found']),
         Format('{dialog_data[act_type]} скоро будут доступны', when=~_ACTIVITY_EXISTS),
         _THEME_AND_DESCRIPTION_HTML,
         Format(
@@ -295,6 +312,7 @@ activity_pages_dialog = Dialog(
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id='scroll', pages='len_activities'),
+        # Button(Const('😉 Ссылка для друга'), id='gen_link', on_click=generate_deep_link),
         Row(
             LastPage(scroll='scroll', text=Const('<')),
             CurrentPage(scroll='scroll', text=Format('{current_page1}/{pages}')),
@@ -320,7 +338,12 @@ activity_pages_dialog = Dialog(
                 state=SignUp.START,
             ),
             Button(Const('Записаться'), id='next', on_click=next_with_lessons),
-            when=_ACTIVITY_EXISTS,
+            when=_ACTIVITY_EXISTS & ~F['not_found'],
+        ),
+        Cancel(
+            Const(RU.menu),
+            id='bact_to_signup',
+            when=F['not_found'],
         ),
         _BACK_TO_MENU_ROW_IF_NO_ACTIVITIES,
         getter=get_activity_page,

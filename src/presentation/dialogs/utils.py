@@ -233,6 +233,18 @@ async def get_activity_page(dialog_manager: DialogManager, **_kwargs) -> dict[st
     scroll: ManagedScroll | None = dialog_manager.find('scroll')
     media_number = await scroll.get_page() if scroll else 0
     activities = dialog_manager.dialog_data.get('activities', [])
+    if (
+        dialog_manager.start_data
+        and (pn := dialog_manager.start_data.get('act_id')) is not None
+    ):
+        media_number, finded_act = next(
+            ((i, act) for i, act in enumerate(activities) if act['id'] == pn),
+            (None, None),
+        )
+        dialog_manager.start_data.pop('act_id')
+        if not finded_act:
+            return {'not_found': True}
+        await scroll.set_page(media_number)
     len_activities = len(activities)
     if not activities:
         return {FILE_ID: None, 'activity': None, 'media_number': 0, 'len_activities': 0}
@@ -291,6 +303,7 @@ async def store_activities_by_type(start_data: Any, manager: DialogManager) -> d
     ]
 
     manager.dialog_data['act_type'] = act_type.human_name
+    manager.dialog_data['act_type_no_human'] = act_type.name
     return await activity_repository.get_all_activity_by_type(act_type.human_name)
 
 

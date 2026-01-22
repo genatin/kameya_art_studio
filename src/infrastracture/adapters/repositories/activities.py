@@ -99,7 +99,7 @@ class ActivityRepository(ActivityAbstractRepository):
         if activity:
             activity_key = self.get_activity_key(activity_type)
             await self.__redis.delete(activity_key)
-            return activity
+            return ActivityModel.model_validate(activity)
 
     async def get_all_activity_by_type(self, activity_type: str) -> list[dict]:
         activity_key = self.get_activity_key(activity_type)

@@ -4,19 +4,14 @@ from aiogram import F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import ContentType
 from aiogram_dialog import Dialog, LaunchMode, Window
-from aiogram_dialog.widgets.kbd import Back, Next, Start, SwitchTo, Url
+from aiogram_dialog.widgets.kbd import Back, Button, Next, Start, SwitchTo, Url
 from aiogram_dialog.widgets.media import DynamicMedia, StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 
 from src.application.domen.text import RU
 from src.config import get_config
 from src.presentation.dialogs.registration import send_contact
-from src.presentation.dialogs.states import (
-    Administration,
-    BaseMenu,
-    Registration,
-    SignUp,
-)
+from src.presentation.dialogs.states import Administration, BaseMenu, SignUp
 from src.presentation.dialogs.utils import FILE_ID, get_base_menu_data
 from src.presentation.middlewares.middleware import RegistrationMiddleware
 
@@ -41,11 +36,10 @@ menu_dialog = Dialog(
             '<i>Для регистрации нажмите кнопку ниже</i>',
             when=~F['user'],
         ),
-        Start(
+        Button(
             Const('📝 Зарегистрироваться'),
             id='sign_up',
             when=~F['user'],
-            state=Registration.GET_CONTACT,
             on_click=send_contact,
         ),
         Start(Const('🎨 О студии'), id='aaa', state=BaseMenu.ABOUT_US),

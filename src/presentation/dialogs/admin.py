@@ -4,9 +4,10 @@ import re
 from datetime import date, datetime, time
 from typing import Any
 
-from aiogram import F
+from aiogram import Bot, F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, ContentType, Message
+from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.api.entities import LaunchMode, MediaAttachment, MediaId, ShowMode
@@ -45,7 +46,10 @@ from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
 )
-from src.infrastracture.adapters.repositories.activities import ActivityRepository
+from src.infrastracture.adapters.repositories.activities import (
+    ActivityModel,
+    ActivityRepository,
+)
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
@@ -104,6 +108,20 @@ def parse_time_regex(time_str: str | None) -> time | None:
 
 def _get_activity_repo(dialog_manager: DialogManager) -> ActivityAbstractRepository:
     return dialog_manager.middleware_data['activity_repository']
+
+
+async def _generate_deep_link(bot: Bot, target_state: str) -> str:
+    return await create_start_link(bot, payload=target_state, encode=True)
+
+
+async def generate_deep_link(
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager
+) -> None:
+    deep_link = await _generate_deep_link(
+        dialog_manager.event.bot,
+        f'{dialog_manager.dialog_data["act_type_no_human"]}:{dialog_manager.dialog_data["activity"]["id"]}',
+    )
+    await callback.message.answer(f'Cсылка для перехода:\n\n{deep_link}')
 
 
 async def send_signup_message(
@@ -719,7 +737,7 @@ async def add_activities_to_db(
     else:
         date_time = None
     activ_repository: ActivityAbstractRepository = _get_activity_repo(dialog_manager)
-    act = await activ_repository.add_activity(
+    act: ActivityModel = await activ_repository.add_activity(
         activity_type=act_type,
         theme=theme_activity,
         image_id=file_id,
@@ -730,13 +748,14 @@ async def add_activities_to_db(
     if not act:
         await callback.message.answer(f'Не удалось добавить {act_type}, попробуйте позже')
         return await dialog_manager.start(BaseMenu.START)
-
+    dialog_manager.dialog_data['activity'] = act.model_dump()
+    await generate_deep_link(callback, button, dialog_manager)
     await callback.message.answer(f'{act_type} добавлен.')
     activities.append(
         {
-            'id': len(activities),
-            'theme': theme_activity,
-            DESCRIPTION: description,
+            'id': act.id,
+            'theme': act.theme,
+            DESCRIPTION: act.description,
             'date': _date,
             'time': _time,
             FILE_ID: file_id,
@@ -746,7 +765,7 @@ async def add_activities_to_db(
 
     scroll: ManagedScroll | None = dialog_manager.find('scroll')
     if scroll:
-        await scroll.set_page(len(activities) - 1)
+        await scroll.set_page(0)
         return await dialog_manager.switch_to(AdminActivity.PAGE)
     await dialog_manager.start(Administration.EDIT_ACTS)
 
@@ -1040,6 +1059,7 @@ change_activity_dialog = Dialog(
         ),
         DynamicMedia(selector=FILE_ID, when=FILE_ID),
         StubScroll(id='scroll', pages='len_activities'),
+        Button(Const('Сгенерировать ссылку'), id='gen_link', on_click=generate_deep_link),
         SwitchTo(
             Const(RU.admin_change),
             id='admin_change',

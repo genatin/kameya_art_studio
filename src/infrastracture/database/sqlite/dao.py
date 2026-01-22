@@ -44,6 +44,7 @@ async def add_activity(
         session.add(activity)
         logger.info('Added activity: %s', activity)
         await session.commit()
+        await session.refresh(activity)
         return activity
     except SQLAlchemyError as e:
         logger.error('Adding activity failed: %s', e)

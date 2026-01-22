@@ -14,6 +14,7 @@ from src.application.domen.text import RU
 from src.application.models import UserDTO
 from src.config import get_config
 from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.presentation.dialogs.sign_up import jump_to_activity_pages
 from src.presentation.dialogs.states import Registration
 from src.presentation.keyboards.keyboard import keyboard_phone
 from src.presentation.notifier import Notifier
@@ -42,6 +43,7 @@ async def send_contact(cq: CallbackQuery, _, manager: DialogManager) -> None:
         'Для регистрации потребуется ваш номер телефона',
         reply_markup=keyboard_phone,
     )
+    await manager.start(Registration.GET_CONTACT, data=manager.start_data)
 
 
 async def get_contact(msg: Message, _, manager: DialogManager) -> None:
@@ -80,7 +82,6 @@ async def registration_complete(
 ) -> None:
     repository: UsersRepository = manager.middleware_data[_REPOSITORY]
     notifier: Notifier = manager.middleware_data['notifier']
-
     user = UserDTO(**manager.dialog_data['user'])
 
     mess_to_remove = await callback.message.answer(RU.random_wait)
@@ -109,6 +110,9 @@ async def registration_complete(
             show_mode = ShowMode.NO_UPDATE
     await callback.message.answer(message, reply_markup=ReplyKeyboardRemove())
     await mess_to_remove.delete()
+    if manager.start_data and (jump_to := manager.start_data.get('jump_to_page')):
+        activity, act_id = jump_to.split(':')
+        return await jump_to_activity_pages(manager, activity, int(act_id))
     await manager.done(show_mode=show_mode)
 
 
