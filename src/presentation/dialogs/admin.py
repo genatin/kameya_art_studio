@@ -254,6 +254,7 @@ async def send_to_user(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
     message_id = manager.start_data['message_id']
+    user_id = manager.start_data['user_id']
     if await message_is_sended(
         manager,
         user_id=message_id,
@@ -280,7 +281,7 @@ async def send_to_user(
             payment_notifier: PaymentReminder = manager.middleware_data[
                 'payment_notifier'
             ]
-            task_remind = tg.create_task(payment_notifier.add_reminder(message_id))
+            task_remind = tg.create_task(payment_notifier.add_reminder(user_id))
             task_payment = tg.create_task(send_user_payment(callback, button, manager))
             repository: UsersRepository = manager.middleware_data['repository']
             repository.change_values_in_signup_user(
@@ -336,7 +337,7 @@ async def cancel_payment(
         parse_mode=ParseMode.HTML,
     )
     payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
-    await payment_notifier.delete_payment(manager.start_data['message_id'])
+    await payment_notifier.delete_payment(manager.start_data['user_id'])
     await approve_form_for_other_admins(
         manager,
         message_id=manager.start_data['message_id'],
@@ -414,7 +415,7 @@ async def approve_payment(
         responding_admin_id=callback.from_user.id,
         message_text='Занятие оплачено ✅',
     )
-    await payment_notifier.delete_payment(manager.start_data['message_id'])
+    await payment_notifier.delete_payment(manager.start_data['user_id'])
 
     user_phone = manager.start_data['user_phone']
     await callback.message.answer(
