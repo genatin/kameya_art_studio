@@ -857,28 +857,14 @@ async def redo_user_message(
 async def get_users(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
-    try:
-        repository: UsersRepository = manager.middleware_data['repository']
-        users = await repository.user.get_users()
-        buffer, filename = generate_csv_buffer(users)
-        file = BufferedInputFile(
-            file=buffer.read(),  # Читаем данные из буфера
-            filename=filename,
-        )
-
-        await manager.event.bot.send_document(
-            chat_id=callback.from_user.id,
-            document=file,
-            caption=f'📊 Список пользователей ({len(users)} записей)',
-        )
-    except Exception:
-        await manager.event.bot.send_message(
-            chat_id=callback.from_user.id, text='❌ Ошибка при создании файла'
-        )
-        raise
-    finally:
-        # Закрываем буфер
-        buffer.close()
+    repository: UsersRepository = manager.middleware_data['repository']
+    users = await repository.user.get_users()
+    buffer, filename = generate_csv_buffer(users)
+    await manager.event.bot.send_document(
+        chat_id=callback.from_user.id,
+        document=BufferedInputFile(buffer.getvalue(), filename),
+        caption=f'Экспорт пользователей ({len(users)} шт.)',
+    )
 
 
 def __validate_description(file_id: str | None, description: str | None) -> str | None:
