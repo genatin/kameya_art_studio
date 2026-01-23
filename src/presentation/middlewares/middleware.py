@@ -38,13 +38,13 @@ class RegistrationMiddleware(BaseMiddleware):
                     '🌠 Звёзды ждут, чтобы их нарисовали… '
                     'Но сначала — возьмите кисть в руки.'
                 )
-                await asyncio.sleep(1.3)
+                await asyncio.sleep(1)
                 if start_data:
                     await event.answer(
                         'Прежде чем перейти к занятию, давайте пройдём регистрацию, '
                         'это не страшно и ни к чему Вас не обязывает 🥰'
                     )
-                    await asyncio.sleep(1.3)
+                    await asyncio.sleep(1)
                 return await dialog_manager.start(FirstSeen.START, data=start_data)
             await event.answer('Ой, кажется регистрация не была завершена')
             await repository.user.remove_user(user_id)
