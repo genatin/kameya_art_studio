@@ -45,7 +45,6 @@ class AdminPayments(StatesGroup):
 class Administration(StatesGroup):
     START = State()
     EDIT_ACTS = State()
-    USERS = State()
     IMAGE = State()
 
 

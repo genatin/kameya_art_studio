@@ -1,10 +1,43 @@
+import csv
+import io
 import logging
+from dataclasses import fields
 
 from src.application.models import UserDTO, UserTgId
 from src.infrastracture.adapters.interfaces.repositories import UsersAbstractRepository
 from src.infrastracture.database.redis.repository import RedisRepository
 
 logger = logging.getLogger(__name__)
+
+
+def generate_csv_buffer(users: list[UserDTO]) -> tuple[io.BytesIO, str]:
+    if not users:
+        raise ValueError('Список пользователей пуст')
+    buffer = io.BytesIO()
+    text_buffer = io.StringIO()
+    fieldnames = [field.name for field in fields(UserDTO)]
+
+    writer = csv.DictWriter(text_buffer, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for user in users:
+        writer.writerow(
+            {
+                'id': user.id,
+                'nickname': user.nickname or '',
+                'phone': user.phone or '',
+                'name': user.name or '',
+                'last_name': user.last_name or '',
+            }
+        )
+
+    buffer.write(text_buffer.getvalue().encode('utf-8-sig'))
+    buffer.seek(0)
+
+    # Генерируем имя файла
+    filename = f'kameya_users_{len(users)}.csv'
+
+    return buffer, filename
 
 
 class UsersService:

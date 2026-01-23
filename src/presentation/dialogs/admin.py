@@ -6,7 +6,7 @@ from typing import Any
 
 from aiogram import Bot, F
 from aiogram.enums.parse_mode import ParseMode
-from aiogram.types import CallbackQuery, ContentType, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, ContentType, Message
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import Dialog, DialogManager, Window
@@ -53,6 +53,7 @@ from src.infrastracture.adapters.repositories.activities import (
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
+from src.infrastracture.repository.users import generate_csv_buffer
 from src.presentation.callbacks import (
     PaymentCallback,
     PaymentScreenCallback,
@@ -856,19 +857,28 @@ async def redo_user_message(
 async def get_users(
     callback: CallbackQuery, button: Button, manager: DialogManager
 ) -> None:
-    repository: UsersRepository = manager.middleware_data['repository']
-    users = await repository.user.get_users()
-    column_name = 'tg_id | last_name.name | phone\n–––––––––––––––––––––––––––––––––\n'
-    users_str = '\n'.join(
-        (
-            f'{user.id} | {user.last_name if user.last_name else None}'
-            f' {user.name if user.name else None} | {user.phone}'
+    try:
+        repository: UsersRepository = manager.middleware_data['repository']
+        users = await repository.user.get_users()
+        buffer, filename = generate_csv_buffer(users)
+        file = BufferedInputFile(
+            file=buffer.read(),  # Читаем данные из буфера
+            filename=filename,
         )
-        for user in users
-    )
-    manager.dialog_data['all_users_mess'] = (
-        f'Количество пользователей: {len(users)}\n\n{column_name}{users_str}'
-    )
+
+        await manager.event.bot.send_document(
+            chat_id=callback.from_user.id,
+            document=file,
+            caption=f'📊 Список пользователей ({len(users)} записей)',
+        )
+    except Exception:
+        await manager.event.bot.send_message(
+            chat_id=callback.from_user.id, text='❌ Ошибка при создании файла'
+        )
+        raise
+    finally:
+        # Закрываем буфер
+        buffer.close()
 
 
 def __validate_description(file_id: str | None, description: str | None) -> str | None:
@@ -977,10 +987,9 @@ admin_payments_dialog = Dialog(
 admin_dialog = Dialog(
     Window(
         Const('Режим администрирования'),
-        SwitchTo(
+        Button(
             Const('🐑 Список зарегистрированных'),
             id='get_users',
-            state=Administration.USERS,
             on_click=get_users,
         ),
         SwitchTo(
@@ -1024,14 +1033,6 @@ admin_dialog = Dialog(
         ),
         Row(Back(Const('Назад')), Button(Const(' '), id='ss')),
         state=Administration.EDIT_ACTS,
-    ),
-    Window(
-        Format('{dialog_data[all_users_mess]}'),
-        Row(
-            SwitchTo(Const('Назад'), id='back', state=Administration.START),
-            Button(Const(' '), id='ss'),
-        ),
-        state=Administration.USERS,
     ),
     Window(
         Const('🖼 Изменить картинку в меню'),
