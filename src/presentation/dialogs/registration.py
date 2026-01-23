@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from typing import Any
@@ -111,8 +112,12 @@ async def registration_complete(
     await callback.message.answer(message, reply_markup=ReplyKeyboardRemove())
     await mess_to_remove.delete()
     if manager.start_data and (jump_to := manager.start_data.get('jump_to_page')):
+        await callback.message.answer('😼 Переводим на страницу занятия!')
+        await asyncio.sleep(1)
         activity, act_id = jump_to.split(':')
-        return await jump_to_activity_pages(manager, activity, int(act_id))
+        return await jump_to_activity_pages(
+            manager, activity, int(act_id), show_mode=ShowMode.SEND
+        )
     await manager.done(show_mode=show_mode)
 
 
