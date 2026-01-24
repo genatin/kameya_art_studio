@@ -38,13 +38,17 @@ def normalize_phone_number(phone: str) -> str:
     raise ValueError
 
 
-async def send_contact(cq: CallbackQuery, _, manager: DialogManager) -> None:
+async def _on_start(start_data: Any, manager: DialogManager) -> None:
     manager.dialog_data[_FINISHED] = False
-    await cq.message.answer(
-        'Для регистрации потребуется ваш номер телефона',
-        reply_markup=keyboard_phone,
+
+
+async def start_reg(
+    cq: CallbackQuery, _, manager: DialogManager, start_data: dict | None = None
+) -> None:
+    start_data = (
+        (manager.start_data or start_data) if manager.has_context() else start_data
     )
-    await manager.start(Registration.GET_CONTACT, data=manager.start_data)
+    await manager.start(Registration.NAME, data=start_data)
 
 
 async def get_contact(msg: Message, _, manager: DialogManager) -> None:
@@ -58,14 +62,8 @@ async def get_contact(msg: Message, _, manager: DialogManager) -> None:
         return None
 
     await msg.answer('Спасибо!', reply_markup=ReplyKeyboardRemove())
-
-    username = '@' + str(msg.from_user.username) if msg.from_user.username else None
-    new_user = UserDTO(id=msg.from_user.id, nickname=username, phone=phone)
-    manager.dialog_data['user'] = new_user
     manager.current_context().widget_data['phone'] = phone
-    repository: UsersRepository = manager.middleware_data[_REPOSITORY]
-    await repository.user.update_user(new_user)
-    await manager.switch_to(Registration.NAME)
+    await manager.switch_to(Registration.END)
 
 
 async def result_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
@@ -76,6 +74,10 @@ async def result_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, An
     user_dict['phone'] = '+' + dialog_manager.find('phone').get_value().lstrip('+')
     user_dict['last_name'] = dialog_manager.find('last_name').get_value()
     return user_dict
+
+
+async def _get_name(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
+    return {'name': dialog_manager.find('name').get_value()}
 
 
 async def registration_complete(
@@ -128,6 +130,36 @@ async def next_or_end(event, widget, dialog_manager: DialogManager, *_) -> None:
         await dialog_manager.next()
 
 
+async def next_or_end_name(event, widget, dialog_manager: DialogManager, *_) -> None:
+    if dialog_manager.dialog_data.get(_FINISHED):
+        await dialog_manager.switch_to(Registration.END)
+    else:
+        event = dialog_manager.event
+        username = (
+            '@' + str(event.from_user.username) if event.from_user.username else None
+        )
+        new_user = UserDTO(id=event.from_user.id, nickname=username)
+        dialog_manager.dialog_data['user'] = new_user
+        await dialog_manager.next()
+
+
+async def next_or_end_with_phone(
+    event, widget, dialog_manager: DialogManager, *_
+) -> None:
+    if dialog_manager.dialog_data.get(_FINISHED):
+        await dialog_manager.switch_to(Registration.END)
+    else:
+        await dialog_manager.event.answer(
+            '*Почти готово! '
+            '\nОставьте, пожалуйста, ваш номер телефона. 🔒'
+            '\nМы гарантируем конфиденциальность — он нужен '
+            'только для внутренней связи студии и не будет передан третьим лицам*',
+            reply_markup=keyboard_phone,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        await dialog_manager.next()
+
+
 async def on_error_name(
     message: Message, dialog_: Any, manager: DialogManager, error_: ValueError
 ) -> None:
@@ -168,6 +200,33 @@ def validate_name_factory(name: str) -> bool:
 
 registration_dialog = Dialog(
     Window(
+        Format('*Давайте знакомиться. Как вас зовут?*\n\n_Например: Илья_'),
+        TextInput(
+            id='name',
+            on_success=next_or_end_name,
+            type_factory=validate_name_factory,
+            on_error=on_error_name,
+        ),
+        state=Registration.NAME,
+        parse_mode=ParseMode.MARKDOWN,
+    ),
+    Window(
+        Format(
+            '*Рады вас видеть, {name}!\nА вашу фамилию подскажете? '
+            'Чтобы мы точно знали, кто к нам зашёл в гости 🎨*'
+            '\n\n_Например: Репин_'
+        ),
+        TextInput(
+            id='last_name',
+            on_success=next_or_end_with_phone,
+            type_factory=validate_name_factory,
+            on_error=on_error_name,
+        ),
+        state=Registration.LASTNAME,
+        parse_mode=ParseMode.MARKDOWN,
+        getter=_get_name,
+    ),
+    Window(
         Const('Нажмите кнопку ниже ⬇️ или введите номер вручную'),
         MessageInput(get_contact, content_types=(ContentType.CONTACT, ContentType.TEXT)),
         state=Registration.GET_CONTACT,
@@ -182,28 +241,6 @@ registration_dialog = Dialog(
         ),
         SwitchTo(Const(RU.back_step), id='reg_end', state=Registration.END),
         state=Registration.EDIT_CONTACT,
-        parse_mode=ParseMode.MARKDOWN,
-    ),
-    Window(
-        Format('*Введите Ваше полное имя*\n_Например: Илья_'),
-        TextInput(
-            id='name',
-            on_success=next_or_end,
-            type_factory=validate_name_factory,
-            on_error=on_error_name,
-        ),
-        state=Registration.NAME,
-        parse_mode=ParseMode.MARKDOWN,
-    ),
-    Window(
-        Const('*Введите Вашу фамилию*\n_Например: Репин_'),
-        TextInput(
-            id='last_name',
-            on_success=next_or_end,
-            type_factory=validate_name_factory,
-            on_error=on_error_name,
-        ),
-        state=Registration.LASTNAME,
         parse_mode=ParseMode.MARKDOWN,
     ),
     Window(
@@ -237,4 +274,5 @@ registration_dialog = Dialog(
         getter=result_getter,
         state=Registration.END,
     ),
+    on_start=_on_start,
 )

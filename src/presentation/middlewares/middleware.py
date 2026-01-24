@@ -10,6 +10,7 @@ from aiogram.utils.deep_linking import decode_payload
 from aiogram_dialog import DialogManager
 
 from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.presentation.dialogs.registration import start_reg
 from src.presentation.dialogs.states import FirstSeen
 
 logger = logging.getLogger(__name__)
@@ -34,17 +35,16 @@ class RegistrationMiddleware(BaseMiddleware):
                 payload = decode_payload(command.args)
                 start_data = {'jump_to_page': payload}
             if not user:
-                await event.answer(
-                    '🌠 Звёзды ждут, чтобы их нарисовали… '
-                    'Но сначала — возьмите кисть в руки.'
-                )
+                await event.answer('🌠 Звёзды ждут, чтобы их нарисовали… ')
                 await asyncio.sleep(1)
                 if start_data:
                     await event.answer(
-                        'Прежде чем перейти к занятию, давайте пройдём регистрацию, '
-                        'это не страшно и ни к чему Вас не обязывает 🥰'
+                        '🎨 Чтобы занятие было удобно смотреть прямо здесь, а нам — '
+                        'знать, кого приветствовать, давайте быстренько познакомимся.'
+                        '\nЭто займёт полминуты!'
                     )
                     await asyncio.sleep(1)
+                    return await start_reg(event, None, dialog_manager, start_data)
                 return await dialog_manager.start(FirstSeen.START, data=start_data)
             await event.answer('Ой, кажется регистрация не была завершена')
             await repository.user.remove_user(user_id)

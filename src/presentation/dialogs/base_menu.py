@@ -10,7 +10,7 @@ from aiogram_dialog.widgets.text import Const, Format
 
 from src.application.domen.text import RU
 from src.config import get_config
-from src.presentation.dialogs.registration import send_contact
+from src.presentation.dialogs.registration import start_reg
 from src.presentation.dialogs.states import Administration, BaseMenu, SignUp
 from src.presentation.dialogs.utils import FILE_ID, get_base_menu_data
 from src.presentation.middlewares.middleware import RegistrationMiddleware
@@ -31,8 +31,7 @@ menu_dialog = Dialog(
             when=F['user'],
         ),
         Format(
-            '👋 {event.from_user.full_name} '
-            'приветствуем в Арт-Студии Камея.\n\n'
+            '👋 Приветствуем в Арт-Студии Камея.\n\n'
             '<i>Для регистрации нажмите кнопку ниже</i>',
             when=~F['user'],
         ),
@@ -40,7 +39,7 @@ menu_dialog = Dialog(
             Const('📝 Зарегистрироваться'),
             id='sign_up',
             when=~F['user'],
-            on_click=send_contact,
+            on_click=start_reg,
         ),
         Start(Const('🎨 О студии'), id='aaa', state=BaseMenu.ABOUT_US),
         Start(

@@ -25,7 +25,7 @@ async def send_to_developer(
         + '</i>',
         parse_mode=ParseMode.HTML,
     )
-    await event.answer('Сообщение отправлено. Благодарим Вас!')
+    await event.answer('Сообщение отправлено. Благодарим вас!')
     await dialog_manager.start(BaseMenu.START)
 
 
