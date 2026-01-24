@@ -37,14 +37,15 @@ class RegistrationMiddleware(BaseMiddleware):
                 start_data = {'jump_to_page': payload}
             if not user:
                 await event.answer('🌠 Звёзды ждут, чтобы их нарисовали… ')
-                await asyncio.sleep(1)
+                await dialog_manager.event.bot.send_chat_action(user_id, 'typing')
+                await asyncio.sleep(1.5)
                 if start_data:
                     redis_repository: RedisRepository = data['redis_repository']
                     base_menu_image = await redis_repository.hgetall('menu_image')
                     try:
                         file_id, content_type = next(iter(base_menu_image.items()))
                     except StopIteration:
-                        return None
+                        file_id = None
                     welcome_message = (
                         'Приветствуем в творческом пространстве 🎨✨\n'
                         'Рады видеть вас в нашей арт-студии Камея! '
@@ -59,13 +60,15 @@ class RegistrationMiddleware(BaseMiddleware):
                         )
                     else:
                         await event.answer(welcome_message)
-                    await asyncio.sleep(1)
+                    await dialog_manager.event.bot.send_chat_action(user_id, 'typing')
+                    await asyncio.sleep(3)
                     await event.answer(
                         '🎨 Чтобы занятие было удобно смотреть прямо здесь, а нам — '
                         'знать, кого приветствовать, давайте быстренько познакомимся.'
                         '\nЭто займёт полминуты!'
                     )
-                    await asyncio.sleep(1)
+                    await dialog_manager.event.bot.send_chat_action(user_id, 'typing')
+                    await asyncio.sleep(3)
                     return await start_reg(event, None, dialog_manager, start_data)
                 return await dialog_manager.start(FirstSeen.START, data=start_data)
             await event.answer('Ой, кажется регистрация не была завершена')
