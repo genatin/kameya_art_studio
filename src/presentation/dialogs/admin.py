@@ -473,7 +473,11 @@ async def description_handler(
             await event.answer(RU.sth_error)
         await dialog_manager.switch_to(AdminActivity.PAGE)
     else:
-        if dialog_manager.dialog_data[FILE_ID] and len(new_description) > 1024:
+        if (
+            dialog_manager.dialog_data[FILE_ID]
+            and new_description
+            and len(new_description) > 1024
+        ):
             return await event.answer(
                 'Так как в активности имеется медифайл, '
                 'то описание не должно быть выше 1024 символов'
