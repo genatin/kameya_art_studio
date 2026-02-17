@@ -1,11 +1,11 @@
 """Тестовые фикстуры для активностей."""
+
 from datetime import datetime, time
 from unittest.mock import MagicMock
 
 from src.application.domen.models.activity_type import ActivityEnum
 from src.application.domen.models.lesson_option import LessonOption
 from src.application.models import UserDTO
-
 
 # Валидные данные для тестирования активностей
 VALID_ACTIVITY_DATA = {
@@ -148,7 +148,6 @@ class SheetFixtures:
     @staticmethod
     def create_worksheet_mock():
         """Создать mock для Google Sheets worksheet."""
-        from unittest.mock import MagicMock
 
         worksheet = MagicMock()
         worksheet.row_values = MagicMock(return_value=SHEET_HEADERS)

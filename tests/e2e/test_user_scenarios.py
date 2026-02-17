@@ -1,4 +1,5 @@
 """E2E тесты пользовательских сценариев."""
+
 from datetime import time
 from unittest.mock import AsyncMock, MagicMock
 
@@ -16,7 +17,6 @@ from src.presentation.dialogs.states import (
     BaseMenu,
     FirstSeen,
 )
-
 
 # ============================================================================
 # ТЕСТЫ ВАЛИДАЦИИ ДАННЫХ
@@ -351,7 +351,6 @@ class TestErrorHandling:
     async def test_error_handler_name_pattern(self) -> None:
         """Тест обработчика ошибки pattern для имени."""
         from src.presentation.dialogs.registration import on_error_name
-        from unittest.mock import AsyncMock
 
         message_mock = AsyncMock()
         manager_mock = MagicMock()
@@ -366,7 +365,6 @@ class TestErrorHandling:
     async def test_error_handler_name_length(self) -> None:
         """Тест обработчика ошибки len для имени."""
         from src.presentation.dialogs.registration import on_error_name
-        from unittest.mock import AsyncMock
 
         message_mock = AsyncMock()
         manager_mock = MagicMock()
@@ -381,7 +379,6 @@ class TestErrorHandling:
     async def test_error_handler_name_repeating(self) -> None:
         """Тест обработчика ошибки same для имени."""
         from src.presentation.dialogs.registration import on_error_name
-        from unittest.mock import AsyncMock
 
         message_mock = AsyncMock()
         manager_mock = MagicMock()

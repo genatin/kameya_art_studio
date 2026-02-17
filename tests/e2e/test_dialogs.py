@@ -1,4 +1,5 @@
 """E2E тесты диалогов Telegram бота."""
+
 from datetime import time
 
 import pytest
@@ -7,20 +8,20 @@ from aiogram_dialog import Dialog
 from src.application.domen.models.activity_type import ActivityEnum
 from src.application.domen.models.lesson_option import (
     CLASSIC_LESS,
-    LessonOptionFactory,
     ONE_LESS,
     PRO_LESS,
     SUBSCRIPTION_4,
     SUBSCRIPTION_8,
     TRIAL_LESS,
+    LessonOptionFactory,
 )
 from src.application.domen.text import RU
 from src.presentation.dialogs.states import (
     AcitivityPages,
     AdminActivity,
-    AdminReply,
-    AdminPayments,
     Administration,
+    AdminPayments,
+    AdminReply,
     BaseMenu,
     Developer,
     FirstSeen,
@@ -28,7 +29,6 @@ from src.presentation.dialogs.states import (
     Registration,
     SignUp,
 )
-
 
 # ============================================================================
 # ТЕСТЫ ДИАЛОГА ПЕРВОГО ЗАПУСКА (FirstSeen)
@@ -307,7 +307,9 @@ class TestStatesGroup:
     def test_registration_state_group(self) -> None:
         """Тест группы состояний Registration."""
         expected_states = {'GET_CONTACT', 'EDIT_CONTACT', 'NAME', 'LASTNAME', 'END'}
-        actual_states = set(name for name in dir(Registration) if not name.startswith('_'))
+        actual_states = set(
+            name for name in dir(Registration) if not name.startswith('_')
+        )
 
         assert expected_states.issubset(actual_states)
 
@@ -328,7 +330,9 @@ class TestStatesGroup:
     def test_activity_pages_state_group(self) -> None:
         """Тест группы состояний ActivityPages."""
         expected_states = {'START', 'TICKETS'}
-        actual_states = set(name for name in dir(AcitivityPages) if not name.startswith('_'))
+        actual_states = set(
+            name for name in dir(AcitivityPages) if not name.startswith('_')
+        )
 
         assert expected_states.issubset(actual_states)
 

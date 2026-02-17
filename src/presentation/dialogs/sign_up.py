@@ -167,10 +167,17 @@ async def jump_to_activity_pages(
 ) -> None:
     activity_type = ActivityTypeFactory.generate(act_name)
     start_data = manager.dialog_data if manager.has_context() else {}
+    mode = StartMode.NORMAL
     if act_id is not None:
+        mode = StartMode.RESET_STACK
         start_data['act_id'] = act_id
     start_data[_LESSON_ACTIVITY] = LessonActivity(activity_type=activity_type)
-    await manager.start(AcitivityPages.START, data=start_data, show_mode=show_mode)
+    await manager.start(
+        AcitivityPages.START,
+        data=start_data,
+        show_mode=show_mode,
+        mode=mode,
+    )
 
 
 async def _activity_option(cq: CallbackQuery, _, manager: DialogManager) -> None:

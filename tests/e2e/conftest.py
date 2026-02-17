@@ -1,19 +1,16 @@
 """Конфигурация pytest для E2E тестов с дополнительными фикстурами."""
+
 from collections.abc import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
 from aiogram import Bot
-from aiogram.types import User
 from aiogram_dialog import DialogManager
 
 from src.application.domen.models.activity_type import ActivityEnum
-from src.application.domen.models.lesson_option import LessonOption
 from src.application.models import UserDTO
 from src.infrastracture.adapters.repositories.repo import UsersRepository
-from src.presentation.notifier import Notifier
-
 
 # ============================================================================
 # E2E СПЕЦИФИЧНЫЕ ФИКСТУРЫ

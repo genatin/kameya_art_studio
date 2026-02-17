@@ -45,7 +45,6 @@ async def cmd_hello(
     message: Message,
     command: CommandObject,  # Объект команды, содержит аргументы
     dialog_manager: DialogManager,
-    repository: UsersRepository,
 ) -> None:
     try:
         args = command.args

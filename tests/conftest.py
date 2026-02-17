@@ -1,4 +1,5 @@
 """Конфигурация pytest с фикстурами для тестов."""
+
 import asyncio
 from collections.abc import AsyncGenerator, Generator, Sequence
 from datetime import datetime
@@ -15,7 +16,6 @@ from src.application.domen.models import LessonActivity
 from src.application.domen.models.activity_type import ActivityEnum
 from src.application.domen.models.lesson_option import LessonOption
 from src.application.models import UserDTO
-from src.config import get_config
 from src.infrastracture.adapters.interfaces.repositories import (
     ActivityAbstractRepository,
     UsersAbstractRepository,
@@ -23,7 +23,6 @@ from src.infrastracture.adapters.interfaces.repositories import (
 from src.infrastracture.adapters.repositories.repo import UsersRepository
 from src.infrastracture.database.sqlite.models import Activity
 from src.presentation.notifier import Notifier
-
 
 # ============================================================================
 # ASYNCIO SETUP
@@ -187,9 +186,7 @@ class MockActivityRepository(ActivityAbstractRepository):
         self._activities[key] = activity
         return activity
 
-    async def get_all_activity_by_type(
-        self, activity_type: str
-    ) -> Sequence[dict]:
+    async def get_all_activity_by_type(self, activity_type: str) -> Sequence[dict]:
         """Получение всех активностей по типу."""
         return [
             {
@@ -492,13 +489,15 @@ async def mock_google_sheets() -> AsyncGenerator[MagicMock, None]:
     worksheet_mock.row_values = MagicMock(return_value=['header1', 'header2'])
     worksheet_mock.find = MagicMock(return_value=MagicMock(col=1))
     worksheet_mock.update_cell = MagicMock()
-    worksheet_mock.insert_row = MagicMock(return_value={'updates': {'updatedRange': 'A1'}})
+    worksheet_mock.insert_row = MagicMock(
+        return_value={'updates': {'updatedRange': 'A1'}}
+    )
     worksheet_mock.batch_update = MagicMock()
     worksheet_mock.get_all_values = MagicMock(return_value=[['header1', 'header2']])
 
-    sheets_mock.open_by_key = MagicMock(return_value=MagicMock(
-        worksheet=MagicMock(return_value=worksheet_mock)
-    ))
+    sheets_mock.open_by_key = MagicMock(
+        return_value=MagicMock(worksheet=MagicMock(return_value=worksheet_mock))
+    )
 
     yield sheets_mock
 

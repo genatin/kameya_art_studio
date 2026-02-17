@@ -1,6 +1,6 @@
 """Тестовые фикстуры для пользователей."""
-from src.application.models import UserDTO
 
+from src.application.models import UserDTO
 
 # Валидные данные для тестирования
 VALID_USER_DATA = {
@@ -50,6 +50,7 @@ VALID_NAMES = [
     'Александр',
     'Анна-Мария',  # С дефисом (может быть невалидным по вашим правилам)
 ]
+
 
 # Фикстуры для различных сценариев тестирования
 class UserFixtures:
