@@ -139,3 +139,5 @@ dmypy.json
 
 # sqlite
 sqlite_data
+
+.claude
