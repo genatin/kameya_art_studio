@@ -94,6 +94,7 @@ class Notifier:
         # при ответе одним из администраторов у других уведомление (сообщение)
         # о заявке редактируется (удаляется кнопка). актуально месяц
         await redis_repository.set(AdminKey(key=message_id), send_mes_ids, ex=_MONTH)
+        logger.info('create value=%s for message_id=%s', send_mes_ids, message_id)
         # admin message id
         signup_data = SignUpCallbackFactory(
             message_id=message_id,

@@ -137,7 +137,7 @@ async def send_signup_message(
             parse_mode=ParseMode.HTML,
         )
         await manager.event.bot.send_chat_action(user_id, 'typing')
-        await asyncio.sleep(2)
+        await asyncio.sleep(1.5)
     builder = InlineKeyboardBuilder()
     builder.button(
         text='Прикрепить чек',
@@ -265,6 +265,7 @@ async def send_user_payment(
     reply_to_mess = await redis_repository.get(AdminKey(key=message_id), dict)
     reply_to_mess[str(callback.from_user.id)] = mess.message_id
     await redis_repository.set(AdminKey(key=message_id), reply_to_mess, ex=MONTH)
+    logger.info('set new value=%s for message_id=%s', reply_to_mess, message_id)
     await manager.done()
     await manager.reset_stack()
 

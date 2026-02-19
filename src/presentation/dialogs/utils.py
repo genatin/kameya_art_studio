@@ -175,8 +175,9 @@ async def close_app_form_for_other_admins(
             )
         except Exception as exc:
             logger.error('Failed while edit admin message', exc_info=exc)
-    await redis_repository.set(AdminKey(key=message_id), admin_mess_ids, ex=MONTH)
     admin_mess_ids[_SENDED] = True
+    await redis_repository.set(AdminKey(key=message_id), admin_mess_ids, ex=MONTH)
+    logger.info('set sended flag for message_id=%s', message_id)
 
 
 async def approve_form_for_other_admins(
@@ -187,6 +188,7 @@ async def approve_form_for_other_admins(
 ) -> None:
     redis_repository: RedisRepository = dialog_manager.middleware_data['redis_repository']
     admin_mess_ids = await redis_repository.getdel(AdminKey(key=message_id), dict)
+    logger.info('removed message_id=%s from repo', message_id)
     if not admin_mess_ids:
         return None
     builder = InlineKeyboardBuilder()

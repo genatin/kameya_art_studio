@@ -9,6 +9,7 @@ from aiogram_dialog.api.entities import StartMode
 
 from src.application.domen.text import RU
 from src.infrastracture.adapters.repositories.repo import UsersRepository
+from src.infrastracture.database.redis.keys import AdminKey
 from src.infrastracture.database.redis.repository import RedisRepository
 from src.presentation.callbacks import (
     PaymentCallback,
@@ -153,6 +154,16 @@ async def sign_up_payment_handler(
     user_data = await redis_repository.hgetall(callback_data.message_id)
     user_data['message_id'] = callback_data.message_id
     user_data['admin_id'] = callback_data.admin_id
+    reply_to_mess = await redis_repository.get(
+        AdminKey(key=callback_data.message_id), dict
+    )
+    if not reply_to_mess:
+        await cq.message.edit_text(
+            '🔫 Преподаватель увидел оплату и подтвердил вашу заявку.\n\n😼 Ждём вас!',
+            reply_markup=None,
+        )
+        # await cq.message.delete()
+        return None
     try:
         await dialog_manager.start(
             PaymentsApprove.START,

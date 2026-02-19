@@ -7,16 +7,10 @@ import pytest
 
 from src.application.domen.models import LessonActivity
 from src.application.domen.models.activity_type import ActivityEnum, ActivityTypeFactory
-from src.application.domen.models.lesson_option import (
-    CLASSIC_LESS,
-    LessonOptionFactory,
-)
+from src.application.domen.models.lesson_option import CLASSIC_LESS, LessonOptionFactory
 from src.application.models import UserDTO
 from src.presentation.dialogs.registration import normalize_phone_number
-from src.presentation.dialogs.states import (
-    BaseMenu,
-    FirstSeen,
-)
+from src.presentation.dialogs.states import BaseMenu, FirstSeen
 
 # ============================================================================
 # ТЕСТЫ ВАЛИДАЦИИ ДАННЫХ
