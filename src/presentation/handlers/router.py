@@ -1,6 +1,7 @@
 import logging
 
 from aiogram import F, Router
+from aiogram.enums.parse_mode import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.deep_linking import decode_payload
@@ -158,11 +159,14 @@ async def sign_up_payment_handler(
         AdminKey(key=callback_data.message_id), dict
     )
     if not reply_to_mess:
-        await cq.message.edit_text(
-            '🔫 Преподаватель увидел оплату и подтвердил вашу заявку.\n\n😼 Ждём вас!',
-            reply_markup=None,
+        await cq.message.answer(
+            '🔫 Преподаватель увидел оплату и подтвердил вашу заявку. '
+            'Ниже были высланы подробности.\n😼 Ждём вас!'
+            '\n\n<i>Если никаких подробностей не нашли, '
+            f'напишите нам {RU.kameya_tg_contact}</i>',
+            parse_mode=ParseMode.HTML,
         )
-        # await cq.message.delete()
+        await cq.message.delete()
         return None
     try:
         await dialog_manager.start(
