@@ -120,24 +120,10 @@ async def store_lesson_activity(manager: DialogManager, data) -> None:
     await on_page_change(manager)
 
 
-async def done_with_lessons(cq: CallbackQuery, _, manager: DialogManager) -> None:
-    await store_lesson_activity(manager, cq.data)
-    await manager.start(SignUp.STAY_FORM, data=manager.dialog_data)
-
-
 async def next_with_lessons(cq: CallbackQuery, _, manager: DialogManager) -> None:
     await store_lesson_activity(manager, cq.data)
     manager.dialog_data[_LESSON_ACTIVITY]['num_tickets'] = 1
     await manager.next()
-
-
-def generate_button(less_option: LessonOption) -> Callable[..., Button]:
-    def button(on_click: Callable = done_with_lessons) -> Button:
-        return Button(
-            Const(less_option.human_name), id=less_option.name, on_click=on_click
-        )
-
-    return button
 
 
 async def stay_form(
@@ -167,16 +153,13 @@ async def jump_to_activity_pages(
 ) -> None:
     activity_type = ActivityTypeFactory.generate(act_name)
     start_data = manager.dialog_data if manager.has_context() else {}
-    mode = StartMode.NORMAL
     if act_id is not None:
-        mode = StartMode.RESET_STACK
         start_data['act_id'] = act_id
     start_data[_LESSON_ACTIVITY] = LessonActivity(activity_type=activity_type)
     await manager.start(
         AcitivityPages.START,
         data=start_data,
         show_mode=show_mode,
-        mode=mode,
     )
 
 
@@ -214,14 +197,14 @@ async def on_page_change(dialog_manager: DialogManager, *args) -> None:
     if scroll is None:
         return
     media_number = await scroll.get_page()
-    activity = dialog_manager.dialog_data.get('activities', [])
-    dialog_manager.dialog_data[_LESSON_ACTIVITY]['topic'] = activity[media_number][
+    activities = dialog_manager.dialog_data.get('activities', [])
+    dialog_manager.dialog_data[_LESSON_ACTIVITY]['topic'] = activities[media_number][
         'theme'
     ]
-    dialog_manager.dialog_data[_LESSON_ACTIVITY]['date'] = activity[media_number].get(
+    dialog_manager.dialog_data[_LESSON_ACTIVITY]['date'] = activities[media_number].get(
         'date'
     )
-    if t := activity[media_number].get('time'):
+    if t := activities[media_number].get('time'):
         dialog_manager.dialog_data[_LESSON_ACTIVITY]['time'] = t
 
 

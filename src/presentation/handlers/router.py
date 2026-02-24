@@ -53,6 +53,8 @@ async def cmd_hello(
         if args:
             payload = decode_payload(args)
             activity, act_id = payload.split(':')
+            if dialog_manager.has_context():
+                await dialog_manager.reset_stack()
             return await jump_to_activity_pages(dialog_manager, activity, int(act_id))
         await dialog_manager.start(BaseMenu.START)
     except ValueError:
