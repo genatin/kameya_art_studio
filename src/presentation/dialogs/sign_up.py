@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Callable
 from typing import Any
 
 from aiogram import F
@@ -40,7 +39,7 @@ from src.application.domen.models.activity_type import (
     lesson_act,
     mclass_act,
 )
-from src.application.domen.models.lesson_option import LessonOption, LessonOptionFactory
+from src.application.domen.models.lesson_option import LessonOptionFactory
 from src.application.domen.text import RU
 from src.application.models import UserDTO
 from src.infrastracture.adapters.repositories.repo import UsersRepository
