@@ -45,7 +45,7 @@ async def _show_current_context_send_warning(
 @main_router.message(Command('start'))
 async def cmd_hello(
     message: Message,
-    command: CommandObject,  # Объект команды, содержит аргументы
+    command: CommandObject,
     dialog_manager: DialogManager,
 ) -> None:
     try:

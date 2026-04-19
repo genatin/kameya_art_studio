@@ -3,6 +3,7 @@ import logging
 
 import gspread
 from aiogram import Bot
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import ExceptionTypeFilter
 from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
 from aiogram_dialog import setup_dialogs
@@ -62,7 +63,9 @@ async def main() -> None:
 
     logger.info('Config init: %s', config.model_dump(exclude={'GOOGLE_SETTINGS'}))
 
-    bot = Bot(token=config.bot_token.get_secret_value())
+    session = AiohttpSession(timeout=60)
+
+    bot = Bot(token=config.bot_token.get_secret_value(), session=session)
 
     spreadsheet = gspread.service_account_from_dict(
         config.google_settings.model_dump()
@@ -147,7 +150,7 @@ async def main() -> None:
 
     setup_dialogs(dp)
 
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, polling_timeout=50, relax=0.5)
 
 
 if __name__ == '__main__':

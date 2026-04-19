@@ -6,6 +6,7 @@ from typing import Any
 
 from aiogram import Bot, F
 from aiogram.enums.parse_mode import ParseMode
+from aiogram.exceptions import TelegramNetworkError, TelegramServerError
 from aiogram.types import BufferedInputFile, CallbackQuery, ContentType, Message
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -105,6 +106,24 @@ def parse_time_regex(time_str: str | None) -> time | None:
             return time(hours, minutes)
 
     return None
+
+
+async def safe_call(coro, *, retries=3, base_delay=1):
+    for i in range(retries):
+        try:
+            return await coro
+        except (TelegramNetworkError, TelegramServerError):
+            if i == retries - 1:
+                raise
+            await asyncio.sleep(base_delay * (2**i))
+
+
+sem = asyncio.Semaphore(5)  # ограничение параллелизма
+
+
+async def limited(coro):
+    async with sem:
+        return await safe_call(coro)
 
 
 def _get_activity_repo(dialog_manager: DialogManager) -> ActivityAbstractRepository:
@@ -275,6 +294,8 @@ async def send_to_user(
 ) -> None:
     message_id = manager.start_data['message_id']
     user_id = manager.start_data['user_id']
+    act_type = manager.start_data['activity_type']
+    num_row = int(manager.start_data['num_row'])
     if await message_is_sended(
         manager,
         user_id=message_id,
@@ -283,32 +304,35 @@ async def send_to_user(
             'Сообщение уже было отправлено другим администратором'
         )
         return await manager.done()
+    await callback.answer()
+    payment_notifier: PaymentReminder = manager.middleware_data['payment_notifier']
+    try:
+        async with asyncio.TaskGroup() as tg:
+            await limited(
+                close_app_form_for_other_admins(
+                    manager,
+                    message_id=message_id,
+                    responding_admin_id=callback.from_user.id,
+                )
+            )
+            if a_m := manager.dialog_data.get('admin_messages'):
+                tg.create_task(limited(send_signup_message(manager, a_m, callback)))
 
-    async with asyncio.TaskGroup() as tg:
-        task_close = tg.create_task(
-            close_app_form_for_other_admins(
-                manager,
-                message_id=message_id,
-                responding_admin_id=callback.from_user.id,
-            )
-        )
-        await task_close
-        if a_m := manager.dialog_data['admin_messages']:
-            task_send = tg.create_task(send_signup_message(manager, a_m, callback))
-        if manager.dialog_data.get('cost', manager.start_data['cost']) == 0:
-            task_approve = tg.create_task(approve_payment(callback, None, manager))
-        else:
-            payment_notifier: PaymentReminder = manager.middleware_data[
-                'payment_notifier'
-            ]
-            task_remind = tg.create_task(payment_notifier.add_reminder(user_id))
-            task_payment = tg.create_task(send_user_payment(callback, button, manager))
-            repository: UsersRepository = manager.middleware_data['repository']
-            repository.change_values_in_signup_user(
-                manager.start_data['activity_type'],
-                int(manager.start_data['num_row']),
-                {'cost': manager.dialog_data['cost'], 'status': 'не оплачено'},
-            )
+            cost = manager.dialog_data.get('cost', manager.start_data['cost'])
+            if cost == 0:
+                tg.create_task(limited(approve_payment(callback, None, manager)))
+            else:
+                tg.create_task(limited(send_user_payment(callback, button, manager)))
+    except Exception:
+        raise
+    repository: UsersRepository = manager.middleware_data['repository']
+    repository.change_values_in_signup_user(
+        act_type,
+        num_row,
+        {'cost': cost, 'status': 'не оплачено'},
+    )
+    if cost != 0:
+        await limited(payment_notifier.add_reminder(user_id))
 
 
 async def get_image(
