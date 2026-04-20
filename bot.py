@@ -63,7 +63,7 @@ async def main() -> None:
 
     logger.info('Config init: %s', config.model_dump(exclude={'GOOGLE_SETTINGS'}))
 
-    session = AiohttpSession(timeout=60)
+    session = AiohttpSession(timeout=30)
 
     bot = Bot(token=config.bot_token.get_secret_value(), session=session)
 
@@ -150,7 +150,7 @@ async def main() -> None:
 
     setup_dialogs(dp)
 
-    await dp.start_polling(bot, polling_timeout=50, relax=0.5)
+    await dp.start_polling(bot)
 
 
 if __name__ == '__main__':
