@@ -63,9 +63,8 @@ async def main() -> None:
 
     logger.info('Config init: %s', config.model_dump(exclude={'GOOGLE_SETTINGS'}))
 
-    session = AiohttpSession(timeout=30)
 
-    bot = Bot(token=config.bot_token.get_secret_value(), session=session)
+    bot = Bot(token=config.bot_token.get_secret_value())
 
     spreadsheet = gspread.service_account_from_dict(
         config.google_settings.model_dump()
@@ -80,8 +79,6 @@ async def main() -> None:
         decode_responses=True,
         max_connections=20,
     )
-    # if get_config().LOCAL:
-    #     await redis.flushdb()
 
     redis_repository = RedisRepository(redis)
     users_service = UsersService(
