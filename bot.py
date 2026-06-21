@@ -3,11 +3,12 @@ import logging
 
 import gspread
 from aiogram import Bot
-from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import ExceptionTypeFilter
 from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiogram_dialog import setup_dialogs
 from aiogram_dialog.api.exceptions import OutdatedIntent, UnknownIntent, UnknownState
+from aiohttp import web
 from redis.asyncio.client import Redis
 
 from src.application.factory.telegram import create_dispatcher
@@ -51,9 +52,13 @@ from src.presentation.reminders.payment_reminder import PaymentReminder
 logger = logging.getLogger(__name__)
 
 
-async def polling_startup(bots: list[Bot]) -> None:
-    for bot in bots:
-        await bot.delete_webhook(drop_pending_updates=True)
+async def webhook_startup(bot: Bot) -> None:
+    config = get_config()
+    await bot.set_webhook(
+        url=f'{config.BASE_WEBHOOK_URL}{config.WEBHOOK_PATH}',
+        secret_token=config.WEBHOOK_SECRET,
+        drop_pending_updates=True,
+    )
 
 
 async def main() -> None:
@@ -62,7 +67,6 @@ async def main() -> None:
     config = get_config()
 
     logger.info('Config init: %s', config.model_dump(exclude={'GOOGLE_SETTINGS'}))
-
 
     bot = Bot(token=config.bot_token.get_secret_value())
 
@@ -143,11 +147,34 @@ async def main() -> None:
         developer_dialog,
         not_handled_router,
     )
-    dp.startup.register(polling_startup)
-
+    dp.startup.register(webhook_startup)
     setup_dialogs(dp)
+    app = web.Application()
+    SimpleRequestHandler(
+        dispatcher=dp, bot=bot, secret_token=config.WEBHOOK_SECRET
+    ).register(app, path=config.WEBHOOK_PATH)
 
-    await dp.start_polling(bot)
+    setup_application(
+        app,
+        dp,
+        bot=bot,
+    )
+
+    runner = web.AppRunner(app)
+
+    await runner.setup()
+
+    site = web.TCPSite(
+        runner,
+        host='0.0.0.0',
+        port=8080,
+    )
+
+    await site.start()
+
+    logger.info('Webhook started')
+
+    await asyncio.Event().wait()
 
 
 if __name__ == '__main__':

@@ -50,6 +50,10 @@ class Config(BaseSettings):
     # welcome images/videos
     static_data_path: Path = Path('static_data')
 
+    WEBHOOK_PATH: str
+    WEBHOOK_SECRET: SecretStr
+    BASE_WEBHOOK_URL: str
+
     @property
     def welcome_image_path(self) -> Path:
         return self.static_data_path / 'welcome_photo.jpg'

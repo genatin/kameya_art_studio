@@ -38,13 +38,28 @@ services:
       retries: 3
       start_period: 40s
     restart: unless-stopped
-
-
-volumes:
-  cache:
-  sqlite_data:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - app_network
+    depends_on:
+      - bot
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile
 
 
 networks:
   app_network:  # Создание внутренней сети для взаимодействия контейнеров
     driver: bridge
+
+volumes:
+  cache:
+  sqlite_data:
+  caddy_data:
+  caddy_config:
