@@ -51,7 +51,7 @@ class Config(BaseSettings):
     static_data_path: Path = Path('static_data')
 
     WEBHOOK_PATH: str
-    WEBHOOK_SECRET: SecretStr
+    WEBHOOK_SECRET: str
     BASE_WEBHOOK_URL: str
 
     @property
