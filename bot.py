@@ -174,7 +174,8 @@ async def main() -> None:
     )
 
     await site.start()
-
+    webhook_info = await bot.get_webhook_info()
+    logger.info("WEBHOOK INFO: %s", webhook_info)
     logger.info('Webhook started')
 
     await asyncio.Event().wait()
