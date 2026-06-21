@@ -53,12 +53,15 @@ logger = logging.getLogger(__name__)
 
 
 async def webhook_startup(bot: Bot) -> None:
+    logger.info('Setting webhook...')
     config = get_config()
     await bot.set_webhook(
         url=f'{config.BASE_WEBHOOK_URL}{config.WEBHOOK_PATH}',
         secret_token=config.WEBHOOK_SECRET,
         drop_pending_updates=True,
     )
+    logger.info(f'webhook url: {config.BASE_WEBHOOK_URL}{config.WEBHOOK_PATH}')
+    logger.info('Webhook registered')
 
 
 async def main() -> None:
